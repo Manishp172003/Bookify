@@ -1,24 +1,18 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import HomePage from "../pages/HomePage";
+import ExplorePage from "../pages/ExplorePage";
+import CategoriesPage from "../pages/CategoriesPage";
+import BookDetailPage from "../pages/BookDetailPage";
+import MainLayout from "../components/layout/MainLayout";
 
-import Login from "../pages/Auth/Login";
-import Register from "../pages/Auth/Register";
-import OTPVerification from "../pages/Auth/OTPVerification";
-
-function AppRoutes() {
+export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-
-      <Route path="/register" element={<Register />} />
-
-      <Route path="/verify-otp" element={<OTPVerification />} />
-
-      <Route
-        path="*"
-        element={<Navigate to="/login" replace />}
-      />
+      <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
+      <Route path="/explore" element={<MainLayout><ExplorePage /></MainLayout>} />
+      <Route path="/categories" element={<MainLayout><CategoriesPage /></MainLayout>} />
+      <Route path="/book/:id" element={<MainLayout><BookDetailPage /></MainLayout>} />
+      <Route path="*" element={<MainLayout><div className="p-8 text-center text-bookify-text-secondary">404 - Page Not Found</div></MainLayout>} />
     </Routes>
   );
 }
-
-export default AppRoutes;

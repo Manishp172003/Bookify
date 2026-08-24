@@ -1,18 +1,12 @@
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
-function MainLayout({ children }) {
+export default function MainLayout({ children }) {
   return (
-    <div className="min-h-screen bg-[#F8F7FF]">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-
-      <main>
-        {children}
-      </main>
-
+      <main className="flex-1">{children}</main>
       <Footer />
     </div>
   );
 }
-
-export default MainLayout;
