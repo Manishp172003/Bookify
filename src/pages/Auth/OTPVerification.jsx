@@ -88,17 +88,17 @@ function OTPVerification() {
       }
     >
       <div className="mb-8">
-        <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
-          Enter OTP
-        </h2>
+          <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
+            Enter OTP
+          </h2>
 
-        <p className="mt-2 text-sm leading-6 text-gray-500 font-medium">
-          We have sent a 6-digit code to <span className="font-bold text-[#6C4BF4]">+91 9876543210</span>
-        </p>
-      </div>
+          <p className="mt-2 text-sm leading-6 text-gray-500 font-medium">
+            We have sent a 6-digit code to <span className="font-bold text-[#6C4BF4]">+91 9876543210</span>
+          </p>
+        </div>
 
-      {/* OTP Inputs */}
-      <form onSubmit={handleSubmit}>
+        {/* OTP Inputs */}
+        <form onSubmit={handleSubmit}>
         <div className="flex justify-center gap-2 sm:gap-3">
           {[0, 1, 2, 3, 4, 5].map((index) => (
             <input

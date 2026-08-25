@@ -1,12 +1,17 @@
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import loginIllustration from "../../assets/images/auth/login-illustration.png";
 import { validateLogin } from "../../utils/validators";
 import AuthLayout from "../../components/auth/AuthLayout";
+import { useAuth } from "../../context/AuthContext";
 
 function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
@@ -31,7 +36,12 @@ function Login() {
       console.log("Login form is valid:", formData);
       setTimeout(() => {
         setIsLoading(false);
-      }, 2000);
+        login(formData.identifier);
+        
+        // Redirect to protected target page, or fallback to dashboard
+        const from = location.state?.from?.pathname || "/dashboard";
+        navigate(from, { replace: true });
+      }, 1500);
     }
   };
 
@@ -43,24 +53,24 @@ function Login() {
       isRegister={false}
     >
       {/* Header with mini books & plant accent */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
-          Login to Bookify
-        </h2>
-        
-        {/* Cute CSS stack of books with plant */}
-        <div className="relative flex flex-col items-center justify-end w-12 h-12 shrink-0">
-          <span className="text-xl leading-none z-10 select-none animate-bounce mb-1">🪴</span>
-          <div className="flex flex-col items-center w-full gap-0.5">
-            <div className="h-1 w-6 rounded-sm bg-[#FFD166] shadow-sm" />
-            <div className="h-1 w-8 rounded-sm bg-[#38BDF8] shadow-sm" />
-            <div className="h-1.5 w-7 rounded-sm bg-[#FF4F81] shadow-sm" />
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
+            Login to Bookify
+          </h2>
+          
+          {/* Cute CSS stack of books with plant */}
+          <div className="relative flex flex-col items-center justify-end w-12 h-12 shrink-0">
+            <span className="text-xl leading-none z-10 select-none animate-bounce mb-1">🪴</span>
+            <div className="flex flex-col items-center w-full gap-0.5">
+              <div className="h-1 w-6 rounded-sm bg-[#FFD166] shadow-sm" />
+              <div className="h-1 w-8 rounded-sm bg-[#38BDF8] shadow-sm" />
+              <div className="h-1.5 w-7 rounded-sm bg-[#FF4F81] shadow-sm" />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Form */}
-      <form className="space-y-5" onSubmit={handleSubmit}>
+        {/* Form */}
+        <form className="space-y-5" onSubmit={handleSubmit}>
 
         {/* Email / Phone */}
         <div>

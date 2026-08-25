@@ -1,149 +1,61 @@
-import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { BookOpen, Mail, Phone, MapPin } from "lucide-react";
 
-function Footer() {
+export default function Footer() {
   return (
-    <footer className="bg-[#171B3A] text-white">
-
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-2 lg:grid-cols-5">
-
-        {/* Brand */}
-        <div className="lg:col-span-2">
-
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#6C4BF4] font-bold">
-              B
-            </div>
-
-            <span className="text-xl font-extrabold">
-              BOOKIFY
-            </span>
+    <footer className="bg-bookify-text text-white">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-9 h-9 bg-bookify-purple rounded-xl flex items-center justify-center">
+                <BookOpen size={20} className="text-white" />
+              </div>
+              <span className="font-[family-name:var(--font-heading)] font-bold text-xl">
+                Book<span className="text-bookify-purple">ify</span>
+              </span>
+            </Link>
+            <p className="text-sm text-gray-400 mt-3 leading-relaxed">
+              India's unified book marketplace. Buy, sell, rent, exchange, and donate books.
+            </p>
           </div>
 
-          <p className="mt-5 max-w-sm text-sm leading-6 text-white/60">
-            India's most trusted student marketplace.
-            Buy, sell, rent and exchange books with fellow
-            students.
-          </p>
-
-          {/* Social */}
-          <div className="mt-6 flex gap-3">
-
-            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-[#6C4BF4]">
-              <Facebook size={16} />
-            </button>
-
-            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-[#6C4BF4]">
-              <Instagram size={16} />
-            </button>
-
-            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-[#6C4BF4]">
-              <Twitter size={16} />
-            </button>
-
-            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-[#6C4BF4]">
-              <Linkedin size={16} />
-            </button>
-
+          <div>
+            <h4 className="font-[family-name:var(--font-heading)] font-semibold mb-4">Quick Links</h4>
+            <ul className="space-y-2">
+              {[{ to: "/explore", label: "Explore Books" }, { to: "/categories", label: "Browse Categories" }, { to: "/explore?mode=sell", label: "Sell a Book" }, { to: "/explore?mode=rent", label: "Rent Books" }].map((link) => (
+                <li key={link.to}><Link to={link.to} className="text-sm text-gray-400 hover:text-bookify-purple transition-colors">{link.label}</Link></li>
+              ))}
+            </ul>
           </div>
-        </div>
 
-        {/* Quick Links */}
-        <div>
-          <h3 className="font-semibold">
-            Quick Links
-          </h3>
+          <div>
+            <h4 className="font-[family-name:var(--font-heading)] font-semibold mb-4">Top Categories</h4>
+            <ul className="space-y-2">
+              {["Computer Science", "Competitive Exams", "Fiction", "Engineering", "Science"].map((cat) => (
+                <li key={cat}><Link to="/categories" className="text-sm text-gray-400 hover:text-bookify-purple transition-colors">{cat}</Link></li>
+              ))}
+            </ul>
+          </div>
 
-          <div className="mt-5 space-y-3 text-sm text-white/60">
-            <Link className="block hover:text-white" to="/">
-              Home
-            </Link>
-
-            <Link className="block hover:text-white" to="/explore">
-              Explore
-            </Link>
-
-            <Link className="block hover:text-white" to="/sell">
-              Sell a Book
-            </Link>
-
-            <Link className="block hover:text-white" to="/rent">
-              Rent a Book
-            </Link>
-
-            <Link className="block hover:text-white" to="/exchange">
-              Exchange
-            </Link>
+          <div>
+            <h4 className="font-[family-name:var(--font-heading)] font-semibold mb-4">Contact Us</h4>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2 text-sm text-gray-400"><Mail size={14} className="text-bookify-purple" />hello@bookify.com</li>
+              <li className="flex items-center gap-2 text-sm text-gray-400"><Phone size={14} className="text-bookify-purple" />+91 98765 43210</li>
+              <li className="flex items-start gap-2 text-sm text-gray-400"><MapPin size={14} className="text-bookify-purple mt-0.5" /><span>Pan-India Campus Network</span></li>
+            </ul>
           </div>
         </div>
 
-        {/* Support */}
-        <div>
-          <h3 className="font-semibold">
-            Support
-          </h3>
-
-          <div className="mt-5 space-y-3 text-sm text-white/60">
-            <Link className="block hover:text-white" to="/help">
-              Help Center
-            </Link>
-
-            <Link className="block hover:text-white" to="/safety">
-              Safety Tips
-            </Link>
-
-            <Link className="block hover:text-white" to="/shipping">
-              Shipping Info
-            </Link>
-
-            <Link className="block hover:text-white" to="/refund">
-              Return Policy
-            </Link>
-
-            <Link className="block hover:text-white" to="/contact">
-              Contact Us
-            </Link>
+        <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500">&copy; 2026 Bookify. All rights reserved.</p>
+          <div className="flex gap-4">
+            <a href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Privacy Policy</a>
+            <a href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Terms of Service</a>
           </div>
-        </div>
-
-        {/* Company */}
-        <div>
-          <h3 className="font-semibold">
-            Company
-          </h3>
-
-          <div className="mt-5 space-y-3 text-sm text-white/60">
-            <Link className="block hover:text-white" to="/about">
-              About Us
-            </Link>
-
-            <Link className="block hover:text-white" to="/careers">
-              Careers
-            </Link>
-
-            <Link className="block hover:text-white" to="/terms">
-              Terms & Conditions
-            </Link>
-
-            <Link className="block hover:text-white" to="/privacy">
-              Privacy Policy
-            </Link>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Bottom */}
-      <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-6 py-5">
-          <p className="text-center text-xs text-white/50">
-            © 2024 BOOKIFY. All rights reserved.
-          </p>
         </div>
       </div>
-
     </footer>
   );
 }
-
-export default Footer;

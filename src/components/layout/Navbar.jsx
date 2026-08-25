@@ -1,144 +1,118 @@
-import {
-  Search,
-  ShoppingCart,
-  Bell,
-  MessageCircle,
-  Menu,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Search, BookOpen, Menu, X, Bell, Plus } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
-function Navbar() {
+const navLinks = [
+  { path: "/", label: "Home" },
+  { path: "/explore", label: "Explore" },
+  { path: "/categories", label: "Categories" },
+];
+
+export default function Navbar() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
+
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
-      <div className="mx-auto flex h-20 max-w-7xl items-center gap-8 px-6">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-bookify-border">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-10">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-9 h-9 bg-bookify-purple rounded-xl flex items-center justify-center">
+              <BookOpen size={20} className="text-white" />
+            </div>
+            <span className="font-[family-name:var(--font-heading)] font-bold text-xl text-bookify-text">
+              Book<span className="text-bookify-purple">ify</span>
+            </span>
+          </Link>
 
-        {/* Logo */}
-        <Link
-          to="/"
-          className="flex shrink-0 items-center gap-2"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#6C4BF4] text-lg font-bold text-white">
-            B
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname === link.path
+                    ? "text-bookify-purple bg-bookify-light-purple"
+                    : "text-bookify-text-secondary hover:text-bookify-text hover:bg-bookify-bg"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
-          <span className="text-xl font-extrabold tracking-tight text-[#17152A]">
-            BOOKIFY
-          </span>
-        </Link>
-
-        {/* Navigation */}
-        <nav className="hidden items-center gap-6 lg:flex">
-          <Link
-            to="/"
-            className="text-sm font-medium text-gray-600 transition hover:text-[#6C4BF4]"
-          >
-            Home
-          </Link>
-
-          <Link
-            to="/explore"
-            className="text-sm font-medium text-gray-600 transition hover:text-[#6C4BF4]"
-          >
-            Explore
-          </Link>
-
-          <Link
-            to="/sell"
-            className="text-sm font-medium text-gray-600 transition hover:text-[#6C4BF4]"
-          >
-            Sell
-          </Link>
-
-          <Link
-            to="/rent"
-            className="text-sm font-medium text-gray-600 transition hover:text-[#6C4BF4]"
-          >
-            Rent
-          </Link>
-
-          <Link
-            to="/exchange"
-            className="text-sm font-medium text-gray-600 transition hover:text-[#6C4BF4]"
-          >
-            Exchange
-          </Link>
-
-          <Link
-            to="/want-board"
-            className="text-sm font-medium text-gray-600 transition hover:text-[#6C4BF4]"
-          >
-            Want Board
-          </Link>
-        </nav>
-
-        {/* Search */}
-        <div className="ml-auto hidden max-w-sm flex-1 md:flex">
-          <div className="relative w-full">
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              type="text"
-              placeholder="Search books, authors, ISBN..."
-              className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#6C4BF4] focus:ring-4 focus:ring-[#6C4BF4]/10"
-            />
+          <div className="hidden md:flex items-center gap-2">
+            {isAuthenticated ? (
+              <>
+                <Link to="/explore" className="p-2 rounded-lg text-bookify-text-secondary hover:text-bookify-text hover:bg-bookify-bg transition-colors">
+                  <Search size={20} />
+                </Link>
+                <button className="relative p-2 rounded-lg text-bookify-text-secondary hover:text-bookify-text hover:bg-bookify-bg transition-colors cursor-pointer">
+                  <Bell size={20} />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-bookify-orange rounded-full" />
+                </button>
+                <Link to="/profile" className="flex h-8 w-8 items-center justify-center rounded-full overflow-hidden border border-gray-150 bg-[#EDE7FF] cursor-pointer hover:opacity-90 transition">
+                  <img
+                    src={user?.avatar || "/images/profile-avatar.png"}
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                  />
+                </Link>
+                <Link to="/sell" className="flex items-center gap-1.5 px-4 py-2 bg-bookify-orange text-white rounded-lg text-sm font-medium hover:bg-bookify-orange-dark transition-colors cursor-pointer shadow-sm shadow-bookify-orange/10">
+                  <Plus size={16} />
+                  Sell a Book
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/explore" className="p-2 rounded-lg text-bookify-text-secondary hover:text-bookify-text hover:bg-bookify-bg transition-colors mr-2">
+                  <Search size={20} />
+                </Link>
+                <Link to="/login" className="px-4 py-2 text-sm font-bold text-gray-600 hover:text-[#6C4BF4] transition-colors">
+                  Login
+                </Link>
+                <Link to="/register" className="px-4 py-2 bg-[#6C4BF4] text-white rounded-xl text-sm font-bold hover:bg-[#5B3DE0] shadow-md shadow-[#6C4BF4]/10 transition-all select-none">
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="hidden items-center gap-4 md:flex">
-
-          <button
-            type="button"
-            className="relative text-gray-500 transition hover:text-[#6C4BF4]"
-          >
-            <ShoppingCart size={20} />
-
-            <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF4F81] px-1 text-[9px] font-bold text-white">
-              2
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className="relative text-gray-500 transition hover:text-[#6C4BF4]"
-          >
-            <Bell size={20} />
-
-            <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-[#FF4F81]" />
-          </button>
-
-          <button
-            type="button"
-            className="text-gray-500 transition hover:text-[#6C4BF4]"
-          >
-            <MessageCircle size={20} />
-          </button>
-
-          {/* Profile */}
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-[#E9E4FF] bg-[#F0ECFF]"
-          >
-            <span className="font-semibold text-[#6C4BF4]">
-              M
-            </span>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 rounded-lg text-bookify-text-secondary hover:bg-bookify-bg cursor-pointer">
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
-
-        {/* Mobile menu */}
-        <button
-          type="button"
-          className="rounded-lg p-2 text-gray-600 hover:bg-[#F8F7FF] lg:hidden"
-        >
-          <Menu size={24} />
-        </button>
-
       </div>
-    </header>
+
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-bookify-border bg-white">
+          <div className="px-4 py-3 space-y-1">
+            {navLinks.map((link) => (
+              <Link key={link.path} to={link.path} onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === link.path ? "text-bookify-purple bg-bookify-light-purple" : "text-bookify-text-secondary hover:text-bookify-text hover:bg-bookify-bg"}`}>
+                {link.label}
+              </Link>
+            ))}
+            <hr className="border-bookify-border my-2" />
+            {isAuthenticated ? (
+              <Link to="/sell" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-bookify-orange text-white rounded-lg text-sm font-medium">
+                <Plus size={16} />
+                Sell a Book
+              </Link>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50">
+                  Login
+                </Link>
+                <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center px-4 py-2 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5B3DE0]">
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
   );
 }
-
-export default Navbar;

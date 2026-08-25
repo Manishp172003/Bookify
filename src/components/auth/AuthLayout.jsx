@@ -1,4 +1,5 @@
 import AuthBranding from "./AuthBranding";
+import AuthCard from "./AuthCard";
 
 function AuthLayout({ children, title, subtitle, illustration, isRegister, theme, tagText, brandingFooter }) {
   return (
@@ -19,7 +20,9 @@ function AuthLayout({ children, title, subtitle, illustration, isRegister, theme
         {/* Right Auth Section */}
         <main className="flex flex-1 flex-col justify-center bg-white px-6 py-10 sm:px-10 lg:px-14">
           <div className="mx-auto w-full max-w-[400px]">
-            {children}
+            <AuthCard>
+              {children}
+            </AuthCard>
           </div>
         </main>
 

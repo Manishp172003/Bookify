@@ -1,0 +1,68 @@
+const categories = [
+  {
+    id: "cs",
+    name: "Computer Science",
+    icon: "💻",
+    color: "#6C4BF4",
+    bgColor: "#EEEAFE",
+    subCategories: ["Programming", "AI/ML", "Data Science", "Software Engineering", "Web Development"],
+  },
+  {
+    id: "science",
+    name: "Science",
+    icon: "🔬",
+    color: "#38BDF8",
+    bgColor: "#E8F4FD",
+    subCategories: ["Physics", "Chemistry", "Biology", "Mathematics"],
+  },
+  {
+    id: "engineering",
+    name: "Engineering",
+    icon: "⚙️",
+    color: "#FF8A3D",
+    bgColor: "#FFF0E6",
+    subCategories: ["Mechanical", "Electrical", "Civil", "Electronics", "Chemical"],
+  },
+  {
+    id: "competitive",
+    name: "Competitive Exams",
+    icon: "🎯",
+    color: "#FF4F81",
+    bgColor: "#FFE8EF",
+    subCategories: ["JEE", "NEET", "UPSC", "GATE", "CAT", "CLAT"],
+  },
+  {
+    id: "fiction",
+    name: "Fiction",
+    icon: "📚",
+    color: "#22C55E",
+    bgColor: "#E8F8EE",
+    subCategories: ["Literary Fiction", "Classic Literature", "Sci-Fi", "Fantasy", "Mystery"],
+  },
+  {
+    id: "nonfiction",
+    name: "Non-Fiction",
+    icon: "📖",
+    color: "#FFD166",
+    bgColor: "#FFF8E6",
+    subCategories: ["History", "Biography", "Self Help", "Philosophy", "Economics"],
+  },
+  {
+    id: "business",
+    name: "Business & Economics",
+    icon: "💼",
+    color: "#6C4BF4",
+    bgColor: "#EEEAFE",
+    subCategories: ["Management", "Finance", "Marketing", "Entrepreneurship"],
+  },
+  {
+    id: "medical",
+    name: "Medical",
+    icon: "🏥",
+    color: "#FF4F81",
+    bgColor: "#FFE8EF",
+    subCategories: ["Anatomy", "Pharmacology", "Pathology", "Surgery"],
+  },
+];
+
+export default categories;

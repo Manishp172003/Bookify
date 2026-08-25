@@ -1,3 +1,39 @@
-
 @import "tailwindcss";
 
+@theme {
+  --color-bookify-purple: #6C4BF4;
+  --color-bookify-purple-light: #8B6FF5;
+  --color-bookify-purple-dark: #5A3AD4;
+  --color-bookify-orange: #FF8A3D;
+  --color-bookify-orange-light: #FF9F62;
+  --color-bookify-orange-dark: #E87528;
+  --color-bookify-pink: #FF4F81;
+  --color-bookify-pink-light: #FF6F99;
+  --color-bookify-yellow: #FFD166;
+  --color-bookify-green: #22C55E;
+  --color-bookify-green-light: #E8F8EE;
+  --color-bookify-blue: #38BDF8;
+  --color-bookify-bg: #F8F7FF;
+  --color-bookify-white: #FFFFFF;
+  --color-bookify-text: #17152A;
+  --color-bookify-text-secondary: #6B6880;
+  --color-bookify-border: #E7E4F2;
+  --color-bookify-light-purple: #EEEAFE;
+  --color-bookify-light-orange: #FFF0E6;
+  --color-bookify-light-pink: #FFE8EF;
+  --font-heading: "Poppins", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--color-bookify-bg);
+  color: var(--color-bookify-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
