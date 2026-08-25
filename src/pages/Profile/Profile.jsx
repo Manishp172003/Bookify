@@ -69,13 +69,13 @@ function ProfileWidgets() {
 
 function Profile() {
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#F8F7FF]">
+    <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">
       {/* Left Column: Sidebar */}
       <DashboardSidebar />
 
       {/* Right Column: Main Content */}
       <div className="flex min-w-0 flex-1 flex-col h-full">
-        <main className="flex-1 overflow-y-auto p-7">
+        <main className="flex-1 overflow-y-auto p-7 animate-fade-in-up">
           {/* Page heading */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-[#17152A]">

@@ -18,6 +18,14 @@ import OTPVerification from "../pages/Auth/OTPVerification";
 import Profile from "../pages/Profile/Profile";
 import Settings from "../pages/Profile/Settings";
 import StudentDashboard from "../pages/Dashboard/StudentDashboard";
+import MyOrders from "../pages/Dashboard/MyOrders";
+import StudentMyListings from "../pages/Dashboard/MyListingsPage";
+import Rentals from "../pages/Dashboard/Rentals";
+import Exchanges from "../pages/Dashboard/Exchanges";
+import Wishlist from "../pages/Dashboard/Wishlist";
+import Messages from "../pages/Dashboard/Messages";
+import StudentEarnings from "../pages/Dashboard/Earnings";
+import StudentWantBoard from "../pages/Dashboard/WantBoardPage";
 
 // Seller Hub
 import MyListings from "../pages/Listing/MyListings";
@@ -136,6 +144,78 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/orders"
+        element={
+          <ProtectedRoute>
+            <MyOrders />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/listings"
+        element={
+          <ProtectedRoute>
+            <StudentMyListings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/rentals"
+        element={
+          <ProtectedRoute>
+            <Rentals />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/exchanges"
+        element={
+          <ProtectedRoute>
+            <Exchanges />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/wishlist"
+        element={
+          <ProtectedRoute>
+            <Wishlist />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/messages"
+        element={
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/earnings"
+        element={
+          <ProtectedRoute>
+            <StudentEarnings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/want-board"
+        element={
+          <ProtectedRoute>
+            <StudentWantBoard />
           </ProtectedRoute>
         }
       />

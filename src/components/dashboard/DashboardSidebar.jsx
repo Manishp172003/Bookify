@@ -18,14 +18,14 @@ import {
 const menuItems = [
   { label: "Browse Marketplace", icon: Globe, path: "/" },
   { label: "Overview", icon: Home, path: "/dashboard" },
-  { label: "My Orders", icon: ShoppingBag, path: "#" },
-  { label: "My Listings", icon: BookOpen, path: "#" },
-  { label: "Rentals", icon: Repeat2, path: "#" },
-  { label: "Exchanges", icon: ArrowLeftRight, path: "#" },
-  { label: "Wishlist", icon: Heart, path: "#" },
-  { label: "Messages", icon: MessageCircle, badge: 3, path: "#" },
-  { label: "Earnings", icon: Wallet, path: "#" },
-  { label: "Want Board", icon: Lightbulb, path: "#" },
+  { label: "My Orders", icon: ShoppingBag, path: "/dashboard/orders" },
+  { label: "My Listings", icon: BookOpen, path: "/dashboard/listings" },
+  { label: "Rentals", icon: Repeat2, path: "/dashboard/rentals" },
+  { label: "Exchanges", icon: ArrowLeftRight, path: "/dashboard/exchanges" },
+  { label: "Wishlist", icon: Heart, path: "/dashboard/wishlist" },
+  { label: "Messages", icon: MessageCircle, badge: 3, path: "/dashboard/messages" },
+  { label: "Earnings", icon: Wallet, path: "/dashboard/earnings" },
+  { label: "Want Board", icon: Lightbulb, path: "/dashboard/want-board" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
@@ -56,12 +56,15 @@ function DashboardSidebar() {
             <Link
               key={item.label}
               to={item.path}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition cursor-pointer ${
+              className={`relative flex items-center gap-3 rounded-lg pl-4 pr-3 py-2.5 text-sm transition cursor-pointer ${
                 isActive
                   ? "bg-[#F0ECFF] font-bold text-[#6C4BF4]"
                   : "text-gray-600 hover:bg-gray-50 hover:text-[#6C4BF4]"
               }`}
             >
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.2 h-6 rounded-r bg-[#6C4BF4]" />
+              )}
               <Icon size={18} />
 
               <span className="flex-1 text-left">

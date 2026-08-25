@@ -9,7 +9,7 @@ import RecentMessages from "../../components/dashboard/RecentMessages";
 
 function StudentDashboard() {
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#F8F7FF]">
+    <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">
       {/* Left Column: Sidebar */}
       <DashboardSidebar />
 
@@ -17,7 +17,7 @@ function StudentDashboard() {
       <div className="flex min-w-0 flex-1 flex-col h-full">
         <DashboardHeader />
 
-        <main className="flex-1 overflow-y-auto p-7">
+        <main className="flex-1 overflow-y-auto p-7 animate-fade-in-up">
           {/* Statistics */}
           <div className="grid grid-cols-4 gap-4">
             <StatCard
