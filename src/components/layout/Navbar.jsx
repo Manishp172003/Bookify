@@ -52,7 +52,7 @@ export default function Navbar() {
                 <Link
                   key={link.label}
                   to={link.path}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? "text-[#6C4BF4] bg-[#EEEAFE]"
                       : "text-gray-500 hover:text-[#6C4BF4] hover:bg-[#6C4BF4]/5"
@@ -136,13 +136,13 @@ export default function Navbar() {
               <>
                 <Link 
                   to="/login" 
-                  className="px-4 py-2.5 text-xs font-bold text-gray-500 hover:text-[#6C4BF4] transition-colors"
+                  className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-[#6C4BF4] transition-colors"
                 >
                   Login
                 </Link>
                 <Link 
                   to="/register" 
-                  className="px-4.5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5B3DE0] shadow-sm shadow-[#6C4BF4]/15 transition-all select-none"
+                  className="px-4 py-2 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5B3DE0] shadow-sm shadow-[#6C4BF4]/15 transition-all select-none"
                 >
                   Sign Up
                 </Link>
@@ -188,7 +188,7 @@ export default function Navbar() {
                   key={link.label}
                   to={link.path}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     isActive
                       ? "text-[#6C4BF4] bg-[#EEEAFE]"
                       : "text-gray-500 hover:text-[#6C4BF4] hover:bg-gray-50"
@@ -245,14 +245,14 @@ export default function Navbar() {
               <Link 
                 to="/login" 
                 onClick={() => setIsMobileMenuOpen(false)} 
-                className="flex items-center justify-center px-4 py-2.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-55"
+                className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-55"
               >
                 Login
               </Link>
               <Link 
                 to="/register" 
                 onClick={() => setIsMobileMenuOpen(false)} 
-                className="flex items-center justify-center px-4 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5B3DE0]"
+                className="flex items-center justify-center px-4 py-2 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5B3DE0]"
               >
                 Sign Up
               </Link>
