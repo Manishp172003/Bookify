@@ -8,10 +8,10 @@ import {
   Truck,
   ChevronRight,
 } from "lucide-react";
-import SearchBar from "../components/search/SearchBar";
-import BookCard from "../components/book/BookCard";
-import books from "../data/books";
-import categories from "../data/categories";
+import SearchBar from "../../components/search/SearchBar";
+import BookCard from "../../components/book/BookCard";
+import books from "../../data/books";
+import categories from "../../data/categories";
 
 const features = [
   {
@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="absolute bottom-10 right-10 w-80 h-80 bg-bookify-pink rounded-full blur-[140px]" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 relative z-10">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-16 md:py-24 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur rounded-full text-sm font-medium mb-6">
               <span className="w-2 h-2 bg-bookify-green rounded-full animate-pulse" />
@@ -91,7 +91,7 @@ export default function HomePage() {
 
       {/* Features bar */}
       <section className="border-b border-bookify-border bg-white">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-10">
           <div className="grid grid-cols-2 md:grid-cols-4">
             {features.map((f, i) => (
               <div
@@ -114,7 +114,7 @@ export default function HomePage() {
       </section>
 
       {/* Categories */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
+      <section className="max-w-[1440px] mx-auto px-6 md:px-10 py-12">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-[family-name:var(--font-heading)] text-2xl font-bold text-bookify-text">
@@ -153,7 +153,7 @@ export default function HomePage() {
       </section>
 
       {/* Trending Books */}
-      <section className="max-w-7xl mx-auto px-4 py-8">
+      <section className="max-w-[1440px] mx-auto px-6 md:px-10 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export default function HomePage() {
 
       {/* Recently Listed */}
       {recentBooks.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-8">
+        <section className="max-w-[1440px] mx-auto px-6 md:px-10 py-8">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="font-[family-name:var(--font-heading)] text-2xl font-bold text-bookify-text">
@@ -209,7 +209,7 @@ export default function HomePage() {
 
       {/* Free Books Banner */}
       {freeBooks.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-8">
+        <section className="max-w-[1440px] mx-auto px-6 md:px-10 py-8">
           <div className="bg-gradient-to-r from-bookify-green-light to-[#D1FADF] rounded-2xl p-6 md:p-8">
             <div className="flex items-start justify-between">
               <div>
@@ -240,7 +240,7 @@ export default function HomePage() {
       )}
 
       {/* CTA */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
+      <section className="max-w-[1440px] mx-auto px-6 md:px-10 py-12">
         <div className="bg-bookify-purple rounded-2xl p-8 md:p-12 text-center text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute -top-20 -right-20 w-60 h-60 bg-bookify-orange rounded-full blur-[100px]" />

@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
-import SearchBar from "../components/search/SearchBar";
-import FilterSidebar from "../components/search/FilterSidebar";
-import SortDropdown from "../components/search/SortDropdown";
-import BookCard from "../components/book/BookCard";
-import books from "../data/books";
+import SearchBar from "../../components/search/SearchBar";
+import FilterSidebar from "../../components/search/FilterSidebar";
+import SortDropdown from "../../components/search/SortDropdown";
+import BookCard from "../../components/book/BookCard";
+import books from "../../data/books";
 
 export default function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -127,7 +127,7 @@ export default function ExplorePage() {
   ].filter(Boolean).length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6">
       <div className="mb-6">
         <SearchBar
           defaultValue={searchQuery}

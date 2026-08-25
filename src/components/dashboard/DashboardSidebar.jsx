@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   Home,
   ShoppingBag,
@@ -11,9 +12,11 @@ import {
   Lightbulb,
   Settings,
   LogOut,
+  Globe,
 } from "lucide-react";
 
 const menuItems = [
+  { label: "Browse Marketplace", icon: Globe, path: "/" },
   { label: "Overview", icon: Home, path: "/dashboard" },
   { label: "My Orders", icon: ShoppingBag, path: "#" },
   { label: "My Listings", icon: BookOpen, path: "#" },
@@ -28,6 +31,7 @@ const menuItems = [
 
 function DashboardSidebar() {
   const location = useLocation();
+  const { logout } = useAuth();
 
   return (
     <aside className="flex w-56 flex-col border-r border-gray-100 bg-white px-4 py-5 shrink-0 select-none">
@@ -77,6 +81,7 @@ function DashboardSidebar() {
       {/* Logout */}
       <Link
         to="/login"
+        onClick={logout}
         className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-red-50 hover:text-red-500 cursor-pointer"
       >
         <LogOut size={18} />

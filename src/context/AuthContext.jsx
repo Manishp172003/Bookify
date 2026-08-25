@@ -1,0 +1,47 @@
+import { createContext, useContext, useState } from "react";
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem("bookify_auth") === "true";
+  });
+
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("bookify_user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const login = (email) => {
+    localStorage.setItem("bookify_auth", "true");
+    const mockUser = {
+      fullName: "Manish Pawar",
+      email: email || "manishpawar@gmail.com",
+      avatar: "/images/profile-avatar.png",
+    };
+    localStorage.setItem("bookify_user", JSON.stringify(mockUser));
+    setIsAuthenticated(true);
+    setUser(mockUser);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("bookify_auth");
+    localStorage.removeItem("bookify_user");
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

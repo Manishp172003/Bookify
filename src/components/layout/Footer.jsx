@@ -4,7 +4,7 @@ import { BookOpen, Mail, Phone, MapPin } from "lucide-react";
 export default function Footer() {
   return (
     <footer className="bg-bookify-text text-white">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <Link to="/" className="flex items-center gap-2">

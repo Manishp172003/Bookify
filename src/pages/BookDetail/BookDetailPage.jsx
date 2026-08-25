@@ -17,10 +17,10 @@ import {
   ChevronRight,
   AlertCircle,
 } from "lucide-react";
-import ConditionBadge from "../components/ui/ConditionBadge";
-import SellerCard from "../components/book/SellerCard";
-import BookCard from "../components/book/BookCard";
-import books from "../data/books";
+import ConditionBadge from "../../components/ui/ConditionBadge";
+import SellerCard from "../../components/book/SellerCard";
+import BookCard from "../../components/book/BookCard";
+import books from "../../data/books";
 
 const modeConfig = {
   sell: {
@@ -57,7 +57,7 @@ export default function BookDetailPage() {
 
   if (!book) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-16 text-center">
         <div className="text-6xl mb-4">📚</div>
         <h2 className="font-[family-name:var(--font-heading)] text-2xl font-bold text-bookify-text">
           Book not found
@@ -88,7 +88,7 @@ export default function BookDetailPage() {
     .slice(0, 4);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6">
       <div className="flex items-center gap-2 text-sm text-bookify-text-secondary mb-6">
         <Link to="/" className="hover:text-bookify-purple transition-colors">
           Home

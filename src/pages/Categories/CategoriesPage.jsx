@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { ChevronRight, BookOpen } from "lucide-react";
-import categories from "../data/categories";
-import books from "../data/books";
+import categories from "../../data/categories";
+import books from "../../data/books";
 
 export default function CategoriesPage() {
   const [searchParams] = useSearchParams();
@@ -22,7 +22,7 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-8">
       <div className="mb-8">
         <h1 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-bookify-text">
           Browse Categories

@@ -1,10 +1,10 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 // Main pages
-import HomePage from "../pages/HomePage";
-import ExplorePage from "../pages/ExplorePage";
-import CategoriesPage from "../pages/CategoriesPage";
-import BookDetailPage from "../pages/BookDetailPage";
+import HomePage from "../pages/Home/HomePage";
+import ExplorePage from "../pages/Explore/ExplorePage";
+import CategoriesPage from "../pages/Categories/CategoriesPage";
+import BookDetailPage from "../pages/BookDetail/BookDetailPage";
 
 // Layout
 import MainLayout from "../components/layout/MainLayout";
@@ -30,6 +30,7 @@ import TransactionMode from "../pages/Listing/TransactionMode";
 import SetPrice from "../pages/Listing/SetPrice";
 import PreviewListing from "../pages/Listing/PreviewListing";
 import PublishSuccess from "../pages/Listing/PublishSuccess";
+import ProtectedRoute from "./ProtectedRoute";
 
 function AppRoutes() {
   return (
@@ -37,7 +38,7 @@ function AppRoutes() {
 
       {/* Main Website */}
       <Route
-        path="/"
+        path="/home"
         element={
           <MainLayout>
             <HomePage />
@@ -63,6 +64,16 @@ function AppRoutes() {
         }
       />
 
+      {/* Default Landing Page: Home Page */}
+      <Route
+        path="/"
+        element={
+          <MainLayout>
+            <HomePage />
+          </MainLayout>
+        }
+      />
+
       <Route
         path="/book/:id"
         element={
@@ -77,22 +88,22 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/verify-otp" element={<OTPVerification />} />
 
-      {/* Dashboard */}
-      <Route path="/dashboard" element={<StudentDashboard />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/settings" element={<Settings />} />
+      {/* Dashboard & Profile Settings (Protected) */}
+      <Route path="/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
-      {/* Seller Hub */}
-      <Route path="/listings" element={<MyListings />} />
-      <Route path="/want-board" element={<WantBoard />} />
-      <Route path="/sell" element={<SellBook />} />
-      <Route path="/sell/isbn" element={<ISBNLookup />} />
-      <Route path="/sell/condition" element={<Condition />} />
-      <Route path="/sell/photos" element={<UploadPhotos />} />
-      <Route path="/sell/transaction" element={<TransactionMode />} />
-      <Route path="/sell/price" element={<SetPrice />} />
-      <Route path="/sell/preview" element={<PreviewListing />} />
-      <Route path="/sell/success" element={<PublishSuccess />} />
+      {/* Seller Hub (Protected) */}
+      <Route path="/listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
+      <Route path="/want-board" element={<ProtectedRoute><WantBoard /></ProtectedRoute>} />
+      <Route path="/sell" element={<ProtectedRoute><SellBook /></ProtectedRoute>} />
+      <Route path="/sell/isbn" element={<ProtectedRoute><ISBNLookup /></ProtectedRoute>} />
+      <Route path="/sell/condition" element={<ProtectedRoute><Condition /></ProtectedRoute>} />
+      <Route path="/sell/photos" element={<ProtectedRoute><UploadPhotos /></ProtectedRoute>} />
+      <Route path="/sell/transaction" element={<ProtectedRoute><TransactionMode /></ProtectedRoute>} />
+      <Route path="/sell/price" element={<ProtectedRoute><SetPrice /></ProtectedRoute>} />
+      <Route path="/sell/preview" element={<ProtectedRoute><PreviewListing /></ProtectedRoute>} />
+      <Route path="/sell/success" element={<ProtectedRoute><PublishSuccess /></ProtectedRoute>} />
 
       {/* Unknown routes */}
       <Route
