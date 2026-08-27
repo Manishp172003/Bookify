@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight, Star, BookOpen } from 'lucide-react';
-import HeroSlider from '../components/hero/HeroSlider';
-import BookCard from '../components/book/BookCard';
-import books from '../data/books';
-import categories from '../data/categories';
+import HeroSlider from '../../components/hero/HeroSlider';
+import BookCard from '../../components/book/BookCard';
+import books from '../../data/books';
+import categories from '../../data/categories';
 
 var trendingFilters = ['All Books', 'Fiction', 'Non-Fiction', 'Academic & Exams', 'Comics & Manga', 'Self-Help'];
 
