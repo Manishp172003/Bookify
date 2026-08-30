@@ -32,13 +32,13 @@ const modeConfig = {
   rent: {
     label: "Rent This Book",
     icon: <Clock size={18} />,
-    color: "bg-bookify-blue hover:bg-sky-500",
+    color: "bg-bookify-purple hover:bg-bookify-purple-dark",
     description: "Rent with refundable security deposit",
   },
   exchange: {
     label: "Propose Exchange",
     icon: <RefreshCcw size={18} />,
-    color: "bg-bookify-orange hover:bg-bookify-orange-dark",
+    color: "bg-bookify-purple hover:bg-bookify-purple-dark",
     description: "Suggest a book to trade",
   },
   donate: {
@@ -85,7 +85,7 @@ export default function BookDetailPage() {
 
   const relatedBooks = books
     .filter((b) => b.id !== book.id && b.category === book.category)
-    .slice(0, 4);
+    .slice(0, 12);
 
   return (
     <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6">
@@ -152,9 +152,9 @@ export default function BookDetailPage() {
                     book.mode === "sell"
                       ? "#6C4BF4"
                       : book.mode === "rent"
-                      ? "#38BDF8"
+                      ? "#6C4BF4"
                       : book.mode === "exchange"
-                      ? "#FF8A3D"
+                      ? "#6C4BF4"
                       : "#22C55E",
                 }}
               >
@@ -342,13 +342,41 @@ export default function BookDetailPage() {
       </div>
 
       {relatedBooks.length > 0 && (
-        <section className="mt-12">
-          <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-bookify-text mb-4">
-            Similar Books in {book.category}
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-bookify-text">
+              Similar Books in {book.category}
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const slider = document.getElementById("related-slider");
+                  if (slider) slider.scrollBy({ left: -300, behavior: "smooth" });
+                }}
+                className="w-8 h-8 rounded-full border border-bookify-border flex items-center justify-center text-bookify-text-secondary hover:bg-bookify-bg transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  const slider = document.getElementById("related-slider");
+                  if (slider) slider.scrollBy({ left: 300, behavior: "smooth" });
+                }}
+                className="w-8 h-8 rounded-full border border-bookify-border flex items-center justify-center text-bookify-text-secondary hover:bg-bookify-bg transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+          <div
+            id="related-slider"
+            className="flex gap-3 overflow-x-auto scroll-smooth pb-2 scrollbar-hide"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {relatedBooks.map((b) => (
-              <BookCard key={b.id} book={b} />
+              <div key={b.id} className="flex-shrink-0 w-[180px]">
+                <BookCard book={b} />
+              </div>
             ))}
           </div>
         </section>

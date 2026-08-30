@@ -3,8 +3,8 @@ import { Star } from "lucide-react";
 
 const modeLabels = {
   sell: { label: "Buy", color: "#6C4BF4" },
-  rent: { label: "Rent", color: "#38BDF8" },
-  exchange: { label: "Exchange", color: "#FF8A3D" },
+  rent: { label: "Rent", color: "#6C4BF4" },
+  exchange: { label: "Exchange", color: "#6C4BF4" },
   donate: { label: "Free", color: "#22C55E" },
 };
 

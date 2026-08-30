@@ -285,7 +285,7 @@ export default function HomePage() {
                 return (
                   <Link
                     key={cat.id}
-                    to={'/categories?cat=' + cat.id}
+                    to={'/explore?category=' + cat.id}
                     className="relative h-36 sm:h-40 rounded-2xl overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-300 flex items-center justify-center p-4 bg-slate-900 border border-bookify-border/40"
                   >
                     {cat.image ? (
