@@ -1,23 +1,18 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  LayoutGrid,
-  List,
   SlidersHorizontal,
   X,
   ChevronLeft,
   ChevronRight,
   Star,
-  Truck,
-  Shield,
-  Award,
-  RotateCcw,
   ChevronDown,
 } from "lucide-react";
 import SearchBar from "../../components/search/SearchBar";
 import FilterSidebar from "../../components/search/FilterSidebar";
 import BookCard from "../../components/book/BookCard";
 import books from "../../data/books";
+import ScrollReveal from "../../components/ui/ScrollReveal";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -33,29 +28,6 @@ const sortOptions = [
   { value: "price_high", label: "Price: High to Low" },
   { value: "rating", label: "Seller Rating" },
   { value: "discount", label: "Biggest Discount" },
-];
-
-const features = [
-  {
-    icon: Truck,
-    title: "Quick Delivery",
-    desc: "Get your order delivered to your doorstep. Adjusting swiftly, be it absurd tempo.",
-  },
-  {
-    icon: Shield,
-    title: "Secure Payment",
-    desc: "100% secure payment method. Adjusting swiftly, be it absurd tempo.",
-  },
-  {
-    icon: Award,
-    title: "Best Quality",
-    desc: "Best quality assurance as you desired. Adjusting swiftly, be it absurd tempo.",
-  },
-  {
-    icon: RotateCcw,
-    title: "Return Guarantee",
-    desc: "Returned products are also guaranteed. Adjusting swiftly, be it absurd tempo.",
-  },
 ];
 
 export default function ExplorePage() {
@@ -281,7 +253,7 @@ export default function ExplorePage() {
       <div className="max-w-[1440px] mx-auto px-4 md:px-8 pb-16">
         <div className="flex gap-8">
           {/* Left Sidebar */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
+          <div className="hidden lg:block w-64 flex-shrink-0 animate-fade-in-left">
             <FilterSidebar
               filters={filters}
               onFilterChange={handleFilterChange}
@@ -413,51 +385,17 @@ export default function ExplorePage() {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* View Toggles */}
-                <div className="hidden sm:flex items-center border border-bookify-border rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => {}}
-                    className="p-2 bg-bookify-light-purple text-bookify-purple"
-                  >
-                    <List size={16} />
-                  </button>
-                  <button
-                    onClick={() => {}}
-                    className="p-2 bg-white text-bookify-text-secondary hover:bg-bookify-bg transition-colors"
-                  >
-                    <LayoutGrid size={16} />
-                  </button>
-                  <button
-                    onClick={() => {}}
-                    className="p-2 bg-white text-bookify-text-secondary hover:bg-bookify-bg transition-colors"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="3" y="3" width="7" height="7" />
-                      <rect x="14" y="3" width="7" height="7" />
-                      <rect x="3" y="14" width="7" height="7" />
-                      <rect x="14" y="14" width="7" height="7" />
-                    </svg>
-                  </button>
-                </div>
-
                 {/* Sort Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setShowSortDropdown(!showSortDropdown)}
-                    className="flex items-center gap-2 px-3 py-2 bg-white border border-bookify-border rounded-lg text-sm text-bookify-text hover:border-bookify-purple transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E7E4F2] focus:border-[#6C4BF4] rounded-xl text-sm font-semibold text-bookify-text hover:border-[#6C4BF4] transition-all"
                   >
-                    <span className="text-bookify-text-secondary">Sort:</span>
-                    <span className="font-medium">
+                    <span className="text-gray-500 font-medium">Sort:</span>
+                    <span className="font-bold text-[#6C4BF4]">
                       {sortOptions.find((o) => o.value === sortBy)?.label}
                     </span>
-                    <ChevronDown size={14} className="text-bookify-text-secondary" />
+                    <ChevronDown size={14} className="text-gray-400" />
                   </button>
                   {showSortDropdown && (
                     <div className="absolute right-0 top-full mt-1 bg-white border border-bookify-border rounded-xl shadow-lg z-50 py-1 min-w-[180px]">
@@ -510,65 +448,75 @@ export default function ExplorePage() {
 
             {/* Pagination */}
             {filteredBooks.length > 0 && (
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-bookify-border">
-                <p className="text-sm text-bookify-text-secondary">
-                  Showing{" "}
-                  <span className="font-semibold text-bookify-text">
-                    {Math.min(
-                      currentPage * ITEMS_PER_PAGE,
-                      filteredBooks.length
-                    )}
-                  </span>{" "}
-                  from{" "}
-                  <span className="font-semibold text-bookify-text">
-                    {filteredBooks.length}
-                  </span>{" "}
-                  data
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.max(1, p - 1))
-                    }
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium rounded-lg border border-bookify-border text-bookify-text-secondary hover:border-bookify-purple hover:text-bookify-purple transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`w-9 h-9 text-sm font-medium rounded-lg transition-colors ${
-                          currentPage === pageNum
-                            ? "bg-bookify-purple text-white"
-                            : "text-bookify-text-secondary hover:bg-bookify-bg"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium rounded-lg border border-bookify-border text-bookify-text-secondary hover:border-bookify-purple hover:text-bookify-purple transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
+              <div className="flex flex-col-reverse sm:grid sm:grid-cols-3 gap-4 items-center mt-8 pt-6 border-t border-bookify-border">
+                {/* Left Spacer for desktop alignment balance */}
+                <div className="hidden sm:block"></div>
+
+                {/* Center: Pagination Buttons */}
+                <div className="flex justify-center">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.max(1, p - 1))
+                      }
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium rounded-lg border border-bookify-border text-bookify-text-secondary hover:border-bookify-purple hover:text-bookify-purple transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-9 h-9 text-sm font-medium rounded-lg transition-colors ${
+                            currentPage === pageNum
+                              ? "bg-bookify-purple text-white"
+                              : "text-bookify-text-secondary hover:bg-bookify-bg"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium rounded-lg border border-bookify-border text-bookify-text-secondary hover:border-bookify-purple hover:text-bookify-purple transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right: Info Text */}
+                <div className="text-center sm:text-right w-full">
+                  <p className="text-sm text-bookify-text-secondary">
+                    Showing{" "}
+                    <span className="font-semibold text-bookify-text">
+                      {Math.min(
+                        currentPage * ITEMS_PER_PAGE,
+                        filteredBooks.length
+                      )}
+                    </span>{" "}
+                    from{" "}
+                    <span className="font-semibold text-bookify-text">
+                      {filteredBooks.length}
+                    </span>{" "}
+                    data
+                  </p>
                 </div>
               </div>
             )}
@@ -576,113 +524,98 @@ export default function ExplorePage() {
         </div>
 
         {/* Books on Sale Section */}
-        <section className="mt-16">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">
-              Books on Sale
-            </h2>
-            <div className="flex gap-2">
-              <button className="w-10 h-10 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors">
-                <ChevronLeft size={18} />
-              </button>
-              <button className="w-10 h-10 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors">
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {booksOnSale.map((book) => {
-              const discount = Math.round(
-                ((book.originalPrice - book.askingPrice) /
-                  book.originalPrice) *
-                  100
-              );
-              return (
-                <a
-                  key={book.id}
-                  href={`/book/${book.id}`}
-                  className="group"
-                >
-                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-3">
-                    <img
-                      src={book.coverImage}
-                      alt={book.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <span className="absolute top-2 left-2 px-2 py-1 bg-bookify-green text-white text-[10px] font-bold rounded-lg">
-                      {discount}% OFF
-                    </span>
-                  </div>
-                  <h4 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-bookify-text line-clamp-1 group-hover:text-bookify-purple transition-colors">
-                    {book.title}
-                  </h4>
-                  <p className="text-[11px] text-bookify-text-secondary mt-0.5">
-                    {book.subCategory}
-                  </p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star
-                      size={11}
-                      fill="#FFD166"
-                      className="text-bookify-yellow"
-                    />
-                    <span className="text-[11px] font-medium text-bookify-text">
-                      {book.seller.rating}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-sm font-bold text-bookify-text">
-                      ₹{book.askingPrice}
-                    </span>
-                    <span className="text-[11px] text-bookify-text-secondary line-through">
-                      ₹{book.originalPrice}
-                    </span>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Feature Highlights */}
-        <section className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {features.map((feat, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-bookify-light-purple flex items-center justify-center flex-shrink-0">
-                <feat.icon size={18} className="text-bookify-purple" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-bookify-text">
-                  {feat.title}
-                </p>
-                <p className="text-[11px] text-bookify-text-secondary leading-snug">
-                  {feat.desc}
-                </p>
+        <ScrollReveal>
+          <section className="mt-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">
+                Books on Sale
+              </h2>
+              <div className="flex gap-2">
+                <button className="w-10 h-10 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors">
+                  <ChevronLeft size={18} />
+                </button>
+                <button className="w-10 h-10 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors">
+                  <ChevronRight size={18} />
+                </button>
               </div>
             </div>
-          ))}
-        </section>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {booksOnSale.map((book) => {
+                const discount = Math.round(
+                  ((book.originalPrice - book.askingPrice) /
+                    book.originalPrice) *
+                    100
+                );
+                return (
+                  <a
+                    key={book.id}
+                    href={`/book/${book.id}`}
+                    className="group"
+                  >
+                    <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-3">
+                      <img
+                        src={book.coverImage}
+                        alt={book.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-1 bg-bookify-green text-white text-[10px] font-bold rounded-lg">
+                        {discount}% OFF
+                      </span>
+                    </div>
+                    <h4 className="font-[family-name:var(--font-heading)] text-sm font-semibold text-bookify-text line-clamp-1 group-hover:text-bookify-purple transition-colors">
+                      {book.title}
+                    </h4>
+                    <p className="text-[11px] text-bookify-text-secondary mt-0.5">
+                      {book.subCategory}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star
+                        size={11}
+                        fill="#FFD166"
+                        className="text-bookify-yellow"
+                      />
+                      <span className="text-[11px] font-medium text-bookify-text">
+                        {book.seller.rating}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="text-sm font-bold text-bookify-text">
+                        ₹{book.askingPrice}
+                      </span>
+                      <span className="text-[11px] text-bookify-text-secondary line-through">
+                        ₹{book.originalPrice}
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        </ScrollReveal>
 
         {/* Newsletter Section */}
-        <section className="mt-16 bg-bookify-purple rounded-2xl p-10 md:p-14 text-center text-white">
-          <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold mb-2">
-            Subscribe our newsletter for newest
-          </h2>
-          <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold mb-8">
-            books updates
-          </h2>
-          <div className="max-w-md mx-auto flex gap-2">
-            <input
-              type="email"
-              placeholder="Type your email here"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-xl text-bookify-text text-sm border-2 border-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-white/60 text-white bg-white/10"
-            />
-            <button className="px-6 py-3 bg-white text-bookify-purple font-semibold rounded-xl hover:bg-gray-100 transition-colors text-sm">
-              SUBSCRIBE
-            </button>
-          </div>
-        </section>
+        <ScrollReveal>
+          <section className="mt-16 bg-bookify-purple rounded-2xl p-10 md:p-14 text-center text-white">
+            <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold mb-2">
+              Subscribe our newsletter for newest
+            </h2>
+            <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold mb-8">
+              books updates
+            </h2>
+            <div className="max-w-md mx-auto flex gap-2">
+              <input
+                type="email"
+                placeholder="Type your email here"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl text-bookify-text text-sm border-2 border-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-white/60 text-white bg-white/10"
+              />
+              <button className="px-6 py-3 bg-white text-bookify-purple font-semibold rounded-xl hover:bg-gray-100 transition-colors text-sm">
+                SUBSCRIBE
+              </button>
+            </div>
+          </section>
+        </ScrollReveal>
       </div>
 
       {/* Mobile Filter Overlay */}

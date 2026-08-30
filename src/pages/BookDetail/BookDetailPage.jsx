@@ -54,6 +54,15 @@ export default function BookDetailPage() {
   const book = books.find((b) => b.id === Number(id));
   const [activePhoto, setActivePhoto] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [triggerBounce, setTriggerBounce] = useState(false);
+
+  const handleFavoriteToggle = () => {
+    setIsFavorited(!isFavorited);
+    if (!isFavorited) {
+      setTriggerBounce(true);
+      setTimeout(() => setTriggerBounce(false), 300);
+    }
+  };
 
   if (!book) {
     return (
@@ -89,7 +98,7 @@ export default function BookDetailPage() {
 
   return (
     <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6">
-      <div className="flex items-center gap-2 text-sm text-bookify-text-secondary mb-6">
+      <div className="flex items-center gap-2 text-sm text-bookify-text-secondary mb-6 animate-fade-in">
         <Link to="/" className="hover:text-bookify-purple transition-colors">
           Home
         </Link>
@@ -107,13 +116,17 @@ export default function BookDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+        <div 
+          className="lg:col-span-2 space-y-4 animate-fade-in-up" 
+          style={{ animationDelay: "75ms", animationFillMode: "both" }}
+        >
           <div className="bg-white rounded-xl border border-bookify-border overflow-hidden">
             <div className="relative aspect-[4/3] bg-bookify-bg">
               <img
+                key={activePhoto}
                 src={book.photos[activePhoto]}
                 alt={book.title}
-                className="w-full h-full object-contain p-4"
+                className="w-full h-full object-contain p-4 animate-fade-in"
               />
 
               {book.photos.length > 1 && (
@@ -174,10 +187,10 @@ export default function BookDetailPage() {
                   <button
                     key={i}
                     onClick={() => setActivePhoto(i)}
-                    className={`w-16 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                    className={`w-16 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
                       activePhoto === i
-                        ? "border-bookify-purple"
-                        : "border-transparent hover:border-bookify-border"
+                        ? "border-[#6C4BF4] shadow-md shadow-[#6C4BF4]/15"
+                        : "border-transparent hover:border-[#6C4BF4]/40"
                     }`}
                   >
                     <img
@@ -238,18 +251,21 @@ export default function BookDetailPage() {
           )}
         </div>
 
-        <div className="space-y-4">
+        <div 
+          className="space-y-4 animate-fade-in-left"
+          style={{ animationDelay: "150ms", animationFillMode: "both" }}
+        >
           <div className="bg-white rounded-xl border border-bookify-border p-5">
             <div className="flex items-start justify-between">
               <ConditionBadge condition={book.condition} size="md" />
               <div className="flex gap-1">
                 <button
-                  onClick={() => setIsFavorited(!isFavorited)}
-                  className={`p-2 rounded-lg transition-colors ${
+                  onClick={handleFavoriteToggle}
+                  className={`p-2 rounded-lg transition-all duration-300 cursor-pointer ${
                     isFavorited
                       ? "text-bookify-pink bg-bookify-light-pink"
                       : "text-bookify-text-secondary hover:bg-bookify-bg"
-                  }`}
+                  } ${triggerBounce ? "animate-scale-bounce" : ""}`}
                 >
                   <Heart
                     size={18}

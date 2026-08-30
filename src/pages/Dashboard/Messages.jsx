@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
-import { Send, Calendar, MapPin } from "lucide-react";
+import { Send, Calendar, MapPin, Menu } from "lucide-react";
 
 const INITIAL_CHATS = [
   {
@@ -111,12 +111,22 @@ export default function Messages() {
       <DashboardSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col h-full">
-        <main className="flex-1 overflow-hidden p-7 flex flex-col animate-fade-in-up">
+        <main className="flex-1 overflow-hidden p-4 md:p-7 flex flex-col animate-fade-in-up">
           
           {/* Header */}
-          <div className="mb-6 shrink-0">
-            <h1 className="text-2xl font-bold text-[#17152A]">Messages</h1>
-            <p className="text-sm text-gray-500">Negotiate and organize textbook handovers with fellow students.</p>
+          <div className="mb-6 flex items-start gap-3 select-none shrink-0">
+            {/* Mobile Hamburger Menu */}
+            <button
+              onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
+              className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-[#6C4BF4] transition cursor-pointer mt-1"
+            >
+              <Menu size={20} />
+            </button>
+
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-[#17152A]">Messages</h1>
+              <p className="mt-0.5 text-xs text-gray-400">Negotiate and organize textbook handovers with fellow students.</p>
+            </div>
           </div>
 
           {/* Core Chat Screen container */}

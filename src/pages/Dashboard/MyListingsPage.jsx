@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
-import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen } from 'lucide-react';
+import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu } from 'lucide-react';
 
 const INITIAL_LISTINGS = [
   {
@@ -101,13 +101,23 @@ export default function MyListingsPage() {
       <DashboardSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col h-full">
-        <main className="flex-1 overflow-y-auto p-7 animate-fade-in-up">
+        <main className="flex-1 overflow-y-auto p-4 md:p-7 animate-fade-in-up">
           
           {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-[#17152A]">My Listings</h1>
-              <p className="text-sm text-gray-500">Manage your textbook listings, track sales status, and adjust prices.</p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 select-none">
+            <div className="flex items-start gap-3">
+              {/* Mobile Hamburger Menu */}
+              <button
+                onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
+                className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-[#6C4BF4] transition cursor-pointer mt-1"
+              >
+                <Menu size={20} />
+              </button>
+              
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-[#17152A]">My Listings</h1>
+                <p className="mt-0.5 text-xs text-gray-400">Manage your textbook listings, track sales status, and adjust prices.</p>
+              </div>
             </div>
             <button
               onClick={() => navigate('/sell')}

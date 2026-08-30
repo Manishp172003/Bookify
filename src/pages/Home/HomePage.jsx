@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -14,46 +14,8 @@ import HeroSlider from '../../components/hero/HeroSlider';
 import BookCard from '../../components/book/BookCard';
 import books from '../../data/books';
 import categories from '../../data/categories';
+import ScrollReveal from '../../components/ui/ScrollReveal';
 import { useAuth } from '../../context/AuthContext';
-
-function ScrollReveal({ children, delay = 0, className = "" }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const domRef = useRef();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.05 });
-
-    const currentRef = domRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-    
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, []);
-
-  return (
-    <div
-      ref={domRef}
-      style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ease-out transform ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-      } ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
 
 function AnimateCounter({ target, suffix, speed = 30 }) {
   const [count, setCount] = useState(0);

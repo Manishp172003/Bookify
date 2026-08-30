@@ -65,13 +65,13 @@ function FilterSection({ title, defaultOpen = true, children }) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between w-full text-left group"
       >
-        <span className="font-[family-name:var(--font-heading)] font-semibold text-sm text-bookify-text group-hover:text-bookify-purple transition-colors">
+        <span className="font-[family-name:var(--font-heading)] font-bold text-sm text-bookify-text group-hover:text-[#6C4BF4] transition-colors">
           {title}
         </span>
         {isOpen ? (
-          <ChevronUp size={16} className="text-bookify-text-secondary" />
+          <ChevronUp size={16} className="text-gray-400" />
         ) : (
-          <ChevronDown size={16} className="text-bookify-text-secondary" />
+          <ChevronDown size={16} className="text-gray-400" />
         )}
       </button>
       {isOpen && <div className="mt-3">{children}</div>}
@@ -87,8 +87,6 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
   const [selectedCategories, setSelectedCategories] = useState(
     filters.subCategories || []
   );
-
-
 
   const toggleSubCategory = (subCat) => {
     const updated = selectedCategories.includes(subCat)
@@ -127,10 +125,10 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-bookify-border p-5 h-fit sticky top-24">
+    <div className="bg-white rounded-2xl border border-gray-100/80 shadow-lg shadow-[#6C4BF4]/3 p-6 h-fit sticky top-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h3 className="font-[family-name:var(--font-heading)] font-bold text-base text-bookify-text">
+        <h3 className="font-[family-name:var(--font-heading)] font-bold text-xs uppercase tracking-wider text-gray-400">
           Filter Option
         </h3>
         {onClose && (
@@ -145,18 +143,18 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
 
       {/* Editor Picks */}
       <FilterSection title="Editor Picks">
-        <div className="space-y-2">
+        <div className="space-y-1">
           {editorPicks.map((item) => (
             <button
               key={item.label}
-              className="flex items-center justify-between w-full text-left group/link"
+              className="flex items-center justify-between w-full text-left group/link px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <span className="text-sm text-bookify-text-secondary group-hover/link:text-bookify-purple transition-colors">
+              <span className="text-sm text-gray-500 font-medium group-hover/link:text-[#6C4BF4] transition-colors">
                 {item.label}
               </span>
               {item.count && (
-                <span className="text-xs text-bookify-text-secondary">
-                  ({item.count})
+                <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md group-hover/link:bg-[#EEEAFE] group-hover/link:text-[#6C4BF4] transition-all">
+                  {item.count}
                 </span>
               )}
             </button>
@@ -164,91 +162,104 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
           {quickLinks.map((item) => (
             <button
               key={item.label}
-              className="flex items-center justify-between w-full text-left group/link"
+              className="flex items-center justify-between w-full text-left group/link px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <span className="text-sm text-bookify-text-secondary group-hover/link:text-bookify-purple transition-colors">
+              <span className="text-sm text-gray-500 font-medium group-hover/link:text-[#6C4BF4] transition-colors">
                 {item.label}
               </span>
               {item.count && (
-                <span className="text-xs text-bookify-text-secondary">
-                  ({item.count})
+                <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md group-hover/link:bg-[#EEEAFE] group-hover/link:text-[#6C4BF4] transition-all">
+                  {item.count}
                 </span>
               )}
             </button>
           ))}
-          <button className="text-sm text-bookify-purple font-medium hover:text-bookify-purple-dark transition-colors">
-            View more...
+          <button className="text-xs text-[#6C4BF4] font-semibold hover:text-[#5B3DE0] transition-colors pl-2.5 mt-2 text-left">
+            + View more
           </button>
         </div>
       </FilterSection>
 
       {/* Choose Publisher */}
       <FilterSection title="Choose Publisher" defaultOpen={false}>
-        <div className="space-y-2">
-          {publishers.map((pub) => (
-            <label
-              key={pub}
-              className="flex items-center gap-2 cursor-pointer group"
-            >
-              <input
-                type="radio"
-                name="publisher"
-                checked={selectedPublisher === pub}
-                onChange={() =>
-                  setSelectedPublisher(
-                    selectedPublisher === pub ? null : pub
-                  )
-                }
-                className="w-4 h-4 border-bookify-border text-bookify-purple accent-[#6C4BF4]"
-              />
-              <span className="text-sm text-bookify-text-secondary group-hover:text-bookify-text transition-colors">
-                {pub}
-              </span>
-            </label>
-          ))}
+        <div className="space-y-1">
+          {publishers.map((pub) => {
+            const isChecked = selectedPublisher === pub;
+            return (
+              <label
+                key={pub}
+                className={`flex items-center gap-2.5 cursor-pointer group px-2.5 py-1.5 rounded-xl transition-all ${
+                  isChecked
+                    ? "bg-[#EEEAFE]/50 text-[#6C4BF4]"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="publisher"
+                  checked={isChecked}
+                  onChange={() =>
+                    setSelectedPublisher(isChecked ? null : pub)
+                  }
+                  className="w-4 h-4 border-gray-300 text-[#6C4BF4] focus:ring-[#6C4BF4]/30 accent-[#6C4BF4]"
+                />
+                <span className="text-sm font-semibold transition-colors">
+                  {pub}
+                </span>
+              </label>
+            );
+          })}
         </div>
       </FilterSection>
 
       {/* Select Year */}
       <FilterSection title="Select Year" defaultOpen={false}>
         <div className="flex flex-wrap gap-2">
-          {years.map((year) => (
-            <button
-              key={year}
-              onClick={() =>
-                setSelectedYear(selectedYear === year ? null : year)
-              }
-              className={`text-xs px-3 py-1.5 rounded-full border transition-all font-medium ${
-                selectedYear === year
-                  ? "bg-bookify-purple text-white border-transparent"
-                  : "text-bookify-text-secondary border-bookify-border hover:border-bookify-purple"
-              }`}
-            >
-              {year}
-            </button>
-          ))}
+          {years.map((year) => {
+            const isSelected = selectedYear === year;
+            return (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(isSelected ? null : year)}
+                className={`text-xs px-3.5 py-2 rounded-xl border transition-all font-semibold ${
+                  isSelected
+                    ? "bg-[#6C4BF4] text-white border-transparent shadow-sm shadow-[#6C4BF4]/20"
+                    : "text-gray-500 border-[#E7E4F2] bg-gray-50 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+              >
+                {year}
+              </button>
+            );
+          })}
         </div>
       </FilterSection>
 
       {/* Shop by Category */}
       <FilterSection title="Shop by Category">
-        <div className="grid grid-cols-2 gap-2">
-          {shopCategories.map((cat) => (
-            <label
-              key={cat}
-              className="flex items-center gap-2 cursor-pointer group"
-            >
-              <input
-                type="checkbox"
-                checked={selectedCategories.includes(cat)}
-                onChange={() => toggleSubCategory(cat)}
-                className="w-4 h-4 rounded border-bookify-border text-bookify-purple accent-[#6C4BF4]"
-              />
-              <span className="text-sm text-bookify-text-secondary group-hover:text-bookify-text transition-colors truncate">
-                {cat}
-              </span>
-            </label>
-          ))}
+        <div className="grid grid-cols-2 gap-1">
+          {shopCategories.map((cat) => {
+            const isChecked = selectedCategories.includes(cat);
+            return (
+              <label
+                key={cat}
+                className={`flex items-center gap-2.5 cursor-pointer group px-2.5 py-1.5 rounded-xl transition-all ${
+                  isChecked
+                    ? "bg-[#EEEAFE]/50 text-[#6C4BF4]"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleSubCategory(cat)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#6C4BF4] focus:ring-[#6C4BF4]/30 accent-[#6C4BF4]"
+                />
+                <span className="text-sm font-semibold transition-colors truncate">
+                  {cat}
+                </span>
+              </label>
+            );
+          })}
         </div>
       </FilterSection>
 
@@ -258,7 +269,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
           {/* Range Slider Track */}
           <div className="relative h-1.5 bg-bookify-border rounded-full mt-2">
             <div
-              className="absolute h-full bg-bookify-purple rounded-full"
+              className="absolute h-full bg-[#6C4BF4] rounded-full"
               style={{
                 left: `${(priceMin / 1000) * 100}%`,
                 right: `${100 - (priceMax / 1000) * 100}%`,
@@ -272,7 +283,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
               onChange={(e) =>
                 setPriceMin(Math.min(Number(e.target.value), priceMax - 10))
               }
-              className="absolute w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bookify-purple [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
+              className="absolute w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6C4BF4] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
               style={{ zIndex: 2 }}
             />
             <input
@@ -283,7 +294,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
               onChange={(e) =>
                 setPriceMax(Math.max(Number(e.target.value), priceMin + 10))
               }
-              className="absolute w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bookify-purple [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
+              className="absolute w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6C4BF4] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
               style={{ zIndex: 3 }}
             />
           </div>
@@ -294,18 +305,18 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
                 type="number"
                 value={priceMin}
                 onChange={(e) => setPriceMin(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm border border-bookify-border rounded-lg text-bookify-text focus:border-bookify-purple focus:outline-none transition-colors"
+                className="w-full px-3 py-2 text-sm border border-[#E7E4F2] focus:border-[#6C4BF4] rounded-xl text-bookify-text focus:outline-none transition-colors"
                 min="0"
                 max={priceMax - 10}
               />
             </div>
-            <span className="text-bookify-text-secondary">—</span>
+            <span className="text-gray-400">—</span>
             <div className="flex-1">
               <input
                 type="number"
                 value={priceMax}
                 onChange={(e) => setPriceMax(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm border border-bookify-border rounded-lg text-bookify-text focus:border-bookify-purple focus:outline-none transition-colors"
+                className="w-full px-3 py-2 text-sm border border-[#E7E4F2] focus:border-[#6C4BF4] rounded-xl text-bookify-text focus:outline-none transition-colors"
                 min={priceMin + 10}
                 max="10000"
               />
@@ -317,7 +328,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
       {/* Refine Search Button */}
       <button
         onClick={handlePriceApply}
-        className="w-full py-3 mt-2 bg-bookify-purple hover:bg-bookify-purple-dark text-white font-semibold rounded-xl transition-colors text-sm"
+        className="w-full py-3 mt-4 bg-[#6C4BF4] hover:bg-[#5B3DE0] text-white font-semibold rounded-xl transition-all duration-200 text-sm hover:-translate-y-0.5 active:translate-y-0 shadow-sm shadow-[#6C4BF4]/15 cursor-pointer"
       >
         Refine Search
       </button>
@@ -325,7 +336,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
       {/* Reset Filter */}
       <button
         onClick={clearAll}
-        className="w-full py-2.5 mt-2 border border-bookify-border text-bookify-text-secondary font-medium rounded-xl hover:border-bookify-purple hover:text-bookify-purple transition-colors text-sm"
+        className="w-full py-2.5 mt-2 border border-[#E7E4F2] text-gray-500 font-semibold rounded-xl hover:border-[#6C4BF4]/30 hover:bg-[#6C4BF4]/5 hover:text-[#6C4BF4] transition-all duration-200 text-sm hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
       >
         Reset Filter
       </button>

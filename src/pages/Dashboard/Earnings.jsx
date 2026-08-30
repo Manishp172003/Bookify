@@ -1,6 +1,6 @@
 import { useState } from "react";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
-import { Wallet, Landmark, Shield, AlertCircle } from "lucide-react";
+import { Wallet, Landmark, Shield, AlertCircle, Menu } from "lucide-react";
 
 const TRANSACTION_HISTORY = [
   { id: "TXN-00192", date: "24 Aug 2026", desc: "Sold Introduction to Algorithms", type: "credit", amount: "₹650", method: "Wallet Credit" },
@@ -51,12 +51,22 @@ export default function Earnings() {
       <DashboardSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col h-full">
-        <main className="flex-1 overflow-y-auto p-7 animate-fade-in-up">
+        <main className="flex-1 overflow-y-auto p-4 md:p-7 animate-fade-in-up">
           
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[#17152A]">Earnings & Wallet</h1>
-            <p className="text-sm text-gray-500">Track book sales revenue, pending escrow balances, and withdraw earnings.</p>
+          <div className="mb-6 flex items-start gap-3 select-none">
+            {/* Mobile Hamburger Menu */}
+            <button
+              onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
+              className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-[#6C4BF4] transition cursor-pointer mt-1"
+            >
+              <Menu size={20} />
+            </button>
+
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-[#17152A]">Earnings & Wallet</h1>
+              <p className="mt-0.5 text-xs text-gray-400">Track book sales revenue, pending escrow balances, and withdraw earnings.</p>
+            </div>
           </div>
 
           {/* Metrics Row */}

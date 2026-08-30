@@ -23,7 +23,7 @@ function ProfileStats() {
   ];
 
   return (
-    <div className="mt-5 grid grid-cols-4 gap-4">
+    <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-4">
       {stats.map((stat) => (
         <div
           key={stat.label}

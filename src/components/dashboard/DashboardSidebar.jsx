@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -14,6 +15,7 @@ import {
   LogOut,
   Globe,
   User,
+  X,
 } from "lucide-react";
 
 const menuItems = [
@@ -34,17 +36,33 @@ const menuItems = [
 function DashboardSidebar() {
   const location = useLocation();
   const { logout, user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
-  return (
-    <aside className="flex w-64 flex-col bg-gradient-to-b from-[#4E35C3] to-[#6C4BF4] px-4.5 py-5 shrink-0 select-none text-white shadow-lg">
-      
+  useEffect(() => {
+    const handleToggle = () => setIsOpen((prev) => !prev);
+    const handleClose = () => setIsOpen(false);
+
+    window.addEventListener("toggle-sidebar", handleToggle);
+    window.addEventListener("close-sidebar", handleClose);
+    
+    return () => {
+      window.removeEventListener("toggle-sidebar", handleToggle);
+      window.removeEventListener("close-sidebar", handleClose);
+    };
+  }, []);
+
+  const renderSidebarContent = (onItemClick) => (
+    <>
       {/* Logo */}
-      <Link to="/dashboard" className="mb-8 flex items-center gap-3 px-2.5 hover:opacity-90 transition">
+      <Link
+        to="/dashboard"
+        onClick={onItemClick}
+        className="mb-8 flex items-center gap-3 px-2.5 hover:opacity-90 transition"
+      >
         <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-[#3E29A1] font-extrabold text-white text-base shadow-inner">
           B
         </div>
-
-        <span className="text-lg font-[family-name:var(--font-heading)] font-extrabold text-[#17152A] tracking-wider">
+        <span className="text-lg font-[family-name:var(--font-heading)] font-extrabold text-white tracking-wider">
           BOOKIFY
         </span>
       </Link>
@@ -59,6 +77,7 @@ function DashboardSidebar() {
             <Link
               key={item.label}
               to={item.path}
+              onClick={onItemClick}
               className={`flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-200 cursor-pointer ${
                 isActive
                   ? "bg-white/15 text-white"
@@ -66,11 +85,7 @@ function DashboardSidebar() {
               }`}
             >
               <Icon size={18} className={isActive ? "text-white" : "text-white/80"} />
-
-              <span className="flex-1 text-left">
-                {item.label}
-              </span>
-
+              <span className="flex-1 text-left">{item.label}</span>
               {item.badge && (
                 <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#6C4BF4]">
                   {item.badge}
@@ -85,7 +100,10 @@ function DashboardSidebar() {
       <div className="border-t border-white/15 pt-4 mt-4">
         <Link
           to="/login"
-          onClick={logout}
+          onClick={() => {
+            if (onItemClick) onItemClick();
+            logout();
+          }}
           className="flex items-center justify-between rounded-xl px-3.5 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer"
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -101,8 +119,41 @@ function DashboardSidebar() {
           <LogOut size={18} className="text-white/70 hover:text-white shrink-0" />
         </Link>
       </div>
+    </>
+  );
 
-    </aside>
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 flex-col bg-gradient-to-b from-[#4E35C3] to-[#6C4BF4] px-4.5 py-5 shrink-0 select-none text-white shadow-lg">
+        {renderSidebarContent()}
+      </aside>
+
+      {/* Mobile Drawer */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity duration-300"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* Sliding panel */}
+          <aside className="relative flex w-64 h-full flex-col bg-gradient-to-b from-[#4E35C3] to-[#6C4BF4] px-4.5 py-5 text-white shadow-2xl z-10 animate-fade-in-left">
+            {/* Close button inside mobile menu */}
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/80 hover:text-white transition cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {renderSidebarContent(() => setIsOpen(false))}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
 

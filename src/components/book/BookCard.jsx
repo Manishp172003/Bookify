@@ -1,5 +1,6 @@
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Star } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 
 const modeLabels = {
   sell: { label: "Buy", color: "#6C4BF4" },
@@ -16,6 +17,38 @@ export default function BookCard({ book, layout = "grid" }) {
       )
     : null;
 
+  const [wishlistVersion, setWishlistVersion] = useState(0);
+
+  const isWishlisted = useMemo(() => {
+    // Dummy reference to satisfy exhaustive-deps rules
+    const _ = wishlistVersion;
+    const list = JSON.parse(localStorage.getItem("bookify_wishlist") || "[]");
+    return list.some((item) => item.id === book.id);
+  }, [book.id, wishlistVersion]);
+
+  const handleWishlistToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const currentList = JSON.parse(localStorage.getItem("bookify_wishlist") || "[]");
+    let newList;
+    if (isWishlisted) {
+      newList = currentList.filter((item) => item.id !== book.id);
+    } else {
+      const newItem = {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        price: book.mode === "donate" ? "Free" : `₹${book.askingPrice}`,
+        condition: book.condition?.replace(/_/g, " ") || "Good",
+        alertActive: false,
+        coverImage: book.coverImage
+      };
+      newList = [...currentList, newItem];
+    }
+    localStorage.setItem("bookify_wishlist", JSON.stringify(newList));
+    setWishlistVersion((v) => v + 1);
+  };
+
   // List layout for ExplorePage
   if (layout === "list") {
     return (
@@ -27,6 +60,7 @@ export default function BookCard({ book, layout = "grid" }) {
           <img
             src={book.coverImage}
             alt={book.title}
+            loading="lazy"
             className="w-full h-full object-cover"
           />
           <span
@@ -75,77 +109,84 @@ export default function BookCard({ book, layout = "grid" }) {
     );
   }
 
-  // Grid layout (compact Bookscape-style)
+  // Grid layout (premium responsive card)
   return (
     <Link
       to={`/book/${book.id}`}
-      className="group block min-w-[165px] max-w-[180px] bg-white rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg"
+      className="group block w-full bg-white rounded-2xl border border-gray-100/90 overflow-hidden transition-all duration-300 hover:border-[#6C4BF4]/30 hover:shadow-md hover:shadow-[#6C4BF4]/4 flex flex-col h-full animate-fade-in-up"
     >
       {/* Cover Image */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden aspect-[2/3]">
         <img
           src={book.coverImage}
           alt={book.title}
-          className="w-full aspect-[2/3] object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         {/* Mode Badge */}
         <span
-          className="absolute top-2 left-2 text-[10px] font-bold text-white px-2 py-0.5 rounded"
+          className="absolute top-2.5 left-2.5 text-[10px] font-bold text-white px-2 py-0.5 rounded-lg z-10"
           style={{ backgroundColor: mode.color }}
         >
           {mode.label}
         </span>
-        {/* Quick View overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-          <span className="text-white text-xs font-semibold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/30">
-            Quick View
-          </span>
-        </div>
+        {/* Floating Wishlist Button */}
+        <button
+          onClick={handleWishlistToggle}
+          className={`absolute top-2.5 right-2.5 z-10 w-7 h-7 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-sm border border-gray-100 cursor-pointer ${
+            isWishlisted ? "text-red-500" : "text-gray-400 hover:text-red-500"
+          }`}
+        >
+          <Heart size={13} className={isWishlisted ? "fill-red-500" : "transition-colors"} />
+        </button>
+
       </div>
 
       {/* Info */}
-      <div className="p-2.5">
-        {/* Rating */}
-        {book.seller.rating && (
-          <div className="flex items-center gap-1 mb-1">
-            <Star size={11} fill="#FFD166" className="text-bookify-yellow" />
-            <span className="text-[11px] font-semibold text-bookify-text">
-              {book.seller.rating}
+      <div className="p-3 flex-1 flex flex-col justify-between">
+        <div>
+          {/* Rating */}
+          {book.seller.rating && (
+            <div className="flex items-center gap-1 mb-1">
+              <Star size={11} fill="#FFD166" className="text-bookify-yellow" />
+              <span className="text-[11px] font-bold text-bookify-text">
+                {book.seller.rating}
+              </span>
+              <span className="text-[10px] text-bookify-text-secondary">
+                / 5 ({book.seller.totalSales || 0})
+              </span>
+            </div>
+          )}
+
+          {/* Title */}
+          <h3 className="font-[family-name:var(--font-heading)] text-xs font-bold text-bookify-text line-clamp-2 leading-tight mb-0.5 group-hover:text-[#6C4BF4] transition-colors">
+            {book.title}
+          </h3>
+
+          {/* Author */}
+          <p className="text-[11px] text-bookify-text-secondary line-clamp-1 mb-2">
+            {book.author}
+          </p>
+        </div>
+
+        {/* Price & Discount Row */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-sm font-bold text-bookify-text">
+              {book.mode === "donate" ? "Free" : `₹${book.askingPrice}`}
             </span>
-            <span className="text-[10px] text-bookify-text-secondary">
-              / 5 ({book.seller.totalSales || 0})
-            </span>
+            {book.originalPrice && (
+              <span className="text-[10px] text-bookify-text-secondary line-through">
+                ₹{book.originalPrice}
+              </span>
+            )}
           </div>
-        )}
-
-        {/* Title */}
-        <h3 className="font-[family-name:var(--font-heading)] text-xs font-semibold text-bookify-text line-clamp-2 leading-tight mb-0.5">
-          {book.title}
-        </h3>
-
-        {/* Author */}
-        <p className="text-[11px] text-bookify-text-secondary line-clamp-1 mb-1.5">
-          {book.author}
-        </p>
-
-        {/* Price */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-sm font-bold text-bookify-text">
-            {book.mode === "donate" ? "Free" : `₹${book.askingPrice}`}
-          </span>
-          {book.originalPrice && (
-            <span className="text-[10px] text-bookify-text-secondary line-through">
-              ₹{book.originalPrice}
+          {discount && (
+            <span className="text-[10px] font-semibold text-bookify-green bg-green-50 px-1.5 py-0.5 rounded-md">
+              {discount}% off
             </span>
           )}
         </div>
-
-        {/* Discount */}
-        {discount && (
-          <span className="text-[10px] font-semibold text-bookify-green">
-            ({discount}%)
-          </span>
-        )}
       </div>
     </Link>
   );

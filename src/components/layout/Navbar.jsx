@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Menu, X, Bell, Heart, MessageSquare } from "lucide-react";
+import { Search, Menu, X, Heart, MessageSquare } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
@@ -117,15 +117,7 @@ export default function Navbar() {
                   <MessageSquare size={15} />
                 </Link>
 
-                {/* Notifications Bell Icon */}
-                <Link 
-                  to="/dashboard" 
-                  className="relative p-2.5 rounded-xl border border-gray-150 bg-white text-gray-400 hover:text-orange-500 hover:bg-orange-50 hover:border-orange-100 transition duration-200 cursor-pointer"
-                  title="Student Overview"
-                >
-                  <Bell size={15} />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#FF8A3D] rounded-full" />
-                </Link>
+
 
                 {/* User Avatar */}
                 <Link 
@@ -226,13 +218,6 @@ export default function Navbar() {
                   className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:text-[#6C4BF4] hover:bg-purple-50"
                 >
                   <MessageSquare size={14} />
-                </Link>
-                <Link 
-                  to="/dashboard" 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:text-orange-500 hover:bg-orange-50"
-                >
-                  <Bell size={14} />
                 </Link>
               </div>
 
