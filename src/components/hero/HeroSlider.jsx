@@ -73,11 +73,11 @@ export default function HeroSlider() {
 
   var next = useCallback(function() {
     setIndex(function(prev) { return (prev + 1) % slides.length; });
-  }, []);
+  }, [setIndex]);
 
   var prev = useCallback(function() {
     setIndex(function(prev) { return (prev - 1 + slides.length) % slides.length; });
-  }, []);
+  }, [setIndex]);
 
   useEffect(function() {
     if (hovering) return;
@@ -101,9 +101,9 @@ export default function HeroSlider() {
           return (
             <div
               key={i}
-              className="hero-slide"
-              style={{ backgroundImage: 'url(' + s.image + ')' }}
+              className={`hero-slide hero-slide-${i}`}
             >
+              {/* Left Column: Text Content */}
               <div className="hero-slide-content">
                 <span className="hero-slide-tag">{s.tag}</span>
                 <h1 className="hero-slide-title">{s.title}</h1>
@@ -120,27 +120,49 @@ export default function HeroSlider() {
                   <button className="hero-btn-secondary">{s.btn2.label}</button>
                 </div>
               </div>
+
+              {/* Right Column: 3D Illustration Graphic */}
+              <div className="hero-slide-graphic">
+                <img src={s.image} alt={s.title} className="hero-slide-img" />
+              </div>
             </div>
           );
         })}
       </div>
 
+      {/* Bottom Bar: Stats on Left, Dots on Right */}
       <div className="hero-slide-bottom">
-        {slide.stats.map(function(st, i) {
-          return (
-            <div key={i} className="hero-stat">
-              <div className="hero-stat-icon">
-                <StatIcon type={st.icon} />
+        <div className="hero-stats-left">
+          {slide.stats.map(function(st, i) {
+            return (
+              <div key={i} className="hero-stat">
+                <div className="hero-stat-icon">
+                  <StatIcon type={st.icon} />
+                </div>
+                <div>
+                  <div className="hero-stat-label">{st.label}</div>
+                  <div className="hero-stat-desc">{st.desc}</div>
+                </div>
               </div>
-              <div>
-                <div className="hero-stat-label">{st.label}</div>
-                <div className="hero-stat-desc">{st.desc}</div>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        <div className="hero-slider-dots">
+          {slides.map(function(_, i) {
+            return (
+              <button
+                key={i}
+                className={'hero-dot' + (i === index ? ' active' : '')}
+                onClick={function() { setIndex(i); }}
+                aria-label={'Slide ' + (i + 1)}
+              />
+            );
+          })}
+        </div>
       </div>
 
+      {/* Arrow Controls */}
       <div className="hero-slider-controls">
         <button className="hero-slider-btn" onClick={prev} aria-label="Previous">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -152,19 +174,6 @@ export default function HeroSlider() {
             <path d="M9 5l7 7-7 7" />
           </svg>
         </button>
-      </div>
-
-      <div className="hero-slider-dots">
-        {slides.map(function(_, i) {
-          return (
-            <button
-              key={i}
-              className={'hero-dot' + (i === index ? ' active' : '')}
-              onClick={function() { setIndex(i); }}
-              aria-label={'Slide ' + (i + 1)}
-            />
-          );
-        })}
       </div>
     </div>
   );
