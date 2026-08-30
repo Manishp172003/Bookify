@@ -52,13 +52,20 @@ export default function Navbar() {
                 <Link
                   key={link.label}
                   to={link.path}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  className={`relative px-3.5 py-2 text-sm font-semibold transition-all duration-200 group ${
                     isActive
-                      ? "text-[#6C4BF4] bg-[#EEEAFE]"
-                      : "text-gray-500 hover:text-[#6C4BF4] hover:bg-[#6C4BF4]/5"
+                      ? "text-[#6C4BF4]"
+                      : "text-gray-500 hover:text-[#6C4BF4]"
                   }`}
                 >
                   {link.label}
+                  <span
+                    className={`absolute bottom-0 left-3.5 right-3.5 h-[3px] bg-[#6C4BF4] rounded-full transition-all duration-300 transform origin-center ${
+                      isActive
+                        ? "scale-x-100 opacity-100"
+                        : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100"
+                    }`}
+                  />
                 </Link>
               );
             })}
