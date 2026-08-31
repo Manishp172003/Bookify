@@ -106,7 +106,7 @@ function Checkout() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-8">
       {/* Back link & Title */}
       <div className="mb-6">
         <Link

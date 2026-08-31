@@ -41,11 +41,13 @@ export default function ExplorePage() {
 
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || null;
+  const initialSeller = searchParams.get("seller") || "";
+  const initialMode = searchParams.get("mode") || null;
   const [searchQuery, setSearchQuery] = useState(initialQuery);
 
   const [filters, setFilters] = useState({
     conditions: [],
-    modes: [],
+    modes: initialMode ? [initialMode] : [],
     priceRange: null,
     priceMin: 0,
     priceMax: 1000,
@@ -57,6 +59,12 @@ export default function ExplorePage() {
 
   const filteredBooks = useMemo(() => {
     let result = [...books];
+
+    if (initialSeller) {
+      result = result.filter(
+        (b) => b.seller && b.seller.name.toLowerCase() === initialSeller.toLowerCase()
+      );
+    }
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -277,8 +285,22 @@ export default function ExplorePage() {
             </button>
 
             {/* Active Filter Pills */}
-            {activeFilterCount > 0 && (
+            {(activeFilterCount > 0 || initialSeller) && (
               <div className="flex flex-wrap gap-2 mb-4">
+                {initialSeller && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold rounded-full">
+                    Seller: {initialSeller}
+                    <button
+                      onClick={() => {
+                        searchParams.delete("seller");
+                        setSearchParams(searchParams);
+                      }}
+                      className="cursor-pointer hover:text-amber-900 transition"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
                 {filters.modes.map((m) => {
                   const labels = {
                     sell: "Buy",

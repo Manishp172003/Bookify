@@ -1,7 +1,8 @@
-import { useState } from "react";
+// React imports omitted
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { Heart, Bell, BellOff, MessageCircle, ShoppingCart, Trash2, ArrowLeft, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useCommerce } from "../../context/CommerceContext";
 
 const INITIAL_WISHLIST = [
   {
@@ -34,31 +35,14 @@ const INITIAL_WISHLIST = [
 ];
 
 export default function Wishlist() {
-  const [wishlist, setWishlist] = useState(() => {
-    const saved = localStorage.getItem("bookify_wishlist");
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    localStorage.setItem("bookify_wishlist", JSON.stringify(INITIAL_WISHLIST));
-    return INITIAL_WISHLIST;
-  });
+  const { wishlistItems: wishlist, toggleWishlist, toggleWishlistAlert } = useCommerce();
 
   const toggleAlert = (id) => {
-    setWishlist(prev => {
-      const updated = prev.map(item =>
-        item.id === id ? { ...item, alertActive: !item.alertActive } : item
-      );
-      localStorage.setItem("bookify_wishlist", JSON.stringify(updated));
-      return updated;
-    });
+    toggleWishlistAlert(id);
   };
 
   const handleRemove = (id) => {
-    setWishlist(prev => {
-      const updated = prev.filter(item => item.id !== id);
-      localStorage.setItem("bookify_wishlist", JSON.stringify(updated));
-      return updated;
-    });
+    toggleWishlist({ id });
   };
 
   return (

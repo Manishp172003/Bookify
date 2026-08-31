@@ -180,6 +180,45 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
         </div>
       </FilterSection>
 
+      {/* Transaction Type */}
+      <FilterSection title="Transaction Type" defaultOpen={true}>
+        <div className="space-y-1">
+          {[
+            { value: "sell", label: "Buy (Purchase)" },
+            { value: "rent", label: "Rent" },
+            { value: "exchange", label: "Exchange" },
+            { value: "donate", label: "Free (Donation)" },
+          ].map((mode) => {
+            const isChecked = (filters.modes || []).includes(mode.value);
+            return (
+              <label
+                key={mode.value}
+                className={`flex items-center gap-2.5 cursor-pointer group px-2.5 py-1.5 rounded-xl transition-all ${
+                  isChecked
+                    ? "bg-[#EEEAFE]/50 text-[#6C4BF4]"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => {
+                    const updated = isChecked
+                      ? (filters.modes || []).filter((x) => x !== mode.value)
+                      : [...(filters.modes || []), mode.value];
+                    onFilterChange({ ...filters, modes: updated });
+                  }}
+                  className="w-4 h-4 rounded border-gray-300 text-[#6C4BF4] focus:ring-[#6C4BF4]/30 accent-[#6C4BF4]"
+                />
+                <span className="text-sm font-semibold transition-colors">
+                  {mode.label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterSection>
+
       {/* Choose Publisher */}
       <FilterSection title="Choose Publisher" defaultOpen={false}>
         <div className="space-y-1">

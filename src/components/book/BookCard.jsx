@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+// React imports omitted as hooks are not used directly
 import { Link } from "react-router-dom";
 import { Star, Heart } from "lucide-react";
+import { useCommerce } from "../../context/CommerceContext";
 
 const modeLabels = {
   sell: { label: "Buy", color: "#6C4BF4" },
@@ -17,36 +18,13 @@ export default function BookCard({ book, layout = "grid" }) {
       )
     : null;
 
-  const [wishlistVersion, setWishlistVersion] = useState(0);
-
-  const isWishlisted = useMemo(() => {
-    // Dummy reference to satisfy exhaustive-deps rules
-    const _ = wishlistVersion;
-    const list = JSON.parse(localStorage.getItem("bookify_wishlist") || "[]");
-    return list.some((item) => item.id === book.id);
-  }, [book.id, wishlistVersion]);
+  const { toggleWishlist, isBookWishlisted } = useCommerce();
+  const isWishlisted = isBookWishlisted(book.id);
 
   const handleWishlistToggle = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const currentList = JSON.parse(localStorage.getItem("bookify_wishlist") || "[]");
-    let newList;
-    if (isWishlisted) {
-      newList = currentList.filter((item) => item.id !== book.id);
-    } else {
-      const newItem = {
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        price: book.mode === "donate" ? "Free" : `₹${book.askingPrice}`,
-        condition: book.condition?.replace(/_/g, " ") || "Good",
-        alertActive: false,
-        coverImage: book.coverImage
-      };
-      newList = [...currentList, newItem];
-    }
-    localStorage.setItem("bookify_wishlist", JSON.stringify(newList));
-    setWishlistVersion((v) => v + 1);
+    toggleWishlist(book);
   };
 
   // List layout for ExplorePage

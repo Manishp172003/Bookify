@@ -27,9 +27,44 @@ export default function SearchBar({
   const [query, setQuery] = useState(defaultValue);
   const [isFocused, setIsFocused] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const inputRef = useRef(null);
   const wrapperRef = useRef(null);
   const navigate = useNavigate();
+
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = 1000;
+      gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+        audioCtx.close();
+      }, 120);
+    } catch (err) {
+      console.warn("Audio Context failed to play beep:", err);
+    }
+  };
+
+  const triggerMockScan = (bookTitle, isbnCode) => {
+    playBeep();
+    setQuery(bookTitle);
+    setIsScannerOpen(false);
+    if (onSearch) {
+      onSearch(bookTitle);
+    } else {
+      navigate(`/explore?q=${encodeURIComponent(bookTitle)}`);
+    }
+  };
 
   // Generate suggestions from books based on query
   const suggestions = useMemo(() => {
@@ -203,10 +238,10 @@ export default function SearchBar({
           <button
             type="button"
             onClick={() => {
-              navigate("/explore?isbn=true");
+              setIsScannerOpen(true);
               setIsFocused(false);
             }}
-            className="p-2 rounded-lg bg-bookify-light-purple text-bookify-purple hover:bg-bookify-purple hover:text-white transition-colors"
+            className="p-2 rounded-lg bg-bookify-light-purple text-bookify-purple hover:bg-bookify-purple hover:text-white transition-colors cursor-pointer"
             title="Scan ISBN barcode"
           >
             <Barcode size={16} />
@@ -303,6 +338,118 @@ export default function SearchBar({
           </div>
         </div>
       )}
+      {/* Webcam Barcode Scanner Modal */}
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in">
+          <div className="bg-[#121124] text-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-scale-up border border-white/5 relative overflow-hidden">
+            {/* Ambient top scanning grid glow */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#6C4BF4] to-transparent animate-pulse" />
+
+            {/* Modal Header */}
+            <div className="flex justify-between items-center mb-5 relative z-10">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-red-500 animate-ping" />
+                <h3 className="font-bold text-xs tracking-wide text-gray-200">
+                  ISBN WEBCAM SCANNER
+                </h3>
+              </div>
+              <button 
+                onClick={() => setIsScannerOpen(false)}
+                className="text-gray-400 hover:text-white transition p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Simulated Video Frame */}
+            <div className="relative aspect-video w-full rounded-2xl border border-white/10 bg-black overflow-hidden flex flex-col items-center justify-center mb-5">
+              {/* scanning grid overlay */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-transparent to-black/40" />
+              
+              {/* Laser scan line animation */}
+              <div className="absolute left-0 right-0 h-0.5 bg-[#22C55E] shadow-[0_0_8px_#22C55E] animate-scan" style={{
+                animation: "scan 2s linear infinite"
+              }} />
+
+              {/* Corner scanner brackets */}
+              <div className="absolute top-6 left-12 w-6 h-6 border-t-2 border-l-2 border-[#22C55E] rounded-tl-md" />
+              <div className="absolute top-6 right-12 w-6 h-6 border-t-2 border-r-2 border-[#22C55E] rounded-tr-md" />
+              <div className="absolute bottom-6 left-12 w-6 h-6 border-b-2 border-l-2 border-[#22C55E] rounded-bl-md" />
+              <div className="absolute bottom-6 right-12 w-6 h-6 border-b-2 border-r-2 border-[#22C55E] rounded-br-md" />
+
+              {/* Instructions overlay */}
+              <p className="absolute bottom-3 text-[10px] text-gray-400 font-medium tracking-wide bg-black/60 px-3 py-1 rounded-full border border-white/5">
+                Position barcode inside green brackets
+              </p>
+
+              <Barcode size={48} className="text-white/10 animate-pulse" />
+            </div>
+
+            {/* Simulation Trigger Controllers */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  Simulate Scan Actions
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { isbn: "9780262033848", name: "Algorithms Book", title: "Introduction to Algorithms" },
+                    { isbn: "9780061120084", name: "Physics Textbook", title: "Concepts of Physics Vol 1" },
+                    { isbn: "9780140441018", name: "Gulliver's Travels", title: "Gulliver's Travels" },
+                    { isbn: "9780321768414", name: "Chemistry Book", title: "Organic Chemistry" }
+                  ].map((sim) => (
+                    <button
+                      key={sim.isbn}
+                      onClick={() => triggerMockScan(sim.title, sim.isbn)}
+                      className="py-2.5 px-3 rounded-xl border border-white/5 bg-white/5 text-[10px] font-bold hover:bg-[#6C4BF4] hover:text-white transition cursor-pointer text-left truncate flex flex-col justify-between"
+                    >
+                      <span className="text-gray-300 font-semibold truncate">{sim.name}</span>
+                      <span className="text-[8px] text-gray-500 mt-0.5 font-medium">{sim.isbn}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Manual ISBN entry fallback */}
+              <div className="border-t border-white/5 pt-4">
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    placeholder="Enter ISBN code manually..."
+                    id="manualIsbnInput"
+                    className="flex-grow text-[11px] bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-[#6C4BF4] transition"
+                  />
+                  <button
+                    onClick={() => {
+                      const val = document.getElementById("manualIsbnInput")?.value || "";
+                      if (val.trim()) {
+                        const matches = {
+                          "9780262033848": "Introduction to Algorithms",
+                          "9780061120084": "Concepts of Physics Vol 1",
+                          "9780140441018": "Gulliver's Travels",
+                          "9780321768414": "Organic Chemistry"
+                        };
+                        const title = matches[val.trim()] || "Introduction to Algorithms";
+                        triggerMockScan(title, val.trim());
+                      }
+                    }}
+                    className="px-4 py-2 bg-[#6C4BF4] hover:bg-[#5B3DE0] text-white rounded-xl text-[10px] font-bold transition cursor-pointer shrink-0"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes scan {
+          0% { top: 15%; }
+          50% { top: 85%; }
+          100% { top: 15%; }
+        }
+      `}</style>
     </div>
   );
 }

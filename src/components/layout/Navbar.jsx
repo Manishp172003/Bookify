@@ -11,7 +11,7 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
-  const { cartCount } = useCommerce();
+  const { cartCount, wishlistItems } = useCommerce();
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -100,12 +100,17 @@ export default function Navbar() {
                 {/* Wishlist Heart Icon */}
                 <Link 
                   to="/dashboard/wishlist" 
-                  className={`p-2.5 rounded-xl border border-gray-150 text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100 transition duration-200 cursor-pointer ${
+                  className={`p-2.5 rounded-xl border border-gray-150 text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100 transition duration-200 cursor-pointer relative ${
                     location.pathname === "/dashboard/wishlist" ? "bg-red-50 text-red-500 border-red-100" : "bg-white"
                   }`}
                   title="My Wishlist"
                 >
                   <Heart size={15} />
+                  {wishlistItems.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#FF4F81] text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                      {wishlistItems.length}
+                    </span>
+                  )}
                 </Link>
 
                 {/* Messages Chat Icon */}
@@ -226,9 +231,14 @@ export default function Navbar() {
                 <Link 
                   to="/dashboard/wishlist" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:text-red-500 hover:bg-red-50"
+                  className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:text-red-500 hover:bg-red-50 relative"
                 >
                   <Heart size={14} />
+                  {wishlistItems.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#FF4F81] text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                      {wishlistItems.length}
+                    </span>
+                  )}
                 </Link>
                 <Link 
                   to="/dashboard/messages" 

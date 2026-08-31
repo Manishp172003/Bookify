@@ -178,7 +178,7 @@ function AppRoutes() {
         path="/chat"
         element={
           <ProtectedRoute>
-            <MainLayout>
+            <MainLayout hideFooter={true}>
               <Chat />
             </MainLayout>
           </ProtectedRoute>
@@ -189,7 +189,7 @@ function AppRoutes() {
         path="/chat/:conversationId"
         element={
           <ProtectedRoute>
-            <MainLayout>
+            <MainLayout hideFooter={true}>
               <Chat />
             </MainLayout>
           </ProtectedRoute>

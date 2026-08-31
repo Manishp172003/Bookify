@@ -33,7 +33,7 @@ function Chat() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6 h-[calc(100vh-66px)] flex flex-col">
       {/* Top Banner / Breadcrumb */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -58,7 +58,7 @@ function Chat() {
       </div>
 
       {/* Main Chat Container Box */}
-      <div className="h-[750px] max-h-[82vh] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl flex">
+      <div className="flex-1 min-h-0 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl flex">
         {/* Left Column: ChatList */}
         <div
           className={`w-full lg:w-80 xl:w-96 shrink-0 border-r border-gray-100 ${

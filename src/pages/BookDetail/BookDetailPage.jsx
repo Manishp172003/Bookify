@@ -53,16 +53,28 @@ const modeConfig = {
 export default function BookDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart, startOrGetConversation } = useCommerce();
+  const { addToCart, startOrGetConversation, toggleWishlist, isBookWishlisted } = useCommerce();
   const book = books.find((b) => b.id === Number(id));
   const [activePhoto, setActivePhoto] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const isFavorited = book ? isBookWishlisted(book.id) : false;
   const [triggerBounce, setTriggerBounce] = useState(false);
+  const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
+  const [selectedSwapBookId, setSelectedSwapBookId] = useState("my_1");
+  const [proposalNote, setProposalNote] = useState("");
 
   const handleActionClick = () => {
     if (book) {
-      addToCart(book, 1);
-      navigate("/checkout");
+      if (book.mode === "exchange") {
+        setIsExchangeModalOpen(true);
+      } else if (book.mode === "donate") {
+        const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+        const customText = `🎁 Donation Request:\nHi ${book.seller?.name?.split(" ")[0] || "there"}! I would love to request your free copy of "${book.title}" for my studies. Let me know when and where we can meet up on campus for the handoff!`;
+        const chatId = startOrGetConversation(book.seller || defaultSeller, book, customText);
+        navigate(`/chat/${chatId}`);
+      } else {
+        addToCart(book, 1);
+        navigate("/checkout");
+      }
     }
   };
 
@@ -75,11 +87,28 @@ export default function BookDetailPage() {
   };
 
   const handleFavoriteToggle = () => {
-    setIsFavorited(!isFavorited);
-    if (!isFavorited) {
-      setTriggerBounce(true);
-      setTimeout(() => setTriggerBounce(false), 300);
+    if (book) {
+      toggleWishlist(book);
+      if (!isFavorited) {
+        setTriggerBounce(true);
+        setTimeout(() => setTriggerBounce(false), 300);
+      }
     }
+  };
+
+  const handleSubmitProposal = () => {
+    if (!book) return;
+    const myBooks = [
+      { id: "my_1", title: "Concepts of Physics Vol 1", author: "H.C. Verma" },
+      { id: "my_2", title: "Organic Chemistry, 8th Edition", author: "L.G. Wade" },
+      { id: "my_3", title: "Introduction to Java Programming", author: "Y. Daniel Liang" }
+    ];
+    const chosen = myBooks.find(b => b.id === selectedSwapBookId) || myBooks[0];
+    const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+    const customText = `🔄 Proposed swap for "${book.title}" in exchange for my "${chosen.title}" by ${chosen.author}.\n\nNote: ${proposalNote || "Let's meet up to exchange textbooks!"}`;
+    const chatId = startOrGetConversation(book.seller || defaultSeller, book, customText);
+    setIsExchangeModalOpen(false);
+    navigate(`/chat/${chatId}`);
   };
 
   if (!book) {
@@ -418,6 +447,94 @@ export default function BookDetailPage() {
             ))}
           </div>
         </section>
+      )}
+      {/* Exchange Proposal Modal */}
+      {isExchangeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-scale-up border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg text-bookify-text flex items-center gap-2">
+                🔄 Propose Book Exchange
+              </h3>
+              <button 
+                onClick={() => setIsExchangeModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p className="text-xs text-bookify-text-secondary mb-4 leading-relaxed">
+              You are proposing a swap for <strong className="text-bookify-text">"{book.title}"</strong> with <strong className="text-bookify-text">{book.seller?.name || "Vikram Singh"}</strong>. Choose a book from your shelf to offer in return:
+            </p>
+
+            {/* Book List Selection */}
+            <div className="space-y-3.5 max-h-60 overflow-y-auto mb-4 p-1">
+              {[
+                { id: "my_1", title: "Concepts of Physics Vol 1", author: "H.C. Verma", image: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg", condition: "Very Good" },
+                { id: "my_2", title: "Organic Chemistry, 8th Edition", author: "L.G. Wade", image: "https://covers.openlibrary.org/b/isbn/9780321768414-L.jpg", condition: "Good" },
+                { id: "my_3", title: "Introduction to Java Programming", author: "Y. Daniel Liang", image: "https://covers.openlibrary.org/b/id/8314352-L.jpg", condition: "Like New" }
+              ].map((myBook) => (
+                <label 
+                  key={myBook.id}
+                  className={`flex gap-3 p-3 rounded-2xl border transition cursor-pointer select-none items-center ${
+                    selectedSwapBookId === myBook.id 
+                      ? "border-[#6C4BF4] bg-[#6C4BF4]/5" 
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <input 
+                    type="radio" 
+                    name="swapBook" 
+                    value={myBook.id}
+                    checked={selectedSwapBookId === myBook.id}
+                    onChange={() => setSelectedSwapBookId(myBook.id)}
+                    className="accent-[#6C4BF4] h-4 w-4"
+                  />
+                  <img src={myBook.image} alt={myBook.title} className="h-12 w-9 object-cover rounded-md border border-gray-100" />
+                  <div className="min-w-0 flex-grow">
+                    <h4 className="text-xs font-bold text-bookify-text truncate">{myBook.title}</h4>
+                    <p className="text-[10px] text-bookify-text-secondary truncate mt-0.5">{myBook.author}</p>
+                    <span className="inline-block text-[9px] font-semibold text-bookify-purple bg-bookify-light-purple px-1.5 py-0.5 rounded-md mt-1">
+                      {myBook.condition}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Note Textarea */}
+            <div className="mb-5">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-bookify-text-secondary mb-1.5">
+                Friendly note for {book.seller?.name?.split(" ")[0] || "Vikram"} (Optional)
+              </label>
+              <textarea
+                placeholder="Hi, would you be down to trade Gulliver's Travels for my Physics book?"
+                value={proposalNote}
+                onChange={(e) => setProposalNote(e.target.value)}
+                className="w-full text-xs p-3 rounded-xl border border-gray-200 focus:border-bookify-purple outline-none h-20 resize-none transition bg-gray-50/50 focus:bg-white"
+              />
+            </div>
+
+            {/* Submit Actions */}
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsExchangeModalOpen(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 text-xs transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitProposal}
+                className="flex-1 py-2.5 bg-[#6C4BF4] text-white rounded-xl font-bold hover:bg-[#5B3DE0] text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                Send Proposal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

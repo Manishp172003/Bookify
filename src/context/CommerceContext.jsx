@@ -184,6 +184,68 @@ export function CommerceProvider({ children }) {
     (c) => c.id === activeConversationId
   );
 
+  // Wishlist State
+  const [wishlistItems, setWishlistItems] = useState(() => {
+    const saved = localStorage.getItem("bookify_wishlist");
+    const INITIAL_WISHLIST = [
+      {
+        id: 1,
+        title: "Introduction to Algorithms, 3rd Edition",
+        author: "Thomas H. Cormen",
+        price: "₹650",
+        condition: "Very Good",
+        alertActive: true,
+        coverImage: "https://covers.openlibrary.org/b/isbn/9780062315007-L.jpg"
+      },
+      {
+        id: 2,
+        title: "Concepts of Physics Vol 1",
+        author: "H.C. Verma",
+        price: "₹350",
+        condition: "Good",
+        alertActive: false,
+        coverImage: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg"
+      }
+    ];
+    return saved ? JSON.parse(saved) : INITIAL_WISHLIST;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("bookify_wishlist", JSON.stringify(wishlistItems));
+  }, [wishlistItems]);
+
+  const toggleWishlist = (book) => {
+    const isWish = wishlistItems.some((item) => item.id === book.id);
+    if (isWish) {
+      setWishlistItems((prev) => prev.filter((item) => item.id !== book.id));
+      showToast("Removed from wishlist.", "info");
+    } else {
+      const newItem = {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        price: book.mode === "donate" ? "Free" : `₹${book.askingPrice || book.price}`,
+        condition: book.condition?.replace(/_/g, " ") || "Good",
+        alertActive: false,
+        coverImage: book.coverImage || (book.photos && book.photos[0]) || ""
+      };
+      setWishlistItems((prev) => [...prev, newItem]);
+      showToast("Added to wishlist!");
+    }
+  };
+
+  const toggleWishlistAlert = (id) => {
+    setWishlistItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, alertActive: !item.alertActive } : item
+      )
+    );
+  };
+
+  const isBookWishlisted = (id) => {
+    return wishlistItems.some((item) => item.id === id);
+  };
+
   // Cart operations
   const addToCart = (book, quantity = 1) => {
     setCartItems((prev) => {
@@ -360,17 +422,28 @@ export function CommerceProvider({ children }) {
   };
 
   // Chats direct messaging
-  const startOrGetConversation = (seller, book) => {
+  const startOrGetConversation = (seller, book, customInitialMessage = null) => {
     const existing = conversations.find(
       (c) => c.seller.id === seller.id && c.book?.id === book.id
     );
 
     if (existing) {
+      if (customInitialMessage) {
+        const newMsg = {
+          id: `msg_custom_${Date.now()}`,
+          sender: "me",
+          text: customInitialMessage,
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          status: "sent"
+        };
+        existing.messages.push(newMsg);
+      }
       selectConversation(existing.id);
       return existing.id;
     }
 
     const newChatId = `chat_${Date.now()}`;
+    const initialMsgText = customInitialMessage || `Hi! Thanks for showing interest in my book "${book.title}". Let me know if you have any questions!`;
     const newChat = {
       id: newChatId,
       active: true,
@@ -393,8 +466,8 @@ export function CommerceProvider({ children }) {
       messages: [
         {
           id: `msg_init_${Date.now()}`,
-          sender: "them",
-          text: `Hi! Thanks for showing interest in my book "${book.title}". Let me know if you have any questions!`,
+          sender: customInitialMessage ? "me" : "them",
+          text: initialMsgText,
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
           status: "read"
         }
@@ -517,7 +590,11 @@ export function CommerceProvider({ children }) {
         selectConversation,
         startOrGetConversation,
         sendMessage,
-        showToast
+        showToast,
+        wishlistItems,
+        toggleWishlist,
+        toggleWishlistAlert,
+        isBookWishlisted
       }}
     >
       {children}
