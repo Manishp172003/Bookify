@@ -1,6 +1,6 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, ShieldCheck, Truck, Package, ArrowRight, ShoppingBag, MapPin, Calendar, Clock, Lock, Sparkles } from "lucide-react";
-import { useCommerce } from "../context/CommerceContext";
+import { useCommerce } from "../../context/CommerceContext";
 
 function OrderConfirmation() {
   const location = useLocation();

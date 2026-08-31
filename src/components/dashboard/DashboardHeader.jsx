@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Menu,
 } from "lucide-react";
+import { useCommerce } from "../../context/CommerceContext";
 
 const INITIAL_NOTIFICATIONS = [
   {
@@ -47,6 +48,7 @@ const INITIAL_NOTIFICATIONS = [
 ];
 
 function DashboardHeader() {
+  const { cartCount } = useCommerce();
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
@@ -135,12 +137,18 @@ function DashboardHeader() {
         </div>
 
         {/* Cart */}
-        <button
-          type="button"
-          className="text-gray-600 hover:text-[#6C4BF4]"
+        <Link
+          to="/cart"
+          className="relative text-gray-600 hover:text-[#6C4BF4] transition"
+          title="My Cart"
         >
           <ShoppingCart size={20} />
-        </button>
+          {cartCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-[#FF4F81] text-white text-[9px] font-bold h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white">
+              {cartCount}
+            </span>
+          )}
+        </Link>
 
         {/* Notifications */}
         <div className="relative" ref={dropdownRef}>

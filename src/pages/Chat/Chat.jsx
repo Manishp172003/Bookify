@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useCommerce } from "../context/CommerceContext";
-import ChatList from "../components/chat/ChatList";
-import ChatWindow from "../components/chat/ChatWindow";
-import SellerInfoPanel from "../components/chat/SellerInfoPanel";
+import { useCommerce } from "../../context/CommerceContext";
+import ChatList from "../../components/chat/ChatList";
+import ChatWindow from "../../components/chat/ChatWindow";
+import SellerInfoPanel from "../../components/chat/SellerInfoPanel";
 import { MessageSquare, ShieldCheck, Zap } from "lucide-react";
 
 function Chat() {

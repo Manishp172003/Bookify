@@ -15,6 +15,11 @@ const HomePage = lazy(() => import("../pages/Home/HomePage"));
 const ExplorePage = lazy(() => import("../pages/Explore/ExplorePage"));
 const CategoriesPage = lazy(() => import("../pages/Categories/CategoriesPage"));
 const BookDetailPage = lazy(() => import("../pages/BookDetail/BookDetailPage"));
+const Cart = lazy(() => import("../pages/Cart/Cart"));
+const Checkout = lazy(() => import("../pages/Checkout/Checkout"));
+const OrderConfirmation = lazy(() => import("../pages/OrderConfirmation/OrderConfirmation"));
+const OrderTracking = lazy(() => import("../pages/OrderTracking/OrderTracking"));
+const Chat = lazy(() => import("../pages/Chat/Chat"));
 
 // Auth
 const Login = lazy(() => import("../pages/Auth/Login"));
@@ -124,6 +129,70 @@ function AppRoutes() {
           <MainLayout>
             <BookDetailPage />
           </MainLayout>
+        }
+      />
+
+      <Route
+        path="/cart"
+        element={
+          <MainLayout>
+            <Cart />
+          </MainLayout>
+        }
+      />
+
+      <Route
+        path="/checkout"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Checkout />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/order-confirmation"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <OrderConfirmation />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/orders/:orderId/tracking"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <OrderTracking />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Chat />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/chat/:conversationId"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Chat />
+            </MainLayout>
+          </ProtectedRoute>
         }
       />
 

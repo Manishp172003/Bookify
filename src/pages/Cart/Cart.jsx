@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { ShoppingBag, ArrowLeft, Trash2, Sparkles, ShieldCheck } from "lucide-react";
-import { useCommerce } from "../context/CommerceContext";
-import CartItem from "../components/cart/CartItem";
-import CartSummary from "../components/cart/CartSummary";
+import { useCommerce } from "../../context/CommerceContext";
+import CartItem from "../../components/cart/CartItem";
+import CartSummary from "../../components/cart/CartSummary";
 
 function Cart() {
   const {
@@ -71,7 +71,7 @@ function Cart() {
               <Sparkles size={16} /> Explore Available Books
             </Link>
             <Link
-              to="/wishlist"
+              to="/dashboard/wishlist"
               className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-[#F8F7FF] px-6 py-3.5 text-sm font-bold text-[#17152A] transition hover:border-[#6C4BF4] hover:bg-[#F0ECFF] hover:text-[#6C4BF4]"
             >
               View Saved Wishlist

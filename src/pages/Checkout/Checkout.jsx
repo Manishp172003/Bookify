@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, ShieldCheck, Lock, ShoppingBag, Sparkles } from "lucide-react";
-import { useCommerce } from "../context/CommerceContext";
-import AddressCard from "../components/checkout/AddressCard";
-import OrderSummary from "../components/checkout/OrderSummary";
-import EscrowCard from "../components/checkout/EscrowCard";
-import PaymentButton from "../components/checkout/PaymentButton";
-import { openRazorpayCheckout } from "../services/paymentService";
+import { useCommerce } from "../../context/CommerceContext";
+import AddressCard from "../../components/checkout/AddressCard";
+import OrderSummary from "../../components/checkout/OrderSummary";
+import EscrowCard from "../../components/checkout/EscrowCard";
+import PaymentButton from "../../components/checkout/PaymentButton";
+import { openRazorpayCheckout } from "../../services/paymentService";
 
 function Checkout() {
   const navigate = useNavigate();

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Menu, X, Heart, MessageSquare } from "lucide-react";
+import { Search, Menu, X, Heart, MessageSquare, ShoppingCart } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useCommerce } from "../../context/CommerceContext";
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -10,6 +11,7 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const { cartCount } = useCommerce();
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -117,6 +119,22 @@ export default function Navbar() {
                   <MessageSquare size={15} />
                 </Link>
 
+                {/* Cart Icon */}
+                <Link 
+                  to="/cart" 
+                  className={`p-2.5 rounded-xl border border-gray-150 text-gray-400 hover:text-[#6C4BF4] hover:bg-purple-50 hover:border-purple-100 transition duration-200 cursor-pointer relative ${
+                    location.pathname === "/cart" ? "bg-[#EEEAFE] text-[#6C4BF4] border-purple-100" : "bg-white"
+                  }`}
+                  title="My Cart"
+                >
+                  <ShoppingCart size={15} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#FF4F81] text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+
 
 
                 {/* User Avatar */}
@@ -218,6 +236,18 @@ export default function Navbar() {
                   className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:text-[#6C4BF4] hover:bg-purple-50"
                 >
                   <MessageSquare size={14} />
+                </Link>
+                <Link 
+                  to="/cart" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:text-[#6C4BF4] hover:bg-purple-50 relative"
+                >
+                  <ShoppingCart size={14} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#FF4F81] text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                      {cartCount}
+                    </span>
+                  )}
                 </Link>
               </div>
 
