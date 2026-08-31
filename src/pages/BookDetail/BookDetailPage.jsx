@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useCommerce } from "../../context/CommerceContext";
 import {
   ArrowLeft,
   Heart,
@@ -51,10 +52,27 @@ const modeConfig = {
 
 export default function BookDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart, startOrGetConversation } = useCommerce();
   const book = books.find((b) => b.id === Number(id));
   const [activePhoto, setActivePhoto] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [triggerBounce, setTriggerBounce] = useState(false);
+
+  const handleActionClick = () => {
+    if (book) {
+      addToCart(book, 1);
+      navigate("/checkout");
+    }
+  };
+
+  const handleChatClick = () => {
+    if (book) {
+      const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+      const chatId = startOrGetConversation(book.seller || defaultSeller, book);
+      navigate(`/chat/${chatId}`);
+    }
+  };
 
   const handleFavoriteToggle = () => {
     setIsFavorited(!isFavorited);
@@ -315,13 +333,17 @@ export default function BookDetailPage() {
             )}
 
             <button
-              className={`w-full flex items-center justify-center gap-2 mt-5 py-3 text-white rounded-xl font-semibold transition-colors ${mode.color}`}
+              onClick={handleActionClick}
+              className={`w-full flex items-center justify-center gap-2 mt-5 py-3 text-white rounded-xl font-semibold transition-colors cursor-pointer ${mode.color}`}
             >
               {mode.icon}
               {mode.label}
             </button>
 
-            <button className="w-full flex items-center justify-center gap-2 mt-2 py-3 border-2 border-bookify-purple text-bookify-purple rounded-xl font-semibold hover:bg-bookify-light-purple transition-colors">
+            <button 
+              onClick={handleChatClick}
+              className="w-full flex items-center justify-center gap-2 mt-2 py-3 border-2 border-bookify-purple text-bookify-purple rounded-xl font-semibold hover:bg-bookify-light-purple transition-colors cursor-pointer"
+            >
               <MessageCircle size={18} />
               Chat with Seller
             </button>

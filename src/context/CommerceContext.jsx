@@ -360,6 +360,52 @@ export function CommerceProvider({ children }) {
   };
 
   // Chats direct messaging
+  const startOrGetConversation = (seller, book) => {
+    const existing = conversations.find(
+      (c) => c.seller.id === seller.id && c.book?.id === book.id
+    );
+
+    if (existing) {
+      selectConversation(existing.id);
+      return existing.id;
+    }
+
+    const newChatId = `chat_${Date.now()}`;
+    const newChat = {
+      id: newChatId,
+      active: true,
+      seller: {
+        id: seller.id,
+        name: seller.name,
+        avatar: seller.avatar || "https://i.pravatar.cc/150",
+        online: true,
+        verified: seller.isVerified || false,
+        college: seller.college || "Campus College"
+      },
+      book: {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        price: book.askingPrice || book.price,
+        condition: book.condition?.replace(/_/g, " ") || "Good",
+        image: book.coverImage || (book.photos && book.photos[0]) || ""
+      },
+      messages: [
+        {
+          id: `msg_init_${Date.now()}`,
+          sender: "them",
+          text: `Hi! Thanks for showing interest in my book "${book.title}". Let me know if you have any questions!`,
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          status: "read"
+        }
+      ]
+    };
+
+    setConversations((prev) => [newChat, ...prev]);
+    setActiveConversationId(newChatId);
+    return newChatId;
+  };
+
   const selectConversation = (id) => {
     setActiveConversationId(id);
     setConversations((prev) =>
@@ -469,6 +515,7 @@ export function CommerceProvider({ children }) {
         activeConversation,
         activeConversationId,
         selectConversation,
+        startOrGetConversation,
         sendMessage,
         showToast
       }}
