@@ -46,13 +46,13 @@ function AdminCoupons() {
     usageLimit: "100"
   });
 
-  useEffect(() => {
-    loadCoupons();
-  }, []);
-
   const loadCoupons = () => {
     setCoupons(getAdminCoupons());
   };
+
+  useEffect(() => {
+    loadCoupons();
+  }, []);
 
   const handleOpenCreateModal = () => {
     setEditingCoupon(null);

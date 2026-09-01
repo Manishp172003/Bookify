@@ -175,6 +175,12 @@ function AdminLogin() {
           <p className="mt-2 text-center text-xs text-red-500">{apiError}</p>
         )}
 
+        <p className="text-center text-xs text-gray-500 pt-2">
+          Not an administrator?{" "}
+          <Link to="/login" className="font-bold text-[#6C4BF4] hover:underline">
+            Student Login
+          </Link>
+        </p>
       </form>
     </AuthLayout>
   );

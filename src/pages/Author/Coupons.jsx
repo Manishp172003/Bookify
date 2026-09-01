@@ -44,13 +44,13 @@ function AuthorCoupons() {
     usageLimit: "100"
   });
 
-  useEffect(() => {
-    loadCoupons();
-  }, []);
-
   const loadCoupons = () => {
     setCoupons(getAuthorCoupons());
   };
+
+  useEffect(() => {
+    loadCoupons();
+  }, []);
 
   const handleOpenCreateModal = () => {
     setEditingCoupon(null);
