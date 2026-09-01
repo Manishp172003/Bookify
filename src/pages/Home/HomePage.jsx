@@ -370,7 +370,7 @@ export default function HomePage() {
 
       {/* Trust Footer */}
       <ScrollReveal>
-        <section className="bg-transparent mb-16">
+        <section id="trust-section" className="bg-transparent mb-16 scroll-mt-8">
           <div className="max-w-[1440px] mx-auto px-6 md:px-10 text-center mb-8">
             <span className="inline-block px-4 py-1.5 bg-[#EEEAFE] text-[#6C4BF4] text-xs font-bold rounded-full mb-3">OUR GUARANTEE</span>
             <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">Shop with Confidence</h2>

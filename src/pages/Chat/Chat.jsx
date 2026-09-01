@@ -33,7 +33,7 @@ function Chat() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6 h-[calc(100vh-66px)] flex flex-col">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6 h-[calc(100vh-66px)] flex flex-col animate-fade-in">
       {/* Top Banner / Breadcrumb */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -41,7 +41,8 @@ function Chat() {
             <h1 className="text-2xl font-extrabold tracking-tight text-[#17152A]">
               Direct Messages
             </h1>
-            <span className="flex items-center gap-1 rounded-full bg-[#E9E4FF] px-2.5 py-0.5 text-xs font-bold text-[#6C4BF4]">
+            <span className="flex items-center gap-1.5 rounded-full bg-[#E9E4FF] px-2.5 py-0.5 text-xs font-bold text-[#6C4BF4]">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <Zap size={12} /> Instant Chat
             </span>
           </div>
@@ -61,7 +62,7 @@ function Chat() {
       <div className="flex-1 min-h-0 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl flex">
         {/* Left Column: ChatList */}
         <div
-          className={`w-full lg:w-80 xl:w-96 shrink-0 border-r border-gray-100 ${
+          className={`w-full lg:w-80 xl:w-96 shrink-0 border-r border-gray-100 animate-slide-in-left ${
             showMobileList ? "block h-full" : "hidden lg:block h-full"
           }`}
         >
@@ -74,7 +75,7 @@ function Chat() {
 
         {/* Center Column: Active Chat Window */}
         <div
-          className={`flex-1 flex flex-col min-w-0 ${
+          className={`flex-1 flex flex-col min-w-0 animate-fade-in ${
             !showMobileList ? "block h-full" : "hidden lg:flex h-full"
           }`}
         >
@@ -99,7 +100,7 @@ function Chat() {
 
         {/* Right Column: Seller Profile / Escrow Info Panel (Desktop) */}
         {showInfoPanel && activeConversation && (
-          <div className="hidden xl:block w-72 shrink-0 border-l border-gray-100 h-full">
+          <div className="hidden xl:block w-72 shrink-0 border-l border-gray-100 h-full animate-slide-in-right">
             <SellerInfoPanel
               seller={activeConversation.seller}
               book={activeConversation.book}

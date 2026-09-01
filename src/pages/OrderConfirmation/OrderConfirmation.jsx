@@ -23,7 +23,7 @@ function OrderConfirmation() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 animate-settle-up">
       {/* 1. Success Hero Box */}
       <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-md relative">
         {/* Decorative background glow */}

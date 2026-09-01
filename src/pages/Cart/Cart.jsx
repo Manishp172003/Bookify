@@ -24,7 +24,7 @@ function Cart() {
   } = useCommerce();
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-8">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-8 animate-settle-up">
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -55,7 +55,7 @@ function Cart() {
 
       {cartItems.length === 0 ? (
         /* Empty Cart State */
-        <div className="rounded-3xl border border-gray-200 bg-white p-12 text-center shadow-sm my-6">
+        <div className="rounded-3xl border border-gray-200 bg-white p-12 text-center shadow-sm my-6 animate-settle-up">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#F0ECFF] text-[#6C4BF4]">
             <ShoppingBag size={38} />
           </div>
@@ -68,13 +68,13 @@ function Cart() {
               to="/explore"
               className="inline-flex items-center gap-2 rounded-2xl bg-[#6C4BF4] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#6C4BF4]/25 transition hover:bg-[#5B3DE0] hover:shadow-xl active:scale-95"
             >
-              <Sparkles size={16} /> Explore Available Books
+              <Sparkles size={16} /> Explore Marketplace
             </Link>
             <Link
               to="/dashboard/wishlist"
-              className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-[#F8F7FF] px-6 py-3.5 text-sm font-bold text-[#17152A] transition hover:border-[#6C4BF4] hover:bg-[#F0ECFF] hover:text-[#6C4BF4]"
+              className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-3.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50 active:scale-95"
             >
-              View Saved Wishlist
+              View Wishlist
             </Link>
           </div>
         </div>
@@ -82,7 +82,7 @@ function Cart() {
         /* Main Cart Grid */
         <div className="grid gap-8 lg:grid-cols-12 items-start">
           {/* Left Column: Cart Items List (7 cols on lg, 8 on xl) */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+          <div className="lg:col-span-7 xl:col-span-8 space-y-4 animate-settle-up">
             {cartItems.map((item) => (
               <CartItem
                 key={item.id}
@@ -103,7 +103,7 @@ function Cart() {
           </div>
 
           {/* Right Column: Order Summary (5 cols on lg, 4 on xl) */}
-          <div className="lg:col-span-5 xl:col-span-4 sticky top-24">
+          <div className="lg:col-span-5 xl:col-span-4 sticky top-24 animate-settle-up [animation-delay:75ms]">
             <CartSummary
               subtotal={subtotal}
               deliveryFee={deliveryFee}

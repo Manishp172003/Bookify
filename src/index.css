@@ -93,3 +93,76 @@ h1, h2, h3, h4, h5, h6 {
 .animate-scale-bounce {
   animation: scaleBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+@keyframes settleUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-settle-up {
+  animation: settleUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes messagePop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-message-pop {
+  animation: messagePop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes escrowGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.2);
+  }
+}
+
+.animate-escrow-glow {
+  animation: escrowGlow 2.5s ease-in-out infinite;
+}

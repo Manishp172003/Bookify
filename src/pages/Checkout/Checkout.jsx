@@ -85,7 +85,7 @@ function Checkout() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-16 text-center">
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center animate-settle-up">
         <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#F0ECFF] text-[#6C4BF4]">
           <ShoppingBag size={36} />
         </div>
@@ -106,7 +106,7 @@ function Checkout() {
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-8">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-8 animate-settle-up">
       {/* Back link & Title */}
       <div className="mb-6">
         <Link
@@ -125,7 +125,7 @@ function Checkout() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-800">
+          <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-800 animate-escrow-glow">
             <ShieldCheck size={16} className="text-emerald-600" />
             <span>Escrow Protected Transaction</span>
           </div>
@@ -135,7 +135,7 @@ function Checkout() {
       {/* Grid Layout: Left sections (Addresses, Shipping, Escrow) vs Right (Summary & Payment) */}
       <div className="grid gap-8 lg:grid-cols-12 items-start">
         {/* Left Column (7 cols on lg, 8 on xl) */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6 animate-settle-up">
           {/* Section 1: Delivery Address */}
           <AddressCard
             addresses={addresses}
@@ -149,7 +149,7 @@ function Checkout() {
         </div>
 
         {/* Right Column (5 cols on lg, 4 on xl) */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-6 sticky top-24">
+        <div className="lg:col-span-5 xl:col-span-4 space-y-6 sticky top-24 animate-settle-up [animation-delay:75ms]">
           {/* Order items recap */}
           <OrderSummary
             items={cartItems}

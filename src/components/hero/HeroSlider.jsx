@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Truck, Shield, Users } from 'lucide-react';
 import './HeroSlider.css';
 
@@ -8,8 +9,8 @@ const slides = [
     tag: 'CAMPUS TO COMMUNITY',
     title: 'Give Your Books a Second Life, or Discover Your Next Great Read',
     desc: "India's ultimate campus-to-community marketplace. Buy, sell, rent, or swap pre-owned semester books securely.",
-    btn1: { label: 'SHOP NOW', icon: true },
-    btn2: { label: 'EXPLORE COLLECTION' },
+    btn1: { label: 'SHOP NOW', icon: true, path: '/explore' },
+    btn2: { label: 'EXPLORE COLLECTION', path: '/categories' },
     stats: [
       { icon: 'truck', label: 'FREE SHIPPING', desc: 'On orders over \u20B9499' },
       { icon: 'shield', label: 'SECURE ESCROW', desc: 'Your money is safe with us' },
@@ -21,8 +22,8 @@ const slides = [
     tag: 'SEMESTER RENTALS',
     title: 'Discounts Up To 70% OFF on Semester Rentals',
     desc: 'Save big on textbooks and academic books. Rent smarter, study better.',
-    btn1: { label: 'BROWSE RENTALS', icon: true },
-    btn2: { label: 'LIST A BOOK' },
+    btn1: { label: 'BROWSE RENTALS', icon: true, path: '/explore?mode=rent' },
+    btn2: { label: 'LIST A BOOK', path: '/sell' },
     stats: [
       { icon: 'truck', label: 'Best Prices', desc: 'Save up to 70%' },
       { icon: 'shield', label: 'Quality Assured', desc: 'Checked by students' },
@@ -34,8 +35,8 @@ const slides = [
     tag: 'FOR AUTHORS',
     title: 'Are You an Independent Author?',
     desc: 'Bypass distributor margins, keep more from every sale, and build lasting connections with readers.',
-    btn1: { label: 'EXPLORE AUTHOR PACKAGES' },
-    btn2: { label: 'SUBMIT MANUSCRIPT' },
+    btn1: { label: 'EXPLORE AUTHOR PACKAGES', path: '/author' },
+    btn2: { label: 'SUBMIT MANUSCRIPT', path: '/author/submit-book' },
     stats: [
       { icon: 'truck', label: 'Bypass Margins', desc: 'Keep more from every sale' },
       { icon: 'shield', label: 'Submit & Publish', desc: 'Easy manuscript submission' },
@@ -47,8 +48,8 @@ const slides = [
     tag: 'SAFE TRADING',
     title: 'Direct Campus Swapping & Safe Escrow Protection',
     desc: 'Chat instantly on socket. Keep your phone number private. 48-hour protection you can trust.',
-    btn1: { label: 'START SWAPPING', icon: true },
-    btn2: { label: 'LEARN ABOUT ESCROW' },
+    btn1: { label: 'START SWAPPING', icon: true, path: '/explore?mode=exchange' },
+    btn2: { label: 'LEARN ABOUT ESCROW', path: '#trust-section' },
     stats: [
       { icon: 'truck', label: 'Instant Chat', desc: 'Socket-based messaging' },
       { icon: 'shield', label: 'Hidden Numbers', desc: 'Privacy guaranteed' },
@@ -64,12 +65,25 @@ function StatIcon({ type }) {
 }
 
 export default function HeroSlider() {
+  const navigate = useNavigate();
   var _s = useState(0);
   var index = _s[0];
   var setIndex = _s[1];
   var _h = useState(false);
   var hovering = _h[0];
   var setHovering = _h[1];
+
+  const handleButtonClick = (path) => {
+    if (!path) return;
+    if (path.startsWith('#')) {
+      const el = document.querySelector(path);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate(path);
+    }
+  };
 
   var next = useCallback(function() {
     setIndex(function(prev) { return (prev + 1) % slides.length; });
@@ -108,7 +122,10 @@ export default function HeroSlider() {
                   <h1 className="hero-slide-title">{s.title}</h1>
                   <p className="hero-slide-desc">{s.desc}</p>
                   <div className="hero-slide-btns">
-                    <button className="hero-btn-primary">
+                    <button 
+                      onClick={() => handleButtonClick(s.btn1.path)}
+                      className="hero-btn-primary cursor-pointer"
+                    >
                       {s.btn1.label}
                       {s.btn1.icon && (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -116,7 +133,12 @@ export default function HeroSlider() {
                         </svg>
                       )}
                     </button>
-                    <button className="hero-btn-secondary">{s.btn2.label}</button>
+                    <button 
+                      onClick={() => handleButtonClick(s.btn2.path)}
+                      className="hero-btn-secondary cursor-pointer"
+                    >
+                      {s.btn2.label}
+                    </button>
                   </div>
 
                   {/* Bullet Stats inside the slide directly */}

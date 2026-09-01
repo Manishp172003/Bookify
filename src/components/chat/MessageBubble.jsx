@@ -4,7 +4,7 @@ function MessageBubble({ message, sellerAvatar, sellerName }) {
   const isBuyer = message.sender === "buyer";
 
   return (
-    <div className={`flex w-full items-end gap-2.5 my-2.5 ${isBuyer ? "justify-end" : "justify-start"}`}>
+    <div className={`flex w-full items-end gap-2.5 my-2.5 animate-message-pop ${isBuyer ? "justify-end" : "justify-start"}`}>
       {/* Seller Avatar for incoming messages */}
       {!isBuyer && (
         <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-200 bg-[#E9E4FF] shadow-xs">
