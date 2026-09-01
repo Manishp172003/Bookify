@@ -13,6 +13,7 @@ import MainLayout from "../components/layout/MainLayout";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import OTPVerification from "../pages/Auth/OTPVerification";
+import AdminLogin from "../pages/Auth/AdminLogin";
 
 // Student Dashboard / Profile
 import Profile from "../pages/Profile/Profile";
@@ -43,6 +44,8 @@ import Campaigns from "../pages/Author/Campaigns";
 import Analytics from "../pages/Author/Analytics";
 import Earnings from "../pages/Author/Earnings";
 import AuthorProfile from "../pages/Author/AuthorProfile";
+import AuthorChat from "../pages/Author/AuthorChat";
+import AuthorCoupons from "../pages/Author/Coupons";
 
 // Admin
 import AdminLayout from "../components/layout/AdminLayout";
@@ -53,11 +56,12 @@ import Disputes from "../pages/Admin/Disputes";
 import Users from "../pages/Admin/Users";
 import AuthorsVerification from "../pages/Admin/AuthorsVerification";
 import PlatformSettings from "../pages/Admin/PlatformSettings";
+import Chat from "../pages/Admin/Chat";
+import AdminCoupons from "../pages/Admin/Coupons";
 
 function AppRoutes() {
   return (
     <Routes>
-
       {/* ================= MAIN WEBSITE ================= */}
 
       <Route
@@ -110,6 +114,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-otp" element={<OTPVerification />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
 
       {/* ================= STUDENT ================= */}
 
@@ -271,6 +276,15 @@ function AppRoutes() {
       />
 
       <Route
+        path="/author/coupons"
+        element={
+          <AuthorLayout>
+            <AuthorCoupons />
+          </AuthorLayout>
+        }
+      />
+
+      <Route
         path="/author/analytics"
         element={
           <AuthorLayout>
@@ -293,6 +307,15 @@ function AppRoutes() {
         element={
           <AuthorLayout>
             <AuthorProfile />
+          </AuthorLayout>
+        }
+      />
+
+      <Route
+        path="/author/chat"
+        element={
+          <AuthorLayout>
+            <AuthorChat />
           </AuthorLayout>
         }
       />
@@ -354,10 +377,28 @@ function AppRoutes() {
       />
 
       <Route
+        path="/admin/coupons"
+        element={
+          <AdminLayout>
+            <AdminCoupons />
+          </AdminLayout>
+        }
+      />
+
+      <Route
         path="/admin/settings"
         element={
           <AdminLayout>
             <PlatformSettings />
+          </AdminLayout>
+        }
+      />
+
+      <Route
+        path="/admin/chat"
+        element={
+          <AdminLayout>
+            <Chat />
           </AdminLayout>
         }
       />

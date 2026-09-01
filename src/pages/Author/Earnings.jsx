@@ -90,7 +90,7 @@ function Earnings() {
 
           <div className="divide-y divide-[#E7E4F2]/50">
             {transactions.map((tx) => (
-              <div key={tx.id} className="flex justify-between items-center py-3.5 first:pt-0 last:pb-0">
+              <div key={tx.id} className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 py-3.5 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-xl ${tx.positive ? "bg-[#E8F8EE] text-[#22C55E]" : "bg-red-50 text-red-500"}`}>
                     {tx.positive ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
@@ -100,7 +100,7 @@ function Earnings() {
                     <p className="text-xs text-[#6B6880] mt-0.5">{tx.desc}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right pl-11 sm:pl-0">
                   <span className={`text-sm font-bold ${tx.positive ? "text-[#22C55E]" : "text-red-500"}`}>
                     {tx.positive ? "+" : "-"}{tx.amount}
                   </span>

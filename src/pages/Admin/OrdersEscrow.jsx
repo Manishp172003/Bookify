@@ -44,28 +44,28 @@ function OrdersEscrow() {
         </div>
         <div className="bg-white p-6 rounded-2xl border border-[#E7E7F2] shadow-sm">
           <span className="text-xs text-[#6B6880] font-semibold uppercase tracking-wider block">Escrow Funds</span>
-          <span className="text-3xl font-extrabold text-[#FF8A3D] mt-2 block font-poppins">₹2.4L</span>
+          <span className="text-3xl font-extrabold text-[#6C4BF4] mt-2 block font-poppins">₹2.4L</span>
         </div>
       </div>
 
       {/* Filter and Table */}
       <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-lg font-bold text-[#17152A] font-poppins">Order Ledger</h2>
-          <div className="relative w-80">
+          <div className="relative w-full sm:w-80">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
               placeholder="Search by Order ID, Buyer..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2 pl-10 pr-4 text-xs outline-none focus:border-[#FF8A3D]"
+              className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2 pl-10 pr-4 text-xs outline-none focus:border-[#6C4BF4]"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto -mx-6">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-[#F8F7FF] border-b border-[#E7E4F2] text-xs font-bold text-[#6B6880] uppercase tracking-wider">
                 <th className="p-5 pl-8">Order ID</th>
@@ -95,7 +95,7 @@ function OrdersEscrow() {
                         <Unlock size={12} /> Released
                       </span>
                     ) : (
-                      <span className="text-xs font-semibold text-[#FF8A3D] flex items-center gap-1">
+                      <span className="text-xs font-semibold text-[#6C4BF4] flex items-center gap-1">
                         <Lock size={12} /> On Hold
                       </span>
                     )}

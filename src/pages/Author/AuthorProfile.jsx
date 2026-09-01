@@ -145,7 +145,7 @@ function AuthorProfile() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-4 justify-between border-t border-[#E7E4F2]/50 pt-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-between border-t border-[#E7E4F2]/50 pt-6">
             {saved ? (
               <span className="flex items-center gap-1.5 text-[#22C55E] text-sm font-semibold">
                 <Check size={16} />
@@ -157,7 +157,7 @@ function AuthorProfile() {
 
             <button 
               type="submit"
-              className="px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20"
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20"
             >
               Save Changes
             </button>

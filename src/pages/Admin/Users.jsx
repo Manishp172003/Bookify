@@ -34,9 +34,9 @@ function Users() {
 
       {/* Search & List */}
       <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-lg font-bold text-[#17152A] font-poppins">Registered Accounts</h2>
-          <div className="relative w-80">
+          <div className="relative w-full sm:w-80">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
@@ -49,7 +49,7 @@ function Users() {
         </div>
 
         <div className="overflow-x-auto -mx-6">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-[#F8F7FF] border-b border-[#E7E4F2] text-xs font-bold text-[#6B6880] uppercase tracking-wider">
                 <th className="p-5 pl-8">Name</th>

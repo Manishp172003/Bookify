@@ -37,7 +37,7 @@ function PlatformSettings() {
                 type="number" 
                 value={settings.commission}
                 onChange={(e) => setSettings({ ...settings, commission: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#FF8A3D]"
+                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
                 required
               />
             </div>
@@ -47,7 +47,7 @@ function PlatformSettings() {
                 type="number" 
                 value={settings.rentalCommission}
                 onChange={(e) => setSettings({ ...settings, rentalCommission: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#FF8A3D]"
+                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
                 required
               />
             </div>
@@ -57,7 +57,7 @@ function PlatformSettings() {
                 type="number" 
                 value={settings.exchangeFee}
                 onChange={(e) => setSettings({ ...settings, exchangeFee: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#FF8A3D]"
+                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
                 required
               />
             </div>
@@ -67,7 +67,7 @@ function PlatformSettings() {
                 type="number" 
                 value={settings.escrowDuration}
                 onChange={(e) => setSettings({ ...settings, escrowDuration: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#FF8A3D]"
+                className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
                 required
               />
             </div>
@@ -77,7 +77,7 @@ function PlatformSettings() {
           <div className="border-t border-[#E7E4F2]/50 pt-6 space-y-4">
             <h3 className="font-bold text-[#17152A] text-base font-poppins">Enable Services</h3>
 
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between gap-4 py-2">
               <div>
                 <label className="text-sm font-bold text-[#17152A]">Allow Rentals</label>
                 <p className="text-xs text-[#6B6880] mt-0.5">Let students temporarily rent books from each other.</p>
@@ -86,11 +86,11 @@ function PlatformSettings() {
                 type="checkbox" 
                 checked={settings.allowRentals}
                 onChange={(e) => setSettings({ ...settings, allowRentals: e.target.checked })}
-                className="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-[#22C55E] cursor-pointer relative after:content-[''] after:absolute after:h-4 after:w-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 checked:after:left-5.5 after:transition-all"
+                className="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-[#22C55E] cursor-pointer relative shrink-0 after:content-[''] after:absolute after:h-4 after:w-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 checked:after:left-5.5 after:transition-all"
               />
             </div>
 
-            <div className="flex items-center justify-between py-2 border-t border-[#E7E4F2]/50">
+            <div className="flex items-center justify-between gap-4 py-2 border-t border-[#E7E4F2]/50">
               <div>
                 <label className="text-sm font-bold text-[#17152A]">Allow Exchanges</label>
                 <p className="text-xs text-[#6B6880] mt-0.5">Allow peer-to-peer verified swaps of physical books.</p>
@@ -99,11 +99,11 @@ function PlatformSettings() {
                 type="checkbox" 
                 checked={settings.allowExchanges}
                 onChange={(e) => setSettings({ ...settings, allowExchanges: e.target.checked })}
-                className="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-[#22C55E] cursor-pointer relative after:content-[''] after:absolute after:h-4 after:w-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 checked:after:left-5.5 after:transition-all"
+                className="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-[#22C55E] cursor-pointer relative shrink-0 after:content-[''] after:absolute after:h-4 after:w-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 checked:after:left-5.5 after:transition-all"
               />
             </div>
 
-            <div className="flex items-center justify-between py-2 border-t border-[#E7E4F2]/50">
+            <div className="flex items-center justify-between gap-4 py-2 border-t border-[#E7E4F2]/50">
               <div>
                 <label className="text-sm font-bold text-[#17152A]">Allow Donations</label>
                 <p className="text-xs text-[#6B6880] mt-0.5">Let users offer books for free to school libraries or students.</p>
@@ -112,13 +112,13 @@ function PlatformSettings() {
                 type="checkbox" 
                 checked={settings.allowDonations}
                 onChange={(e) => setSettings({ ...settings, allowDonations: e.target.checked })}
-                className="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-[#22C55E] cursor-pointer relative after:content-[''] after:absolute after:h-4 after:w-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 checked:after:left-5.5 after:transition-all"
+                className="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-[#22C55E] cursor-pointer relative shrink-0 after:content-[''] after:absolute after:h-4 after:w-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 checked:after:left-5.5 after:transition-all"
               />
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-4 justify-between border-t border-[#E7E4F2]/50 pt-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-between border-t border-[#E7E4F2]/50 pt-6">
             {saved ? (
               <span className="flex items-center gap-1.5 text-[#22C55E] text-sm font-semibold">
                 <Check size={16} />
@@ -130,7 +130,7 @@ function PlatformSettings() {
 
             <button 
               type="submit"
-              className="px-6 py-2.5 bg-[#FF8A3D] text-white rounded-xl text-sm font-semibold hover:bg-[#e0752b] transition shadow-md shadow-[#FF8A3D]/20"
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5B3DE0] transition shadow-md shadow-[#6C4BF4]/20"
             >
               Save Settings
             </button>

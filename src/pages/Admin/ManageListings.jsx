@@ -41,7 +41,7 @@ function ManageListings() {
               onClick={() => setFilter(tab)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
                 filter === tab 
-                  ? "bg-[#FF8A3D] text-white" 
+                  ? "bg-[#6C4BF4] text-white" 
                   : "text-[#6B6880] hover:bg-[#F8F7FF]"
               }`}
             >
@@ -57,7 +57,7 @@ function ManageListings() {
             placeholder="Search listings, sellers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 pl-10 pr-4 text-xs outline-none focus:border-[#FF8A3D]"
+            className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 pl-10 pr-4 text-xs outline-none focus:border-[#6C4BF4]"
           />
         </div>
       </div>
@@ -65,7 +65,7 @@ function ManageListings() {
       {/* Listings Table */}
       <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-[#F8F7FF] border-b border-[#E7E4F2] text-xs font-bold text-[#6B6880] uppercase tracking-wider">
                 <th className="p-5">Book Info</th>
@@ -92,7 +92,7 @@ function ManageListings() {
                   <td className="p-5 font-bold text-[#17152A]">{item.price}</td>
                   <td className="p-5">
                     {item.status === "Pending" && (
-                      <span className="text-xs font-semibold text-[#FF8A3D] bg-[#FFF0E6] px-2.5 py-1 rounded-full">Pending</span>
+                      <span className="text-xs font-semibold text-[#6C4BF4] bg-[#F0ECFF] px-2.5 py-1 rounded-full">Pending</span>
                     )}
                     {item.status === "Approved" && (
                       <span className="text-xs font-semibold text-[#22C55E] bg-[#E8F8EE] px-2.5 py-1 rounded-full">Approved</span>

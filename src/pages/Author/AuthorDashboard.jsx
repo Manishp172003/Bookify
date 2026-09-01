@@ -33,7 +33,7 @@ function AuthorDashboard() {
           <h1 className="text-3xl font-extrabold text-[#17152A] font-poppins">Welcome back, Author 👋</h1>
           <p className="text-[#6B6880] mt-1 text-sm">Here's what's happening with your books and earnings.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Link
             to="/author/submit-book"
             className="flex items-center gap-2 px-5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20"
@@ -190,7 +190,7 @@ function AuthorDashboard() {
           <h2 className="text-lg font-bold text-[#17152A] font-poppins">Recent Activity</h2>
           <div className="divide-y divide-[#E7E4F2]/50">
             {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
+              <div key={activity.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-4 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-3">
                   <div className={`w-3.5 h-3.5 rounded-full ${activity.iconBg}`} />
                   <div>

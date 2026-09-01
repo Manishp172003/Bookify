@@ -46,14 +46,14 @@ function Disputes() {
 
       {/* Ledger */}
       <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-lg font-bold text-[#17152A] font-poppins">Claims List</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto">
             {["All", "Open", "Under Review", "Resolved"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setFilter(tab)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                   filter === tab 
                     ? "bg-[#FF4F81] text-white" 
                     : "text-[#6B6880] hover:bg-[#F8F7FF]"
@@ -66,7 +66,7 @@ function Disputes() {
         </div>
 
         <div className="overflow-x-auto -mx-6">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-[#F8F7FF] border-b border-[#E7E4F2] text-xs font-bold text-[#6B6880] uppercase tracking-wider">
                 <th className="p-5 pl-8">Order ID</th>
@@ -87,7 +87,7 @@ function Disputes() {
                       <span className="text-xs font-semibold text-[#FF4F81] bg-[#FFE8EF] px-2.5 py-1 rounded-full">Open</span>
                     )}
                     {d.status === "Under Review" && (
-                      <span className="text-xs font-semibold text-[#FF8A3D] bg-[#FFF0E6] px-2.5 py-1 rounded-full">Under Review</span>
+                      <span className="text-xs font-semibold text-[#6C4BF4] bg-[#F0ECFF] px-2.5 py-1 rounded-full">Under Review</span>
                     )}
                     {d.status === "Resolved" && (
                       <span className="text-xs font-semibold text-[#22C55E] bg-[#E8F8EE] px-2.5 py-1 rounded-full">Resolved</span>

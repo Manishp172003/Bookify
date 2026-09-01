@@ -415,7 +415,7 @@ function SubmitBook() {
                 <h3 className="text-lg font-bold text-[#17152A] font-poppins">{formData.title || "Untitled Book"}</h3>
                 {formData.subtitle && <p className="text-sm text-[#6B6880] -mt-3">{formData.subtitle}</p>}
                 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-xs text-[#6B6880] block">Category</span>
                     <span className="font-semibold text-[#17152A]">

@@ -71,8 +71,8 @@ function AdminDashboard() {
             <svg className="w-full h-48 mt-4 overflow-visible" viewBox="0 0 500 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="adminGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#FF8A3D" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#FF8A3D" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#6C4BF4" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#6C4BF4" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path 
@@ -82,11 +82,11 @@ function AdminDashboard() {
               <path 
                 d="M 0 95 Q 60 70 120 75 T 240 40 T 360 45 T 500 15" 
                 fill="none" 
-                stroke="#FF8A3D" 
+                stroke="#6C4BF4" 
                 strokeWidth="3.5" 
                 strokeLinecap="round"
               />
-              <circle cx="240" cy="40" r="5" fill="#FF8A3D" stroke="#ffffff" strokeWidth="2" />
+              <circle cx="240" cy="40" r="5" fill="#6C4BF4" stroke="#ffffff" strokeWidth="2" />
               <circle cx="500" cy="15" r="5" fill="#22C55E" stroke="#ffffff" strokeWidth="2" />
             </svg>
 
@@ -131,14 +131,14 @@ function AdminDashboard() {
         <h2 className="text-lg font-bold text-[#17152A] font-poppins">Recent System Log</h2>
         <div className="divide-y divide-[#E7E4F2]/50">
           {logs.map((log) => (
-            <div key={log.id} className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
+            <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-4 first:pt-0 last:pb-0">
               <div>
                 <p className="text-sm font-semibold text-[#17152A]">{log.text}</p>
                 <span className="inline-block mt-1 text-[10px] font-bold text-[#6B6880] bg-gray-100 px-2 py-0.5 rounded">
                   {log.role}
                 </span>
               </div>
-              <span className="text-xs text-[#6B6880]">{log.time}</span>
+              <span className="text-xs text-[#6B6880] sm:text-right">{log.time}</span>
             </div>
           ))}
         </div>

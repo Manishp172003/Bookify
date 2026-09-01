@@ -100,7 +100,7 @@ function Analytics() {
                 <div className="flex items-center gap-3">
                   <span className="w-6 text-sm font-bold text-[#6B6880]">{b.rank}</span>
                   <div>
-                    <h4 className="text-sm font-bold text-[#17152A] font-poppins">{b.title}</h4>
+                    <h4 className="text-sm font-bold text-[#17152A] font-poppins truncate max-w-[120px] sm:max-w-none">{b.title}</h4>
                     <span className="text-[10px] font-semibold text-[#22C55E] bg-[#E8F8EE] px-1.5 py-0.5 rounded-full">{b.change}</span>
                   </div>
                 </div>
