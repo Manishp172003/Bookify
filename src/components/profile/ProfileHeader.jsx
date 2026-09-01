@@ -1,6 +1,10 @@
-import { Camera, CheckCircle, Share2, MapPin, Mail, Phone, Calendar } from "lucide-react";
+import { Camera, CheckCircle, Share2, MapPin, Mail, Phone, Calendar, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 function ProfileHeader() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     alert("Profile link copied to clipboard!");
@@ -70,6 +74,15 @@ function ProfileHeader() {
             >
               <Camera size={14} />
               Change Cover
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { logout(); navigate("/login"); }}
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-100 transition cursor-pointer shadow-sm"
+            >
+              <LogOut size={14} />
+              Logout
             </button>
           </div>
 

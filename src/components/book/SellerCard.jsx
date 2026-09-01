@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { MapPin, Star, Shield, Package, UserCheck } from "lucide-react";
 
 export default function SellerCard({ seller, compact = false }) {
@@ -78,14 +79,13 @@ export default function SellerCard({ seller, compact = false }) {
         </div>
       </div>
 
-      <div className="flex gap-2 mt-4">
-        <button className="flex-1 flex items-center justify-center gap-2 bg-bookify-purple text-white py-2.5 rounded-lg font-medium text-sm hover:bg-bookify-purple-dark transition-colors">
-          <Package size={14} />
-          Chat with Seller
-        </button>
-        <button className="px-4 py-2.5 border border-bookify-border rounded-lg text-sm font-medium text-bookify-text-secondary hover:border-bookify-purple hover:text-bookify-purple transition-colors">
-          View All
-        </button>
+      <div className="mt-4">
+        <Link 
+          to={`/explore?seller=${encodeURIComponent(seller.name)}`}
+          className="w-full py-2.5 border-2 border-bookify-purple text-bookify-purple hover:bg-bookify-light-purple rounded-xl font-semibold text-center text-xs transition-colors cursor-pointer flex items-center justify-center gap-1 bg-white"
+        >
+          View Seller's Other Listings →
+        </Link>
       </div>
     </div>
   );

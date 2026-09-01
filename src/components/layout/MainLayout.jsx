@@ -1,12 +1,12 @@
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
-export default function MainLayout({ children }) {
+export default function MainLayout({ children, hideFooter }) {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-grow">{children}</main>
-      <Footer />
+      {!hideFooter && <Footer />}
     </div>
   );
 }

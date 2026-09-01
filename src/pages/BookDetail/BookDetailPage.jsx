@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useCommerce } from "../../context/CommerceContext";
 import {
   ArrowLeft,
   Heart,
@@ -32,13 +33,13 @@ const modeConfig = {
   rent: {
     label: "Rent This Book",
     icon: <Clock size={18} />,
-    color: "bg-bookify-blue hover:bg-sky-500",
+    color: "bg-bookify-purple hover:bg-bookify-purple-dark",
     description: "Rent with refundable security deposit",
   },
   exchange: {
     label: "Propose Exchange",
     icon: <RefreshCcw size={18} />,
-    color: "bg-bookify-orange hover:bg-bookify-orange-dark",
+    color: "bg-bookify-purple hover:bg-bookify-purple-dark",
     description: "Suggest a book to trade",
   },
   donate: {
@@ -51,9 +52,64 @@ const modeConfig = {
 
 export default function BookDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart, startOrGetConversation, toggleWishlist, isBookWishlisted } = useCommerce();
   const book = books.find((b) => b.id === Number(id));
   const [activePhoto, setActivePhoto] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const isFavorited = book ? isBookWishlisted(book.id) : false;
+  const [triggerBounce, setTriggerBounce] = useState(false);
+  const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
+  const [selectedSwapBookId, setSelectedSwapBookId] = useState("my_1");
+  const [proposalNote, setProposalNote] = useState("");
+
+  const handleActionClick = () => {
+    if (book) {
+      if (book.mode === "exchange") {
+        setIsExchangeModalOpen(true);
+      } else if (book.mode === "donate") {
+        const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+        const customText = `🎁 Donation Request:\nHi ${book.seller?.name?.split(" ")[0] || "there"}! I would love to request your free copy of "${book.title}" for my studies. Let me know when and where we can meet up on campus for the handoff!`;
+        const chatId = startOrGetConversation(book.seller || defaultSeller, book, customText);
+        navigate(`/chat/${chatId}`);
+      } else {
+        addToCart(book, 1);
+        navigate("/checkout");
+      }
+    }
+  };
+
+  const handleChatClick = () => {
+    if (book) {
+      const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+      const chatId = startOrGetConversation(book.seller || defaultSeller, book);
+      navigate(`/chat/${chatId}`);
+    }
+  };
+
+  const handleFavoriteToggle = () => {
+    if (book) {
+      toggleWishlist(book);
+      if (!isFavorited) {
+        setTriggerBounce(true);
+        setTimeout(() => setTriggerBounce(false), 300);
+      }
+    }
+  };
+
+  const handleSubmitProposal = () => {
+    if (!book) return;
+    const myBooks = [
+      { id: "my_1", title: "Concepts of Physics Vol 1", author: "H.C. Verma" },
+      { id: "my_2", title: "Organic Chemistry, 8th Edition", author: "L.G. Wade" },
+      { id: "my_3", title: "Introduction to Java Programming", author: "Y. Daniel Liang" }
+    ];
+    const chosen = myBooks.find(b => b.id === selectedSwapBookId) || myBooks[0];
+    const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+    const customText = `🔄 Proposed swap for "${book.title}" in exchange for my "${chosen.title}" by ${chosen.author}.\n\nNote: ${proposalNote || "Let's meet up to exchange textbooks!"}`;
+    const chatId = startOrGetConversation(book.seller || defaultSeller, book, customText);
+    setIsExchangeModalOpen(false);
+    navigate(`/chat/${chatId}`);
+  };
 
   if (!book) {
     return (
@@ -85,11 +141,11 @@ export default function BookDetailPage() {
 
   const relatedBooks = books
     .filter((b) => b.id !== book.id && b.category === book.category)
-    .slice(0, 4);
+    .slice(0, 12);
 
   return (
     <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6">
-      <div className="flex items-center gap-2 text-sm text-bookify-text-secondary mb-6">
+      <div className="flex items-center gap-2 text-sm text-bookify-text-secondary mb-6 animate-fade-in">
         <Link to="/" className="hover:text-bookify-purple transition-colors">
           Home
         </Link>
@@ -107,13 +163,17 @@ export default function BookDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+        <div 
+          className="lg:col-span-2 space-y-4 animate-fade-in-up" 
+          style={{ animationDelay: "75ms", animationFillMode: "both" }}
+        >
           <div className="bg-white rounded-xl border border-bookify-border overflow-hidden">
             <div className="relative aspect-[4/3] bg-bookify-bg">
               <img
+                key={activePhoto}
                 src={book.photos[activePhoto]}
                 alt={book.title}
-                className="w-full h-full object-contain p-4"
+                className="w-full h-full object-contain p-4 animate-fade-in"
               />
 
               {book.photos.length > 1 && (
@@ -152,9 +212,9 @@ export default function BookDetailPage() {
                     book.mode === "sell"
                       ? "#6C4BF4"
                       : book.mode === "rent"
-                      ? "#38BDF8"
+                      ? "#6C4BF4"
                       : book.mode === "exchange"
-                      ? "#FF8A3D"
+                      ? "#6C4BF4"
                       : "#22C55E",
                 }}
               >
@@ -174,10 +234,10 @@ export default function BookDetailPage() {
                   <button
                     key={i}
                     onClick={() => setActivePhoto(i)}
-                    className={`w-16 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                    className={`w-16 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
                       activePhoto === i
-                        ? "border-bookify-purple"
-                        : "border-transparent hover:border-bookify-border"
+                        ? "border-[#6C4BF4] shadow-md shadow-[#6C4BF4]/15"
+                        : "border-transparent hover:border-[#6C4BF4]/40"
                     }`}
                   >
                     <img
@@ -238,18 +298,21 @@ export default function BookDetailPage() {
           )}
         </div>
 
-        <div className="space-y-4">
+        <div 
+          className="space-y-4 animate-fade-in-left"
+          style={{ animationDelay: "150ms", animationFillMode: "both" }}
+        >
           <div className="bg-white rounded-xl border border-bookify-border p-5">
             <div className="flex items-start justify-between">
               <ConditionBadge condition={book.condition} size="md" />
               <div className="flex gap-1">
                 <button
-                  onClick={() => setIsFavorited(!isFavorited)}
-                  className={`p-2 rounded-lg transition-colors ${
+                  onClick={handleFavoriteToggle}
+                  className={`p-2 rounded-lg transition-all duration-300 cursor-pointer ${
                     isFavorited
                       ? "text-bookify-pink bg-bookify-light-pink"
                       : "text-bookify-text-secondary hover:bg-bookify-bg"
-                  }`}
+                  } ${triggerBounce ? "animate-scale-bounce" : ""}`}
                 >
                   <Heart
                     size={18}
@@ -299,13 +362,17 @@ export default function BookDetailPage() {
             )}
 
             <button
-              className={`w-full flex items-center justify-center gap-2 mt-5 py-3 text-white rounded-xl font-semibold transition-colors ${mode.color}`}
+              onClick={handleActionClick}
+              className={`w-full flex items-center justify-center gap-2 mt-5 py-3 text-white rounded-xl font-semibold transition-colors cursor-pointer ${mode.color}`}
             >
               {mode.icon}
               {mode.label}
             </button>
 
-            <button className="w-full flex items-center justify-center gap-2 mt-2 py-3 border-2 border-bookify-purple text-bookify-purple rounded-xl font-semibold hover:bg-bookify-light-purple transition-colors">
+            <button 
+              onClick={handleChatClick}
+              className="w-full flex items-center justify-center gap-2 mt-2 py-3 border-2 border-bookify-purple text-bookify-purple rounded-xl font-semibold hover:bg-bookify-light-purple transition-colors cursor-pointer"
+            >
               <MessageCircle size={18} />
               Chat with Seller
             </button>
@@ -342,16 +409,132 @@ export default function BookDetailPage() {
       </div>
 
       {relatedBooks.length > 0 && (
-        <section className="mt-12">
-          <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-bookify-text mb-4">
-            Similar Books in {book.category}
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-bookify-text">
+              Similar Books in {book.category}
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const slider = document.getElementById("related-slider");
+                  if (slider) slider.scrollBy({ left: -300, behavior: "smooth" });
+                }}
+                className="w-8 h-8 rounded-full border border-bookify-border flex items-center justify-center text-bookify-text-secondary hover:bg-bookify-bg transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  const slider = document.getElementById("related-slider");
+                  if (slider) slider.scrollBy({ left: 300, behavior: "smooth" });
+                }}
+                className="w-8 h-8 rounded-full border border-bookify-border flex items-center justify-center text-bookify-text-secondary hover:bg-bookify-bg transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+          <div
+            id="related-slider"
+            className="flex gap-3 overflow-x-auto scroll-smooth pb-2 scrollbar-hide"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {relatedBooks.map((b) => (
-              <BookCard key={b.id} book={b} />
+              <div key={b.id} className="flex-shrink-0 w-[180px]">
+                <BookCard book={b} />
+              </div>
             ))}
           </div>
         </section>
+      )}
+      {/* Exchange Proposal Modal */}
+      {isExchangeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-scale-up border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg text-bookify-text flex items-center gap-2">
+                🔄 Propose Book Exchange
+              </h3>
+              <button 
+                onClick={() => setIsExchangeModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p className="text-xs text-bookify-text-secondary mb-4 leading-relaxed">
+              You are proposing a swap for <strong className="text-bookify-text">"{book.title}"</strong> with <strong className="text-bookify-text">{book.seller?.name || "Vikram Singh"}</strong>. Choose a book from your shelf to offer in return:
+            </p>
+
+            {/* Book List Selection */}
+            <div className="space-y-3.5 max-h-60 overflow-y-auto mb-4 p-1">
+              {[
+                { id: "my_1", title: "Concepts of Physics Vol 1", author: "H.C. Verma", image: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg", condition: "Very Good" },
+                { id: "my_2", title: "Organic Chemistry, 8th Edition", author: "L.G. Wade", image: "https://covers.openlibrary.org/b/isbn/9780321768414-L.jpg", condition: "Good" },
+                { id: "my_3", title: "Introduction to Java Programming", author: "Y. Daniel Liang", image: "https://covers.openlibrary.org/b/id/8314352-L.jpg", condition: "Like New" }
+              ].map((myBook) => (
+                <label 
+                  key={myBook.id}
+                  className={`flex gap-3 p-3 rounded-2xl border transition cursor-pointer select-none items-center ${
+                    selectedSwapBookId === myBook.id 
+                      ? "border-[#6C4BF4] bg-[#6C4BF4]/5" 
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <input 
+                    type="radio" 
+                    name="swapBook" 
+                    value={myBook.id}
+                    checked={selectedSwapBookId === myBook.id}
+                    onChange={() => setSelectedSwapBookId(myBook.id)}
+                    className="accent-[#6C4BF4] h-4 w-4"
+                  />
+                  <img src={myBook.image} alt={myBook.title} className="h-12 w-9 object-cover rounded-md border border-gray-100" />
+                  <div className="min-w-0 flex-grow">
+                    <h4 className="text-xs font-bold text-bookify-text truncate">{myBook.title}</h4>
+                    <p className="text-[10px] text-bookify-text-secondary truncate mt-0.5">{myBook.author}</p>
+                    <span className="inline-block text-[9px] font-semibold text-bookify-purple bg-bookify-light-purple px-1.5 py-0.5 rounded-md mt-1">
+                      {myBook.condition}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Note Textarea */}
+            <div className="mb-5">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-bookify-text-secondary mb-1.5">
+                Friendly note for {book.seller?.name?.split(" ")[0] || "Vikram"} (Optional)
+              </label>
+              <textarea
+                placeholder="Hi, would you be down to trade Gulliver's Travels for my Physics book?"
+                value={proposalNote}
+                onChange={(e) => setProposalNote(e.target.value)}
+                className="w-full text-xs p-3 rounded-xl border border-gray-200 focus:border-bookify-purple outline-none h-20 resize-none transition bg-gray-50/50 focus:bg-white"
+              />
+            </div>
+
+            {/* Submit Actions */}
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsExchangeModalOpen(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 text-xs transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitProposal}
+                className="flex-1 py-2.5 bg-[#6C4BF4] text-white rounded-xl font-bold hover:bg-[#5B3DE0] text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                Send Proposal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

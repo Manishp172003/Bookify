@@ -44,12 +44,16 @@ export default function CategoriesPage() {
               <div className="p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <span
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                      style={{ backgroundColor: cat.bgColor }}
-                    >
-                      {cat.icon}
-                    </span>
+                    {cat.image ? (
+                      <img src={cat.image} alt={cat.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                    ) : (
+                      <span
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                        style={{ backgroundColor: cat.bgColor }}
+                      >
+                        {cat.icon}
+                      </span>
+                    )}
                     <div>
                       <h3 className="font-[family-name:var(--font-heading)] font-semibold text-bookify-text group-hover:text-bookify-purple transition-colors">
                         {cat.name}
