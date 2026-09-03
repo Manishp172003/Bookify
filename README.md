@@ -1,16 +1,61 @@
-# React + Vite
+﻿# 📚 Bookify — Campus-to-Community Book Marketplace
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Welcome to the **Bookify** monorepo repository! Bookify is India's ultimate campus-to-community marketplace enabling students and readers to buy, sell, rent, swap pre-owned semester textbooks, and support independent authors.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🏗️ Repository Architecture
 
-## React Compiler
+This repository contains both the client and server applications in dedicated workspaces:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+Bookify/
+├── 📁 frontend-app/    # React 19 + Vite + Tailwind CSS v4 UI
+└── 📁 backend-app/     # Node.js + Express + PostgreSQL/Prisma + Socket.io API
+```
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 🚀 Quick Start Guide
+
+### 1. Frontend Development (`frontend-app`)
+To run the client application locally:
+
+```bash
+# Navigate to frontend directory
+cd frontend-app
+
+# Install dependencies
+npm install
+
+# Start Vite development server
+npm run dev
+```
+* The frontend server will start at: `http://localhost:5173/`
+
+---
+
+### 2. Backend Development (`backend-app`)
+To run the server and APIs locally:
+
+```bash
+# Navigate to backend directory
+cd backend-app
+
+# Install dependencies
+npm install
+
+# Copy environment variables template
+cp .env.example .env
+
+# Run development server
+npm run dev
+```
+* The backend API server will start at: `http://localhost:5000/`
+
+---
+
+## 🌿 Branching & Contribution Guidelines
+* **`main`**: Production-ready, stable releases.
+* **`develop`**: Default development branch where feature branches are integrated.
+* **Feature Branches**: Branch from `develop` (`feature/<feature-name>`), build and test, then open a PR back into `develop`.
