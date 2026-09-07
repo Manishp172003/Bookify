@@ -13,6 +13,7 @@ import AdminLayout from "../components/layout/AdminLayout";
 // Main pages
 const HomePage = lazy(() => import("../pages/Home/HomePage"));
 const ExplorePage = lazy(() => import("../pages/Explore/ExplorePage"));
+const NotFoundPage = lazy(() => import("../pages/NotFound/NotFoundPage"));
 const CategoriesPage = lazy(() => import("../pages/Categories/CategoriesPage"));
 const BookDetailPage = lazy(() => import("../pages/BookDetail/BookDetailPage"));
 const Cart = lazy(() => import("../pages/Cart/Cart"));
@@ -588,15 +589,7 @@ function AppRoutes() {
         />
 
         {/* ================= 404 ================= */}
-
-        <Route
-          path="*"
-          element={
-            <div className="p-8 text-center text-bookify-text-secondary">
-              404 - Page Not Found
-            </div>
-          }
-        />
+        <Route path="*" element={<NotFoundPage />} />
 
       </Routes>
     </Suspense>
