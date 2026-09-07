@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
+import { useCommerce } from "../../context/CommerceContext";
 import { ShoppingBag, Eye, Download, HelpCircle, CheckCircle2, Truck, Clock, Menu } from "lucide-react";
 
-const MOCK_ORDERS = [
+const SEED_ORDERS = [
   {
     id: "ORD-98725",
     title: "Introduction to Algorithms, 3rd Edition",
@@ -54,12 +56,38 @@ const MOCK_ORDERS = [
 ];
 
 export default function MyOrders() {
+  const { orders: contextOrders } = useCommerce();
   const [activeTab, setActiveTab] = useState("All");
   const [selectedSeller, setSelectedSeller] = useState(null);
 
-  const filteredOrders = MOCK_ORDERS.filter(order => {
+  // Normalize context orders and merge with seed orders
+  const formattedContextOrders = (contextOrders || []).map((ord) => ({
+    id: ord.id || `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
+    title: ord.items?.[0]?.title || ord.title || "Textbook Order",
+    author: ord.items?.[0]?.author || ord.author || "Academic Author",
+    price: ord.total ? `₹${ord.total}` : "₹499",
+    date: ord.orderDateFormatted || "Recently",
+    status: ord.status === "shipped" ? "Meetup Scheduled" : ord.status === "delivered" ? "Completed" : ord.status === "cancelled" ? "Cancelled" : "Meetup Scheduled",
+    statusColor: ord.status === "delivered" 
+      ? "text-green-600 bg-green-50 border-green-100" 
+      : ord.status === "cancelled" 
+      ? "text-red-600 bg-red-50 border-red-100" 
+      : "text-amber-600 bg-amber-50 border-amber-100",
+    coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
+    step: ord.status === "delivered" ? 3 : ord.status === "shipped" ? 2 : 1,
+    seller: {
+      name: ord.items?.[0]?.seller?.name || "Campus Peer",
+      phone: "+91 98765 00000",
+      meetup: ord.address?.meetupSpot || "Main Campus Library Entrance"
+    }
+  }));
+
+  // Combine and deduplicate
+  const allOrders = [...formattedContextOrders, ...SEED_ORDERS.filter(s => !formattedContextOrders.some(c => c.id === s.id))];
+
+  const filteredOrders = allOrders.filter(order => {
     if (activeTab === "All") return true;
-    if (activeTab === "Active") return order.status === "Meetup Scheduled";
+    if (activeTab === "Active") return order.status === "Meetup Scheduled" || order.status === "Processing";
     if (activeTab === "Completed") return order.status === "Completed";
     if (activeTab === "Cancelled") return order.status === "Cancelled";
     return true;

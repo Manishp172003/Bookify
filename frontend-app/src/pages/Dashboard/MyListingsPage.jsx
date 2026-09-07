@@ -1,72 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
-import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu } from 'lucide-react';
-
-const INITIAL_LISTINGS = [
-  {
-    id: "BKFY-518290",
-    title: "Introduction to Algorithms, 3rd Edition",
-    price: "₹650",
-    condition: "Very Good",
-    status: "Active",
-    views: 42,
-    wishlists: 12,
-    coverClass: "from-[#111827] to-[#374151]"
-  },
-  {
-    id: "BKFY-982741",
-    title: "Cracking the Coding Interview",
-    price: "₹450",
-    condition: "Good",
-    status: "Active",
-    views: 29,
-    wishlists: 5,
-    coverClass: "from-[#6C4BF4] to-[#8B3FD9]"
-  },
-  {
-    id: "BKFY-304910",
-    title: "Organic Chemistry, 8th Edition",
-    price: "₹800",
-    condition: "Like New",
-    status: "Sold",
-    views: 95,
-    wishlists: 18,
-    coverClass: "from-[#059669] to-[#10B981]"
-  },
-  {
-    id: "BKFY-298301",
-    title: "Calculus: Early Transcendentals",
-    price: "₹950",
-    condition: "Fair",
-    status: "Inactive",
-    views: 14,
-    wishlists: 2,
-    coverClass: "from-[#E11D48] to-[#F43F5E]"
-  }
-];
+import { listingService } from '../../services/listingService';
+import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu, Plus } from 'lucide-react';
 
 export default function MyListingsPage() {
   const navigate = useNavigate();
-  const [listings, setListings] = useState(INITIAL_LISTINGS);
+  const [listings, setListings] = useState(() => listingService.getAllListings());
   const [activeFilter, setActiveFilter] = useState('All');
 
+  const reloadListings = () => {
+    setListings(listingService.getAllListings());
+  };
+
+  useEffect(() => {
+    reloadListings();
+    window.addEventListener('bookify_user_listings_updated', reloadListings);
+    return () => window.removeEventListener('bookify_user_listings_updated', reloadListings);
+  }, []);
+
   const handleMarkSold = (id) => {
-    setListings(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, status: 'Sold' } : item
-      )
-    );
+    listingService.updateStatus(id, 'Sold');
   };
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
-      setListings(prev => prev.filter(item => item.id !== id));
+      listingService.deleteListing(id);
     }
   };
 
   const handleEdit = (id) => {
-    alert(`Editing mode simulated for Listing ID: ${id}. Redirecting to Sell flow.`);
     navigate('/sell');
   };
 

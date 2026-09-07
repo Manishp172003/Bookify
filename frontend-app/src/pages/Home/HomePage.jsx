@@ -108,32 +108,32 @@ export default function HomePage() {
 
       {/* Stats Counters Section */}
       <ScrollReveal delay={150}>
-        <section className="bg-white border-b border-bookify-border py-8 mb-8 shadow-sm">
-          <div className="max-w-[1440px] mx-auto px-6 md:px-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              <div>
-                <div className="text-2xl md:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
+        <section className="bg-white border-b border-bookify-border py-6 sm:py-8 mb-6 sm:mb-8 shadow-xs">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+              <div className="p-2 sm:p-0">
+                <div className="text-2xl sm:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
                   <AnimateCounter target="2" suffix="M+" />
                 </div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1.5">BOOKS LISTED</div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-1">BOOKS LISTED</div>
               </div>
-              <div>
-                <div className="text-2xl md:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
+              <div className="p-2 sm:p-0">
+                <div className="text-2xl sm:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
                   <AnimateCounter target="500" suffix="K+" />
                 </div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1.5">HAPPY READERS</div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-1">HAPPY READERS</div>
               </div>
-              <div>
-                <div className="text-2xl md:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
+              <div className="p-2 sm:p-0">
+                <div className="text-2xl sm:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
                   <AnimateCounter target="50" suffix="K+" />
                 </div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1.5">PUBLISHED AUTHORS</div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-1">PUBLISHED AUTHORS</div>
               </div>
-              <div>
-                <div className="text-2xl md:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
+              <div className="p-2 sm:p-0">
+                <div className="text-2xl sm:text-3xl font-[family-name:var(--font-heading)] font-extrabold text-[#6C4BF4]">
                   <AnimateCounter target="1200" suffix="+" />
                 </div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1.5">ACTIVE CAMPUS CLUBS</div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-1">ACTIVE CAMPUS CLUBS</div>
               </div>
             </div>
           </div>
@@ -142,29 +142,29 @@ export default function HomePage() {
 
       {/* Trending Books Near You */}
       <ScrollReveal>
-        <section className="w-full bg-[#F8F7FF] border-b border-bookify-border/40 py-12">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-between mb-6">
+        <section className="w-full bg-[#F8F7FF] border-b border-bookify-border/40 py-8 sm:py-12">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
               <div>
-                <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">
+                <h2 className="font-[family-name:var(--font-heading)] text-xl sm:text-2xl md:text-3xl font-bold text-bookify-text">
                   Trending Books Near You
                 </h2>
               </div>
-              <Link to="/explore?sort=trending" className="flex items-center gap-1 text-sm font-medium text-bookify-purple hover:text-bookify-purple-dark transition-colors">
-                Explore All Trending <ArrowRight size={16} />
+              <Link to="/explore?sort=trending" className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-bookify-purple hover:text-bookify-purple-dark transition-colors">
+                Explore All Trending <ArrowRight size={15} />
               </Link>
             </div>
 
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <div className="flex gap-2 mb-5 sm:mb-6 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
               {trendingFilters.map(function(f) {
                 return (
                   <button
                     key={f}
                     onClick={function() { setActiveFilter(f); }}
                     className={
-                      'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ' +
+                      'px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap shrink-0 transition-all ' +
                       (activeFilter === f
-                        ? 'bg-bookify-purple text-white'
+                        ? 'bg-bookify-purple text-white shadow-xs'
                         : 'bg-white text-bookify-text border border-bookify-border hover:border-bookify-purple')
                     }
                   >
@@ -174,7 +174,7 @@ export default function HomePage() {
               })}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
               {(trendingBooks.length > 0 ? trendingBooks : featuredBooks).map(function(book) {
                 return <BookCard key={book.id} book={book} />;
               })}
@@ -185,40 +185,40 @@ export default function HomePage() {
 
       {/* Spotlight Authors */}
       <ScrollReveal>
-        <section className="max-w-7xl mx-auto px-4 py-12">
-          <div className="flex items-center justify-between mb-6">
+        <section className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 py-8 sm:py-12">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div>
-              <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">
+              <h2 className="font-[family-name:var(--font-heading)] text-xl sm:text-2xl md:text-3xl font-bold text-bookify-text">
                 Spotlight Authors
               </h2>
-              <p className="text-bookify-text-secondary text-sm mt-1">
+              <p className="text-bookify-text-secondary text-xs sm:text-sm mt-0.5">
                 Discover incredible self-published works directly from Indian creators
               </p>
             </div>
-            <div className="flex gap-2">
-              <button className="w-10 h-10 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors">
-                <ChevronLeft size={18} />
+            <div className="hidden sm:flex gap-2">
+              <button className="w-9 h-9 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors cursor-pointer">
+                <ChevronLeft size={16} />
               </button>
-              <button className="w-10 h-10 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors">
-                <ChevronRight size={18} />
+              <button className="w-9 h-9 rounded-full border border-bookify-border flex items-center justify-center hover:bg-bookify-light-purple transition-colors cursor-pointer">
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {spotlightAuthors.map(function(author, i) {
               return (
-                <div key={i} className="bg-white rounded-xl border border-bookify-border p-5 hover:shadow-lg transition-shadow">
-                  <div className="flex gap-4">
-                    <img src={author.cover} alt={author.book} className="w-20 h-28 object-cover rounded-lg flex-shrink-0" />
+                <div key={i} className="bg-white rounded-xl border border-bookify-border p-4 sm:p-5 hover:shadow-md transition-shadow">
+                  <div className="flex gap-3.5 sm:gap-4">
+                    <img src={author.cover} alt={author.book} className="w-18 sm:w-20 h-26 sm:h-28 object-cover rounded-lg shrink-0 shadow-xs" />
                     <div className="flex-1 min-w-0">
-                      <span className="inline-block px-2 py-0.5 bg-[#EEEAFE] text-[#6C4BF4] text-[9px] font-extrabold uppercase tracking-wider rounded mb-2">
+                      <span className="inline-block px-2 py-0.5 bg-[#EEEAFE] text-[#6C4BF4] text-[9px] font-extrabold uppercase tracking-wider rounded mb-1.5">
                         ★ SPOTLIGHT CREATOR
                       </span>
-                      <h3 className="font-[family-name:var(--font-heading)] font-bold text-bookify-text truncate">{author.book}</h3>
-                      <p className="text-xs text-bookify-text-secondary mt-0.5">By {author.name}</p>
-                      <p className="text-xs text-bookify-text-secondary mt-1 line-clamp-2">{author.desc}</p>
-                      <button className="mt-3 px-4 py-1.5 bg-bookify-purple text-white text-xs font-semibold rounded-lg hover:bg-bookify-purple-dark transition-colors">
+                      <h3 className="font-[family-name:var(--font-heading)] font-bold text-sm sm:text-base text-bookify-text truncate">{author.book}</h3>
+                      <p className="text-[11px] sm:text-xs text-bookify-text-secondary mt-0.5">By {author.name}</p>
+                      <p className="text-[11px] sm:text-xs text-bookify-text-secondary mt-1 line-clamp-2">{author.desc}</p>
+                      <button className="mt-2.5 sm:mt-3 px-3.5 py-1 bg-bookify-purple text-white text-xs font-semibold rounded-lg hover:bg-bookify-purple-dark transition-colors cursor-pointer">
                         View Book
                       </button>
                     </div>
@@ -232,43 +232,43 @@ export default function HomePage() {
 
       {/* Browse by Category */}
       <ScrollReveal>
-        <section className="w-full bg-[#F8F7FF] border-y border-bookify-border/40 py-12">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="mb-6">
-              <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">
+        <section className="w-full bg-[#F8F7FF] border-y border-bookify-border/40 py-8 sm:py-12">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="font-[family-name:var(--font-heading)] text-xl sm:text-2xl md:text-3xl font-bold text-bookify-text">
                 Browse by Category
               </h2>
-              <p className="text-bookify-text-secondary text-sm mt-1">
+              <p className="text-bookify-text-secondary text-xs sm:text-sm mt-0.5">
                 Explore a vast collection of academic textbooks, popular novels, and regional writing
               </p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {categories.map(function(cat) {
                 return (
                   <Link
                     key={cat.id}
                     to={'/explore?category=' + cat.id}
-                    className="relative h-36 sm:h-40 rounded-2xl overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-300 flex items-center justify-center p-4 bg-slate-900 border border-bookify-border/40"
+                    className="relative h-28 sm:h-36 md:h-40 rounded-xl sm:rounded-2xl overflow-hidden group shadow-xs hover:shadow-xl transition-all duration-300 flex items-center justify-center p-3 sm:p-4 bg-slate-900 border border-bookify-border/40"
                   >
                     {cat.image ? (
                       <>
                         <img
                           src={cat.image}
                           alt={cat.name}
-                          className="absolute inset-0 w-full h-full object-cover blur-sm group-hover:blur-none group-hover:scale-110 transition-all duration-500"
+                          className="absolute inset-0 w-full h-full object-cover blur-xs group-hover:blur-none group-hover:scale-110 transition-all duration-500"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20 group-hover:from-black/60 group-hover:via-black/20 group-hover:to-transparent transition-colors duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/25 group-hover:from-black/60 group-hover:via-black/20 group-hover:to-transparent transition-colors duration-300" />
                         <div className="relative z-10 flex flex-col items-center justify-center text-center">
-                          <span className="text-2xl mb-1 drop-shadow">{cat.icon}</span>
-                          <p className="text-sm sm:text-base font-bold text-white tracking-wide drop-shadow-md group-hover:scale-105 transition-transform duration-300">
+                          <span className="text-xl sm:text-2xl mb-1 drop-shadow">{cat.icon}</span>
+                          <p className="text-xs sm:text-sm md:text-base font-bold text-white tracking-wide drop-shadow-md group-hover:scale-105 transition-transform duration-300">
                             {cat.name}
                           </p>
                         </div>
                       </>
                     ) : (
-                      <div className="flex flex-col items-center justify-center gap-2 text-center">
-                        <span className="text-3xl">{cat.icon}</span>
-                        <p className="text-sm font-semibold text-bookify-text group-hover:text-bookify-purple transition-colors">
+                      <div className="flex flex-col items-center justify-center gap-1.5 text-center">
+                        <span className="text-2xl sm:text-3xl">{cat.icon}</span>
+                        <p className="text-xs sm:text-sm font-semibold text-bookify-text group-hover:text-bookify-purple transition-colors">
                           {cat.name}
                         </p>
                       </div>
@@ -283,55 +283,58 @@ export default function HomePage() {
 
       {/* Publish Your Story */}
       <ScrollReveal>
-        <section className="max-w-7xl mx-auto px-4 py-12">
-          <div className="bg-bookify-bg rounded-2xl p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center">
+        <section className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 py-8 sm:py-12">
+          <div className="bg-bookify-bg rounded-2xl p-6 sm:p-8 md:p-12 grid md:grid-cols-2 gap-6 sm:gap-8 items-center border border-bookify-border/50">
             <div>
-              <span className="inline-block px-3 py-1 bg-[#EEEAFE] text-[#6C4BF4] text-xs font-bold rounded-full mb-4">
+              <span className="inline-block px-3 py-1 bg-[#EEEAFE] text-[#6C4BF4] text-xs font-bold rounded-full mb-3 sm:mb-4">
                 FOR CREATORS
               </span>
-              <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text mb-4">
+              <h2 className="font-[family-name:var(--font-heading)] text-xl sm:text-2xl md:text-3xl font-bold text-bookify-text mb-3 sm:mb-4">
                 Publish Your Story with Bookify
               </h2>
-              <p className="text-bookify-text-secondary mb-6">
+              <p className="text-bookify-text-secondary text-xs sm:text-sm mb-5 sm:mb-6 leading-relaxed">
                 Empowering India independent authors. Ship print-on-demand books, track daily royalty payouts, and reach millions of passionate readers nationwide.
               </p>
               <div className="space-y-3 mb-6">
                 <div className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-bookify-green text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-bookify-green text-white flex items-center justify-center shrink-0 mt-0.5">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-bookify-text">Upload & Format Instantly</p>
-                    <p className="text-xs text-bookify-text-secondary">Convert drafts into publishing-ready formats with our free creator tools.</p>
+                    <p className="text-xs sm:text-sm font-semibold text-bookify-text">Upload & Format Instantly</p>
+                    <p className="text-[11px] sm:text-xs text-bookify-text-secondary">Convert drafts into publishing-ready formats with our free creator tools.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-bookify-green text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-bookify-green text-white flex items-center justify-center shrink-0 mt-0.5">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-bookify-text">Set Pricing & Royalties</p>
-                    <p className="text-xs text-bookify-text-secondary">Take control of your pricing. Earn up to 70% royalties on printed books.</p>
+                    <p className="text-xs sm:text-sm font-semibold text-bookify-text">Set Pricing & Royalties</p>
+                    <p className="text-[11px] sm:text-xs text-bookify-text-secondary">Take control of your pricing. Earn up to 70% royalties on printed books.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="w-5 h-5 rounded-full bg-bookify-green text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-bookify-green text-white flex items-center justify-center shrink-0 mt-0.5">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-bookify-text">Reach Millions of Readers</p>
-                    <p className="text-xs text-bookify-text-secondary">Promote your launch via targeted in-app banners and community clubs.</p>
+                    <p className="text-xs sm:text-sm font-semibold text-bookify-text">Reach Millions of Readers</p>
+                    <p className="text-[11px] sm:text-xs text-bookify-text-secondary">Promote your launch via targeted in-app banners and community clubs.</p>
                   </div>
                 </div>
               </div>
-              <button className="px-6 py-3 bg-bookify-purple text-white font-semibold rounded-xl hover:bg-bookify-purple-dark transition-colors">
+              <button 
+                onClick={() => navigate('/author')}
+                className="w-full sm:w-auto px-6 py-3 bg-bookify-purple text-white font-semibold text-sm rounded-xl hover:bg-bookify-purple-dark transition-colors cursor-pointer text-center"
+              >
                 Start Publishing
               </button>
             </div>
-            <div className="relative">
-              <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&h=400&fit=crop" alt="Author" className="rounded-xl w-full object-cover" />
-              <div className="absolute -bottom-4 -left-4 bg-white p-4 rounded-xl shadow-lg max-w-xs hidden md:block">
-                <p className="text-xs text-bookify-text italic mb-2">Bookify took my manuscript from a Word file to print in 10 days.</p>
+            <div className="relative mt-4 md:mt-0">
+              <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&h=400&fit=crop" alt="Author" className="rounded-xl w-full object-cover shadow-sm max-h-[280px] sm:max-h-none" />
+              <div className="absolute -bottom-3 -left-3 bg-white p-3 sm:p-4 rounded-xl shadow-lg max-w-[240px] sm:max-w-xs hidden sm:block border border-bookify-border/40">
+                <p className="text-[11px] sm:text-xs text-bookify-text italic mb-1.5">Bookify took my manuscript from a Word file to print in 10 days.</p>
                 <p className="text-[10px] text-bookify-purple font-semibold">- Ritesh Deshmukh, Author</p>
               </div>
             </div>
@@ -341,72 +344,72 @@ export default function HomePage() {
 
       {/* Community */}
       <ScrollReveal>
-        <section className="w-full bg-[#F8F7FF] border-y border-bookify-border/40 py-12 text-center">
-          <div className="max-w-7xl mx-auto px-4">
-            <span className="inline-block px-4 py-1.5 bg-[#EEEAFE] text-[#6C4BF4] text-xs font-bold rounded-full mb-4">JOIN THE CLUB</span>
-            <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text mb-2">Join the Bookify Community</h2>
-            <p className="text-bookify-text-secondary mb-8 max-w-lg mx-auto">Share reading goals, debate plot twists, and swap paperbacks with verified members around you.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-xl border border-bookify-border p-6 text-left">
-                <div className="flex gap-0.5 mb-3">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
-                <p className="text-sm text-bookify-text mb-4">"Perfect for buying costly engineering textbooks. Picked up standard books directly on campus from seniors for half price!"</p>
-                <div className="flex items-center gap-3"><img src="https://i.pravatar.cc/150?img=11" alt="Siddharth" className="w-9 h-9 rounded-full" /><div><p className="text-sm font-semibold text-bookify-text">Siddharth Roy</p><p className="text-xs text-bookify-text-secondary">Student, IIT Bombay</p></div></div>
+        <section className="w-full bg-[#F8F7FF] border-y border-bookify-border/40 py-8 sm:py-12 text-center">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
+            <span className="inline-block px-3.5 py-1 bg-[#EEEAFE] text-[#6C4BF4] text-xs font-bold rounded-full mb-3 sm:mb-4">JOIN THE CLUB</span>
+            <h2 className="font-[family-name:var(--font-heading)] text-xl sm:text-2xl md:text-3xl font-bold text-bookify-text mb-2">Join the Bookify Community</h2>
+            <p className="text-bookify-text-secondary text-xs sm:text-sm mb-6 sm:mb-8 max-w-lg mx-auto">Share reading goals, debate plot twists, and swap paperbacks with verified members around you.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              <div className="bg-white rounded-xl border border-bookify-border p-4 sm:p-6 text-left shadow-xs">
+                <div className="flex gap-0.5 mb-2.5">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
+                <p className="text-xs sm:text-sm text-bookify-text mb-3 leading-relaxed">"Perfect for buying costly engineering textbooks. Picked up standard books directly on campus from seniors for half price!"</p>
+                <div className="flex items-center gap-2.5"><img src="https://i.pravatar.cc/150?img=11" alt="Siddharth" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full" /><div><p className="text-xs sm:text-sm font-semibold text-bookify-text">Siddharth Roy</p><p className="text-[10px] sm:text-xs text-bookify-text-secondary">Student, IIT Bombay</p></div></div>
               </div>
-              <div className="bg-white rounded-xl border border-bookify-border p-6 text-left">
-                <div className="flex gap-0.5 mb-3">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
-                <p className="text-sm text-bookify-text mb-4">"I have sold over 30 romance novels that were gathering dust on my shelves. Bookify shipping is seamless."</p>
-                <div className="flex items-center gap-3"><img src="https://i.pravatar.cc/150?img=5" alt="Aradhana" className="w-9 h-9 rounded-full" /><div><p className="text-sm font-semibold text-bookify-text">Aradhana Sen</p><p className="text-xs text-bookify-text-secondary">Avid Reader, Kolkata</p></div></div>
+              <div className="bg-white rounded-xl border border-bookify-border p-4 sm:p-6 text-left shadow-xs">
+                <div className="flex gap-0.5 mb-2.5">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
+                <p className="text-xs sm:text-sm text-bookify-text mb-3 leading-relaxed">"I have sold over 30 romance novels that were gathering dust on my shelves. Bookify shipping is seamless."</p>
+                <div className="flex items-center gap-2.5"><img src="https://i.pravatar.cc/150?img=5" alt="Aradhana" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full" /><div><p className="text-xs sm:text-sm font-semibold text-bookify-text">Aradhana Sen</p><p className="text-[10px] sm:text-xs text-bookify-text-secondary">Avid Reader, Kolkata</p></div></div>
               </div>
-              <div className="bg-white rounded-xl border border-bookify-border p-6 text-left">
-                <div className="flex gap-0.5 mb-3">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
-                <p className="text-sm text-bookify-text mb-4">"Being able to print copies on demand and see daily analytics changed my writing career."</p>
-                <div className="flex items-center gap-3"><img src="https://i.pravatar.cc/150?img=33" alt="Vikram" className="w-9 h-9 rounded-full" /><div><p className="text-sm font-semibold text-bookify-text">Vikram G.</p><p className="text-xs text-bookify-text-secondary">Self-Published Novelist</p></div></div>
+              <div className="bg-white rounded-xl border border-bookify-border p-4 sm:p-6 text-left shadow-xs">
+                <div className="flex gap-0.5 mb-2.5">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
+                <p className="text-xs sm:text-sm text-bookify-text mb-3 leading-relaxed">"Being able to print copies on demand and see daily analytics changed my writing career."</p>
+                <div className="flex items-center gap-2.5"><img src="https://i.pravatar.cc/150?img=33" alt="Vikram" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full" /><div><p className="text-xs sm:text-sm font-semibold text-bookify-text">Vikram G.</p><p className="text-[10px] sm:text-xs text-bookify-text-secondary">Self-Published Novelist</p></div></div>
               </div>
             </div>
-            <button onClick={handleJoinClub} className="px-8 py-3 bg-[#6C4BF4] text-white font-semibold rounded-xl hover:bg-[#5B3DE0] shadow-sm shadow-[#6C4BF4]/15 transition-all hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer">Join Book Clubs Near You</button>
+            <button onClick={handleJoinClub} className="w-full sm:w-auto px-8 py-3 bg-[#6C4BF4] text-white text-sm font-semibold rounded-xl hover:bg-[#5B3DE0] shadow-xs shadow-[#6C4BF4]/15 transition-all hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer">Join Book Clubs Near You</button>
           </div>
         </section>
       </ScrollReveal>
 
       {/* Trust Footer */}
       <ScrollReveal>
-        <section id="trust-section" className="bg-transparent mb-16 scroll-mt-8">
-          <div className="max-w-[1440px] mx-auto px-6 md:px-10 text-center mb-8">
-            <span className="inline-block px-4 py-1.5 bg-[#EEEAFE] text-[#6C4BF4] text-xs font-bold rounded-full mb-3">OUR GUARANTEE</span>
-            <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">Shop with Confidence</h2>
+        <section id="trust-section" className="bg-transparent mb-12 sm:mb-16 scroll-mt-8">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 text-center mb-6 sm:mb-8">
+            <span className="inline-block px-3.5 py-1 bg-[#EEEAFE] text-[#6C4BF4] text-xs font-bold rounded-full mb-2.5">OUR GUARANTEE</span>
+            <h2 className="font-[family-name:var(--font-heading)] text-xl sm:text-2xl md:text-3xl font-bold text-bookify-text">Shop with Confidence</h2>
           </div>
-          <div className="max-w-[1440px] mx-auto px-6 md:px-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="flex flex-col items-center text-center p-6 bg-white border border-bookify-border rounded-2xl shadow-sm hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
-                <div className="w-12 h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
-                  <Shield size={22} className="group-hover:scale-110 transition-transform duration-300" />
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+              <div className="flex flex-col items-center text-center p-4 sm:p-6 bg-white border border-bookify-border rounded-xl sm:rounded-2xl shadow-xs hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-3 sm:mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
+                  <Shield size={20} className="group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <h3 className="text-sm font-bold text-bookify-text mb-1.5">Escrow-Protected</h3>
-                <p className="text-xs text-bookify-text-secondary leading-relaxed">Money held until delivery</p>
+                <h3 className="text-xs sm:text-sm font-bold text-bookify-text mb-1">Escrow-Protected</h3>
+                <p className="text-[10px] sm:text-xs text-bookify-text-secondary leading-relaxed">Money held until delivery</p>
               </div>
 
-              <div className="flex flex-col items-center text-center p-6 bg-white border border-bookify-border rounded-2xl shadow-sm hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
-                <div className="w-12 h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
-                  <UserCheck size={22} className="group-hover:scale-110 transition-transform duration-300" />
+              <div className="flex flex-col items-center text-center p-4 sm:p-6 bg-white border border-bookify-border rounded-xl sm:rounded-2xl shadow-xs hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-3 sm:mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
+                  <UserCheck size={20} className="group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <h3 className="text-sm font-bold text-bookify-text mb-1.5">Verified Sellers</h3>
-                <p className="text-xs text-bookify-text-secondary leading-relaxed">Profiles fully screened</p>
+                <h3 className="text-xs sm:text-sm font-bold text-bookify-text mb-1">Verified Sellers</h3>
+                <p className="text-[10px] sm:text-xs text-bookify-text-secondary leading-relaxed">Profiles fully screened</p>
               </div>
 
-              <div className="flex flex-col items-center text-center p-6 bg-white border border-bookify-border rounded-2xl shadow-sm hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
-                <div className="w-12 h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
-                  <RotateCcw size={22} className="group-hover:scale-110 transition-transform duration-300" />
+              <div className="flex flex-col items-center text-center p-4 sm:p-6 bg-white border border-bookify-border rounded-xl sm:rounded-2xl shadow-xs hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-3 sm:mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
+                  <RotateCcw size={20} className="group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <h3 className="text-sm font-bold text-bookify-text mb-1.5">Easy Returns</h3>
-                <p className="text-xs text-bookify-text-secondary leading-relaxed">No-questions-asked disputes</p>
+                <h3 className="text-xs sm:text-sm font-bold text-bookify-text mb-1">Easy Returns</h3>
+                <p className="text-[10px] sm:text-xs text-bookify-text-secondary leading-relaxed">No-questions-asked disputes</p>
               </div>
 
-              <div className="flex flex-col items-center text-center p-6 bg-white border border-bookify-border rounded-2xl shadow-sm hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
-                <div className="w-12 h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
-                  <Headphones size={22} className="group-hover:scale-110 transition-transform duration-300" />
+              <div className="flex flex-col items-center text-center p-4 sm:p-6 bg-white border border-bookify-border rounded-xl sm:rounded-2xl shadow-xs hover:shadow-lg hover:shadow-[#6C4BF4]/5 hover:border-[#6C4BF4]/30 hover:-translate-y-1 group transition-all duration-300 ease-out cursor-default">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#EEEAFE] flex items-center justify-center mb-3 sm:mb-4 text-[#6C4BF4] group-hover:bg-[#6C4BF4] group-hover:text-white shrink-0 transition-colors duration-300">
+                  <Headphones size={20} className="group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <h3 className="text-sm font-bold text-bookify-text mb-1.5">24/7 Support</h3>
-                <p className="text-xs text-bookify-text-secondary leading-relaxed">Always here to guide you</p>
+                <h3 className="text-xs sm:text-sm font-bold text-bookify-text mb-1">24/7 Support</h3>
+                <p className="text-[10px] sm:text-xs text-bookify-text-secondary leading-relaxed">Always here to guide you</p>
               </div>
             </div>
           </div>

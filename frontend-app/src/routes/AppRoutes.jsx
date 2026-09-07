@@ -206,6 +206,7 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<OTPVerification />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* ================= STUDENT ================= */}
 
@@ -314,7 +315,9 @@ function AppRoutes() {
           path="/listings"
           element={
             <ProtectedRoute>
-              <MyListings />
+              <MainLayout>
+                <MyListings />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -323,7 +326,9 @@ function AppRoutes() {
           path="/want-board"
           element={
             <ProtectedRoute>
-              <WantBoard />
+              <MainLayout>
+                <WantBoard />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -332,7 +337,9 @@ function AppRoutes() {
           path="/sell"
           element={
             <ProtectedRoute>
-              <SellBook />
+              <MainLayout>
+                <SellBook />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -341,7 +348,9 @@ function AppRoutes() {
           path="/sell/isbn"
           element={
             <ProtectedRoute>
-              <ISBNLookup />
+              <MainLayout hideFooter={true}>
+                <ISBNLookup />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -350,7 +359,9 @@ function AppRoutes() {
           path="/sell/condition"
           element={
             <ProtectedRoute>
-              <Condition />
+              <MainLayout hideFooter={true}>
+                <Condition />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -359,7 +370,9 @@ function AppRoutes() {
           path="/sell/photos"
           element={
             <ProtectedRoute>
-              <UploadPhotos />
+              <MainLayout hideFooter={true}>
+                <UploadPhotos />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -368,7 +381,9 @@ function AppRoutes() {
           path="/sell/transaction"
           element={
             <ProtectedRoute>
-              <TransactionMode />
+              <MainLayout hideFooter={true}>
+                <TransactionMode />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -377,7 +392,9 @@ function AppRoutes() {
           path="/sell/price"
           element={
             <ProtectedRoute>
-              <SetPrice />
+              <MainLayout hideFooter={true}>
+                <SetPrice />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -386,7 +403,9 @@ function AppRoutes() {
           path="/sell/preview"
           element={
             <ProtectedRoute>
-              <PreviewListing />
+              <MainLayout hideFooter={true}>
+                <PreviewListing />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -395,7 +414,9 @@ function AppRoutes() {
           path="/sell/success"
           element={
             <ProtectedRoute>
-              <PublishSuccess />
+              <MainLayout>
+                <PublishSuccess />
+              </MainLayout>
             </ProtectedRoute>
           }
         />

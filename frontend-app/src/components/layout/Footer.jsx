@@ -23,8 +23,23 @@ export default function Footer() {
           <div>
             <h4 className="font-[family-name:var(--font-heading)] font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2">
-              {[{ to: "/explore", label: "Explore Books" }, { to: "/categories", label: "Browse Categories" }, { to: "/explore?mode=sell", label: "Sell a Book" }, { to: "/explore?mode=rent", label: "Rent Books" }].map((link) => (
-                <li key={link.to}><Link to={link.to} className="text-sm text-gray-400 hover:text-bookify-purple transition-colors">{link.label}</Link></li>
+              {[
+                { to: "/explore", label: "Explore Books" },
+                { to: "/categories", label: "Browse Categories" },
+                { to: "/sell", label: "Sell a Book" },
+                { to: "/explore?mode=rent", label: "Rent Books" },
+                { to: "/want-board", label: "Want Board" },
+                { to: "/author", label: "Author Portal" },
+                { to: "/admin/login", label: "Admin Login" }
+              ].map((link) => (
+                <li key={link.to}>
+                  <Link 
+                    to={link.to} 
+                    className="text-sm text-gray-400 hover:text-bookify-purple transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -50,7 +65,10 @@ export default function Footer() {
 
         <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-500">&copy; 2026 Bookify. All rights reserved.</p>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <Link to="/explore" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Marketplace</Link>
+            <Link to="/author" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Authors</Link>
+            <Link to="/admin/login" className="text-xs text-gray-400 hover:text-bookify-purple transition-colors font-semibold">Admin Portal</Link>
             <a href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Privacy Policy</a>
             <a href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Terms of Service</a>
           </div>

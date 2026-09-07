@@ -1,113 +1,135 @@
-import React, { useState } from 'react';
+﻿import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import ListingWizardLayout from '../../components/listing/ListingWizardLayout';
+import { useListing } from '../../context/ListingContext';
+import { Check, Sparkles, ShieldCheck, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const CONDITIONS = [
   {
     id: 'like-new',
     name: 'Like New',
-    description: 'Practically brand new. No highlight marks, folded pages, or visible cover wear.'
+    badge: 'Flawless',
+    badgeColor: 'bg-emerald-100 text-emerald-800',
+    description: 'Practically brand new. Zero highlight marks, uncreased spine, crisp pages, and no visible cover wear.'
   },
   {
     id: 'very-good',
     name: 'Very Good',
-    description: 'Minimal signs of use. Pages are clean, spine is solid, with zero or minor highlights.'
+    badge: 'Popular',
+    badgeColor: 'bg-purple-100 text-[#6C4BF4]',
+    description: 'Minimal signs of handling. Pages are clean, spine is solid, with minor pencil notes or no highlights.'
   },
   {
     id: 'good',
     name: 'Good',
-    description: 'Some light wear. May contain highlight marks or margin notes, but perfectly readable.'
+    badge: 'Great Value',
+    badgeColor: 'bg-blue-100 text-blue-800',
+    description: 'Light study wear. May contain highlighter marks or margin notes, but 100% readable and intact.'
   },
   {
     id: 'fair',
     name: 'Fair',
-    description: 'Visible wear, folded corners, or significant highlight marks, but all pages are intact.'
+    badge: 'Budget Pick',
+    badgeColor: 'bg-amber-100 text-amber-800',
+    description: 'Visible cover creases, folded page corners, or extensive highlighting, but no missing text or sheets.'
   }
 ];
 
 export default function Condition() {
   const navigate = useNavigate();
-  const [selectedCondition, setSelectedCondition] = useState(null);
+  const { listingData, updateListingData } = useListing();
+
+  const handleSelectCondition = (conditionId) => {
+    updateListingData({ condition: conditionId });
+  };
 
   return (
-    <div className="max-w-3xl mx-auto py-2">
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate('/sell/isbn')}
-        className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary transition font-inter cursor-pointer"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Find Book
-      </button>
-
-      <div className="bg-cards p-6 md:p-10 rounded-3xl border border-gray-200/50 shadow-xs">
-        <h1 className="text-3xl font-extrabold text-text-main mb-2 font-poppins">Select Book Condition</h1>
-        <p className="text-gray-500 font-inter text-sm mb-8">
-          Be honest about your book's condition. Happy buyers lead to better seller ratings!
-        </p>
-
-        {/* Condition Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+    <ListingWizardLayout
+      currentStep={2}
+      title="Select Book Condition"
+      subtitle="Accurate condition grading ensures smooth handoffs and 5-star seller ratings."
+    >
+      <div className="space-y-8">
+        
+        {/* Condition Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {CONDITIONS.map((cond) => {
-            const isSelected = selectedCondition === cond.id;
+            const isSelected = listingData.condition === cond.id;
             return (
               <button
                 key={cond.id}
-                onClick={() => setSelectedCondition(cond.id)}
-                className={`text-left p-6 rounded-2xl border transition duration-200 cursor-pointer flex justify-between items-start gap-4 ${
+                type="button"
+                onClick={() => handleSelectCondition(cond.id)}
+                className={`text-left p-5 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between gap-3 ${
                   isSelected
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                    : 'border-gray-200 hover:border-primary/50 bg-cards'
+                    ? 'border-[#6C4BF4] bg-[#EEEAFE]/30 ring-2 ring-[#6C4BF4] shadow-sm'
+                    : 'border-gray-200 hover:border-[#6C4BF4]/60 bg-white hover:bg-gray-50/50'
                 }`}
               >
-                <div className="flex-1">
-                  <h3 className="font-bold text-text-main text-lg font-poppins mb-1.5">
-                    {cond.name}
-                  </h3>
-                  <p className="text-gray-500 font-inter text-sm leading-relaxed">
-                    {cond.description}
-                  </p>
+                <div className="flex items-start justify-between gap-2 w-full">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-[#17152A] text-base font-[family-name:var(--font-heading)]">
+                      {cond.name}
+                    </h3>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cond.badgeColor}`}>
+                      {cond.badge}
+                    </span>
+                  </div>
+
+                  {/* Radio Indicator */}
+                  <div
+                    className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center border transition ${
+                      isSelected
+                        ? 'bg-[#6C4BF4] border-[#6C4BF4] text-white'
+                        : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    {isSelected && <Check size={14} strokeWidth={3} />}
+                  </div>
                 </div>
 
-                {/* Selection Indicator */}
-                <div className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center border transition ${
-                  isSelected 
-                    ? 'bg-primary border-primary text-white' 
-                    : 'border-gray-300 bg-white'
-                }`}>
-                  {isSelected && (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  {cond.description}
+                </p>
               </button>
             );
           })}
         </div>
 
+        {/* Custom Seller Notes */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+            Additional Condition Notes (Optional)
+          </label>
+          <textarea
+            rows={3}
+            value={listingData.conditionNotes || ''}
+            onChange={(e) => updateListingData({ conditionNotes: e.target.value })}
+            placeholder="e.g. Includes formula cheat sheet, chapters 1-4 highlighted in yellow, no torn pages."
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-[#F8F7FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6C4BF4]/20 focus:border-[#6C4BF4] text-sm text-[#17152A]"
+          />
+        </div>
+
         {/* Footer Navigation */}
         <div className="flex items-center justify-between pt-6 border-t border-gray-100">
           <button
+            type="button"
             onClick={() => navigate('/sell/isbn')}
-            className="px-6 py-3.5 border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl text-sm transition cursor-pointer font-inter"
+            className="inline-flex items-center gap-2 px-6 py-3.5 border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl text-sm transition cursor-pointer"
           >
-            Back
+            <ArrowLeft size={16} /> Back
           </button>
+
           <button
+            type="button"
             onClick={() => navigate('/sell/photos')}
-            disabled={!selectedCondition}
-            className={`px-8 py-3.5 font-bold rounded-xl text-sm transition font-inter shadow-xs cursor-pointer ${
-              selectedCondition
-                ? 'bg-cta hover:bg-cta/90 text-white'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-            }`}
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#6C4BF4] hover:bg-[#5B3DE0] text-white font-bold rounded-xl text-sm transition shadow-md shadow-[#6C4BF4]/25 cursor-pointer"
           >
-            Continue
+            Continue to Photos <ArrowRight size={16} />
           </button>
         </div>
+
       </div>
-    </div>
+    </ListingWizardLayout>
   );
 }

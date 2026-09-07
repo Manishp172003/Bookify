@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { IndianRupee } from "lucide-react";
 
 function WalletOverview() {
+  const navigate = useNavigate();
+
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-5">
       <h3 className="font-semibold text-[#17152A]">
@@ -20,9 +23,10 @@ function WalletOverview() {
 
       <button
         type="button"
-        className="mt-5 w-full rounded-xl bg-[#6C4BF4] py-3 text-sm font-bold text-white transition hover:bg-[#5B3DE0] cursor-pointer shadow-sm hover:-translate-y-0.5 active:translate-y-0 duration-150"
+        onClick={() => navigate('/dashboard/earnings')}
+        className="mt-5 w-full rounded-xl bg-[#6C4BF4] py-3 text-sm font-bold text-white transition hover:bg-[#5B3DE0] cursor-pointer shadow-sm hover:-translate-y-0.5 active:translate-y-0 duration-150 text-center"
       >
-        Withdraw
+        Withdraw & Payouts
       </button>
 
       <div className="mt-5 flex justify-between border-t pt-4 text-xs">

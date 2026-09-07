@@ -73,6 +73,33 @@ export default function HeroSlider() {
   var hovering = _h[0];
   var setHovering = _h[1];
 
+  // Touch swipe handling for mobile
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const minSwipeDistance = 45;
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      next();
+    } else if (isRightSwipe) {
+      prev();
+    }
+  };
+
   const handleButtonClick = (path) => {
     if (!path) return;
     if (path.startsWith('#')) {
@@ -104,6 +131,9 @@ export default function HeroSlider() {
       className="hero-slider"
       onMouseEnter={function() { setHovering(true); }}
       onMouseLeave={function() { setHovering(false); }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
       <div
         className="hero-slider-track"
@@ -116,7 +146,7 @@ export default function HeroSlider() {
               className={'hero-slide' + (i === index ? ' active' : '')}
               style={{ backgroundImage: 'url(' + s.image + ')' }}
             >
-              <div className="max-w-[1440px] mx-auto px-6 md:px-10 w-full flex items-center">
+              <div className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-10 w-full flex items-center py-8 sm:py-12">
                 <div className="hero-slide-content">
                   <span className="hero-slide-tag">{s.tag}</span>
                   <h1 className="hero-slide-title">{s.title}</h1>
@@ -126,9 +156,9 @@ export default function HeroSlider() {
                       onClick={() => handleButtonClick(s.btn1.path)}
                       className="hero-btn-primary cursor-pointer"
                     >
-                      {s.btn1.label}
+                      <span>{s.btn1.label}</span>
                       {s.btn1.icon && (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M5 12h14M12 5l7 7-7 7" />
                         </svg>
                       )}
@@ -141,17 +171,17 @@ export default function HeroSlider() {
                     </button>
                   </div>
 
-                  {/* Bullet Stats inside the slide directly */}
-                  <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-x-8 gap-y-4">
+                  {/* Bullet Stats inside the slide */}
+                  <div className="mt-5 sm:mt-8 pt-4 sm:pt-6 border-t border-white/15 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 sm:gap-x-8 gap-y-3">
                     {s.stats.map(function(st, idx) {
                       return (
-                        <div key={idx} className="flex items-center gap-3 text-white/95">
-                          <div className="text-white shrink-0 p-1.5 bg-white/5 rounded-lg">
+                        <div key={idx} className={`flex items-center gap-2.5 text-white/95 ${idx === 2 ? 'col-span-2 sm:col-span-1' : ''}`}>
+                          <div className="text-white shrink-0 p-1 sm:p-1.5 bg-white/10 backdrop-blur-xs rounded-lg">
                             <StatIcon type={st.icon} />
                           </div>
                           <div>
-                            <div className="text-xs font-bold leading-tight">{st.label}</div>
-                            <div className="text-[10px] text-white/60 leading-tight mt-0.5">{st.desc}</div>
+                            <div className="text-[11px] sm:text-xs font-bold leading-tight">{st.label}</div>
+                            <div className="text-[9px] sm:text-[10px] text-white/70 leading-tight mt-0.5">{st.desc}</div>
                           </div>
                         </div>
                       );
@@ -165,7 +195,7 @@ export default function HeroSlider() {
         })}
       </div>
 
-      <div className="hero-slider-controls">
+      <div className="hero-slider-controls hidden md:flex">
         <button className="hero-slider-btn" onClick={prev} aria-label="Previous">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 5l-7 7 7 7" />

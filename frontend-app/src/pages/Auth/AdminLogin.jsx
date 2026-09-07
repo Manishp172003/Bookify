@@ -124,6 +124,23 @@ function AdminLogin() {
 
         {/* 15-digit code */}
         <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-bold text-gray-700">Security Verification Code</label>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({
+                  email: "admin@bookify.in",
+                  password: "AdminPassword123!",
+                  code: "123456789012345"
+                });
+                setErrors({});
+              }}
+              className="text-[11px] font-bold text-[#6C4BF4] hover:underline cursor-pointer bg-[#F0ECFF] px-2.5 py-0.5 rounded-full"
+            >
+              ⚡ Fill Demo Admin Credentials
+            </button>
+          </div>
           <div className="relative">
             <KeyRound
               size={18}
@@ -132,7 +149,7 @@ function AdminLogin() {
             <input
               type="text"
               maxLength={15}
-              placeholder="15-Digit Verification Code"
+              placeholder="15-Digit Code (e.g. 123456789012345)"
               value={formData.code}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, ""); // Allow digits only

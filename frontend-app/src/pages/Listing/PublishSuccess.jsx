@@ -1,133 +1,104 @@
-import React, { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useListing } from '../../context/ListingContext';
+import { 
+  CheckCircle2, 
+  Sparkles, 
+  Share2, 
+  Copy, 
+  Check, 
+  BookOpen, 
+  ArrowRight, 
+  PlusCircle, 
+  ShieldCheck, 
+  MessageSquare 
+} from 'lucide-react';
 
 export default function PublishSuccess() {
   const navigate = useNavigate();
-  const canvasRef = useRef(null);
-  
-  // Generate random Listing ID on mount
-  const listingIdRef = useRef("BKFY-" + Math.floor(100000 + Math.random() * 900000));
-  const listingId = listingIdRef.current;
+  const { listingData, resetListing } = useListing();
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    setCanvasSize();
+  const listingId = 'BKF-' + Math.floor(100000 + Math.random() * 900000);
+  const shareUrl = window.location.origin + '/book/' + listingId;
 
-    const colors = ['#6C4BF4', '#FF8A3D', '#10B981', '#3B82F6', '#EC4899', '#F59E0B'];
-    const particles = Array.from({ length: 130 }).map(() => {
-      // Explode from bottom center
-      const angle = (Math.random() * Math.PI / 3) + Math.PI / 3; // roughly upward
-      const speed = Math.random() * 18 + 12;
-      return {
-        x: canvas.width / 2,
-        y: canvas.height * 0.8,
-        r: Math.random() * 6 + 4,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        tilt: Math.random() * 10 - 5,
-        tiltAngleIncremental: Math.random() * 0.08 + 0.03,
-        tiltAngle: 0,
-        vx: Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1),
-        vy: -Math.sin(angle) * speed,
-      };
-    });
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-    let animationFrameId;
-    const update = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      let active = false;
-
-      particles.forEach((p) => {
-        p.tiltAngle += p.tiltAngleIncremental;
-        p.y += p.vy;
-        p.x += p.vx;
-        
-        // physics
-        p.vy += 0.45; // gravity
-        p.vx *= 0.98; // drag
-        p.tilt = Math.sin(p.tiltAngle) * 12;
-
-        // Keep rendering if at least one particle is within screen bounds
-        if (p.y <= canvas.height && p.x >= 0 && p.x <= canvas.width) {
-          active = true;
-        }
-
-        ctx.beginPath();
-        ctx.lineWidth = p.r;
-        ctx.strokeStyle = p.color;
-        ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
-        ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
-        ctx.stroke();
-      });
-
-      if (active) {
-        animationFrameId = requestAnimationFrame(update);
-      }
-    };
-
-    update();
-    
-    window.addEventListener('resize', setCanvasSize);
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', setCanvasSize);
-    };
-  }, []);
+  const handleListAnother = () => {
+    resetListing();
+    navigate('/sell/isbn');
+  };
 
   return (
-    <div className="relative max-w-xl mx-auto py-12 px-4">
-      {/* Absolute overlay canvas for confetti */}
-      <canvas 
-        ref={canvasRef} 
-        className="fixed inset-0 w-full h-full pointer-events-none z-50"
-      />
-
-      <div className="bg-cards p-8 md:p-12 rounded-3xl border border-gray-200/50 shadow-md text-center relative z-10 animate-bounceIn">
+    <div className="bg-[#F8F7FF] min-h-screen py-12">
+      <div className="max-w-2xl mx-auto px-6">
         
-        {/* Animated Check Circle */}
-        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xs border border-green-200/40">
-          <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
+        {/* Success Box */}
+        <div className="bg-white border border-bookify-border/70 rounded-3xl p-8 md:p-12 shadow-md text-center space-y-6">
+          
+          {/* Animated Success Badge */}
+          <div className="w-20 h-20 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+            <CheckCircle2 size={44} strokeWidth={2.5} />
+          </div>
 
-        <h1 className="text-3xl md:text-4xl font-extrabold text-text-main mb-3 font-poppins">
-          Your book is live!
-        </h1>
-        <p className="text-gray-500 font-inter text-sm mb-8 max-w-sm mx-auto leading-relaxed">
-          Students at your campus can now discover and purchase your textbook. Keep an eye on your messages!
-        </p>
+          <div className="space-y-2">
+            <span className="inline-block bg-[#EEEAFE] text-[#6C4BF4] text-xs font-extrabold uppercase tracking-wider px-3.5 py-1 rounded-full">
+              ★ Listing Published Live
+            </span>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-[#17152A] font-[family-name:var(--font-heading)]">
+              Your Book is Live on Campus!
+            </h1>
+            <p className="text-xs md:text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
+              Students at your university can now find, chat with you, and reserve <strong>{listingData.title || 'your book'}</strong>.
+            </p>
+          </div>
 
-        {/* Listing ID Box */}
-        <div className="bg-primary/5 border border-primary/20 rounded-2xl py-4 px-6 mb-8 inline-block">
-          <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 font-inter">
-            Listing ID
-          </span>
-          <span className="text-lg font-mono font-bold text-primary tracking-wider">
-            {listingId}
-          </span>
-        </div>
+          {/* Reference ID Pill */}
+          <div className="bg-[#F8F7FF] border border-gray-200/80 rounded-2xl p-4 flex items-center justify-between gap-3 text-left">
+            <div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Listing Reference ID</span>
+              <div className="text-sm font-mono font-bold text-[#6C4BF4]">{listingId}</div>
+            </div>
+            <button
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:text-[#6C4BF4] hover:border-[#6C4BF4] transition cursor-pointer shadow-2xs"
+            >
+              {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+              {copied ? 'Copied Link!' : 'Copy Share Link'}
+            </button>
+          </div>
 
-        {/* Button Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
-            onClick={() => navigate('/listings')}
-            className="bg-cta hover:bg-cta/90 text-white font-bold py-3.5 px-8 rounded-xl text-sm transition cursor-pointer font-inter shadow-xs"
-          >
-            View My Listings
-          </button>
-          <button
-            onClick={() => navigate('/sell')}
-            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-3.5 px-6 rounded-xl text-sm transition cursor-pointer font-inter"
-          >
-            List Another Book
-          </button>
+          {/* What happens next box */}
+          <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 text-left space-y-2 text-xs text-purple-900">
+            <div className="font-bold flex items-center gap-1.5">
+              <Sparkles size={14} className="text-[#6C4BF4]" /> What happens next?
+            </div>
+            <p className="text-purple-800/80 leading-relaxed text-[11px]">
+              When an interested student messages you or requests a meetup, you will receive an instant notification in your Messages center.
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-4 flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <button
+              onClick={() => navigate('/dashboard/listings')}
+              className="w-full sm:w-auto px-6 py-3.5 bg-[#6C4BF4] hover:bg-[#5B3DE0] text-white font-bold text-sm rounded-xl transition shadow-md shadow-[#6C4BF4]/25 cursor-pointer"
+            >
+              Go to My Listings
+            </button>
+
+            <button
+              onClick={handleListAnother}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white border border-gray-200 hover:bg-gray-50 text-[#17152A] font-bold text-sm rounded-xl transition cursor-pointer"
+            >
+              <PlusCircle size={16} /> List Another Book
+            </button>
+          </div>
+
         </div>
 
       </div>

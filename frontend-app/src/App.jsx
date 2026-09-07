@@ -2,6 +2,7 @@ import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
 import { CommerceProvider } from "./context/CommerceContext";
+import { ListingProvider } from "./context/ListingContext";
 import ScrollToTop from "./components/ui/ScrollToTop";
 
 export default function App() {
@@ -10,7 +11,9 @@ export default function App() {
       <ScrollToTop />
       <AuthProvider>
         <CommerceProvider>
-          <AppRoutes />
+          <ListingProvider>
+            <AppRoutes />
+          </ListingProvider>
         </CommerceProvider>
       </AuthProvider>
     </BrowserRouter>

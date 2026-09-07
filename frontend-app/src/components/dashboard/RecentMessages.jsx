@@ -1,6 +1,9 @@
+import { useNavigate, Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 
 function RecentMessages() {
+  const navigate = useNavigate();
+
   const messages = [
     {
       name: "Rahul Sharma",
@@ -23,19 +26,20 @@ function RecentMessages() {
           Recent Messages
         </h3>
 
-        <button
-          type="button"
-          className="text-xs font-semibold text-[#6C4BF4] cursor-pointer hover:underline bg-transparent border-none"
+        <Link
+          to="/chat"
+          className="text-xs font-semibold text-[#6C4BF4] cursor-pointer hover:underline"
         >
           View All
-        </button>
+        </Link>
       </div>
 
       <div className="space-y-5">
         {messages.map((message) => (
           <div
             key={message.name}
-            className="flex items-center gap-3"
+            onClick={() => navigate('/chat')}
+            className="flex items-center gap-3 cursor-pointer hover:bg-gray-50/80 p-1.5 rounded-xl transition"
           >
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gray-100 bg-[#EDE7FF]">
               <img 
@@ -62,12 +66,11 @@ function RecentMessages() {
               <span className="text-[10px] text-gray-450">
                 {message.time}
               </span>
-              <button 
-                type="button"
+              <div 
                 className="flex h-5 w-5 items-center justify-center rounded-full bg-[#6C4BF4] text-white hover:bg-[#5B3DE0] cursor-pointer shadow-sm transition"
               >
                 <ChevronRight size={12} strokeWidth={3} />
-              </button>
+              </div>
             </div>
           </div>
         ))}

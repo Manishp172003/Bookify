@@ -1,167 +1,173 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ListingWizardLayout from '../../components/listing/ListingWizardLayout';
+import { useListing } from '../../context/ListingContext';
+import { listingService } from '../../services/listingService';
+import { 
+  CheckCircle2, 
+  MapPin, 
+  ShieldCheck, 
+  Sparkles, 
+  Tag, 
+  BookOpen, 
+  Clock, 
+  Repeat, 
+  HeartHandshake, 
+  ArrowLeft, 
+  Send 
+} from 'lucide-react';
 
 export default function PreviewListing() {
   const navigate = useNavigate();
+  const { listingData, resetListing } = useListing();
+  const [isPublishing, setIsPublishing] = useState(false);
 
-  // Mocked details to simulate previously entered step data
-  const listingData = {
-    book: {
-      title: "Introduction to Algorithms",
-      author: "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein",
-      publisher: "MIT Press",
-      edition: "3rd Edition",
-      year: "2009",
-      format: "Paperback",
-      cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300"
-    },
-    condition: "Very Good",
-    conditionDesc: "Minimal signs of use. Pages are clean, spine is solid, with zero or minor highlights.",
-    price: 45.00,
-    transactionMode: "Sell",
-    location: "Student Union / Central Library, Main Campus",
-    photosCount: 3
+  const handlePublish = () => {
+    setIsPublishing(true);
+    setTimeout(() => {
+      listingService.createListing(listingData);
+      resetListing();
+      setIsPublishing(false);
+      navigate('/sell/success');
+    }, 600);
+  };
+
+  const getConditionLabel = (id) => {
+    switch (id) {
+      case 'like-new': return 'Like New';
+      case 'very-good': return 'Very Good';
+      case 'good': return 'Good';
+      case 'fair': return 'Fair';
+      default: return 'Good';
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-2">
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate('/sell/price')}
-        className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary transition font-inter cursor-pointer"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Price
-      </button>
-
-      <div className="bg-cards p-6 md:p-10 rounded-3xl border border-gray-200/50 shadow-xs">
-        <h1 className="text-3xl font-extrabold text-text-main mb-2 font-poppins">Preview Your Listing</h1>
-        <p className="text-gray-500 font-inter text-sm mb-8">
-          Review your textbook listing details. Once published, students at your campus can purchase it immediately.
-        </p>
-
-        {/* Two-Column Summary Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
-          
-          {/* Column 1: Book Info Card (Left) */}
-          <div className="lg:col-span-7 bg-background p-6 rounded-2xl border border-gray-200/40 flex flex-col sm:flex-row gap-6">
-            <div className="w-full sm:w-36 h-52 rounded-xl overflow-hidden shadow-xs shrink-0 bg-gray-200 border border-gray-300/30 relative">
-              <img 
-                src={listingData.book.cover} 
-                alt={listingData.book.title} 
-                className="w-full h-full object-cover"
-              />
-              <span className="absolute bottom-2 left-2 bg-black/65 text-white text-[10px] font-bold px-2 py-0.5 rounded-md font-inter flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {listingData.photosCount} Photos
-              </span>
-            </div>
-
-            <div className="flex-1 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-inter">
-                  Textbook Details
-                </span>
-                <h3 className="text-xl font-extrabold text-text-main mt-2 mb-2 font-poppins leading-tight">
-                  {listingData.book.title}
-                </h3>
-                <p className="text-sm font-medium text-gray-500 font-inter mb-4">
-                  by <span className="text-text-main">{listingData.book.author}</span>
-                </p>
-
-                <div className="space-y-1.5 text-xs text-gray-500 font-inter">
-                  <div>
-                    <span className="font-bold text-gray-400 uppercase text-[9px] tracking-wider inline-block w-20">Publisher:</span>
-                    <span className="text-text-main font-semibold">{listingData.book.publisher}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-gray-400 uppercase text-[9px] tracking-wider inline-block w-20">Edition:</span>
-                    <span className="text-text-main font-semibold">{listingData.book.edition}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-gray-400 uppercase text-[9px] tracking-wider inline-block w-20">Year:</span>
-                    <span className="text-text-main font-semibold">{listingData.book.year}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-gray-400 uppercase text-[9px] tracking-wider inline-block w-20">Format:</span>
-                    <span className="text-text-main font-semibold">{listingData.book.format}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 2: Listing Parameters (Right) */}
-          <div className="lg:col-span-5 space-y-6">
+    <ListingWizardLayout
+      currentStep={6}
+      title="Review & Confirm Listing"
+      subtitle="Verify your book information, photos, and price before making it live to campus buyers."
+    >
+      <div className="space-y-8">
+        
+        {/* Book Summary Card */}
+        <div className="bg-[#F8F7FF] border border-gray-200/80 rounded-3xl p-6 md:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
             
-            {/* Condition Panel */}
-            <div className="bg-cards border border-gray-200/50 p-5 rounded-2xl shadow-xs">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-inter">Condition</span>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-base font-extrabold text-text-main font-poppins">{listingData.condition}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                <span className="text-xs text-primary font-bold font-inter">Verified Grade</span>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed font-inter">
-                {listingData.conditionDesc}
-              </p>
+            {/* Cover Image */}
+            <div className="w-28 h-40 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shadow-sm shrink-0">
+              <img
+                src={listingData.photos?.[0] || listingData.cover}
+                alt={listingData.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300';
+                }}
+              />
             </div>
 
-            {/* Transaction & Price Panel */}
-            <div className="bg-cards border border-gray-200/50 p-5 rounded-2xl shadow-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 font-inter">Transaction</span>
-                  <span className="inline-block bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-lg font-inter">
-                    {listingData.transactionMode}
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 font-inter">Listing Price</span>
-                  <span className="text-xl font-extrabold text-green-600 font-inter">
-                    ${listingData.price.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Meetup Location Panel */}
-            <div className="bg-cards border border-gray-200/50 p-5 rounded-2xl shadow-xs">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-inter">Exchange Location</span>
-              <div className="flex gap-2 items-start">
-                <svg className="w-4 h-4 text-primary shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-xs font-semibold text-text-main font-inter">
-                  {listingData.location}
+            {/* Meta */}
+            <div className="flex-1 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="bg-[#6C4BF4] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
+                  {listingData.mode === 'donate' ? 'Free Donation' : listingData.mode === 'rent' ? 'Rental' : listingData.mode === 'exchange' ? 'Exchange' : 'For Sale'}
                 </span>
+                <span className="bg-[#EEEAFE] text-[#6C4BF4] text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                  {getConditionLabel(listingData.condition)}
+                </span>
+              </div>
+
+              <h2 className="text-xl md:text-2xl font-bold text-[#17152A] font-[family-name:var(--font-heading)] leading-snug">
+                {listingData.title}
+              </h2>
+
+              <p className="text-xs md:text-sm text-gray-500 font-medium">
+                by {listingData.author}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 pt-2 border-t border-gray-200/70">
+                <div><span className="font-semibold text-gray-700">ISBN:</span> {listingData.isbn || '9780262033848'}</div>
+                <div><span className="font-semibold text-gray-700">Edition:</span> {listingData.edition || 'Standard'}</div>
+                <div><span className="font-semibold text-gray-700">Publisher:</span> {listingData.publisher || 'Academic Press'}</div>
+                <div><span className="font-semibold text-gray-700">Photos:</span> {listingData.photos?.length || 1} uploaded</div>
               </div>
             </div>
 
           </div>
+
+          {/* Pricing & Terms Recap */}
+          <div className="bg-white rounded-2xl p-5 border border-gray-200/80 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Listing Price</span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                {listingData.mode === 'donate' ? (
+                  <span className="text-2xl font-extrabold text-emerald-600">FREE (₹0.00)</span>
+                ) : listingData.mode === 'exchange' ? (
+                  <div>
+                    <span className="text-base font-extrabold text-amber-600">Swap for:</span>
+                    <p className="text-xs text-gray-600 font-medium">{listingData.exchangeWish}</p>
+                  </div>
+                ) : listingData.mode === 'rent' ? (
+                  <div>
+                    <span className="text-2xl font-extrabold text-[#6C4BF4]">₹{listingData.rentalPrice}</span>
+                    <span className="text-xs text-gray-400">/{listingData.rentalDuration || 'semester'}</span>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-2xl font-extrabold text-[#17152A]">₹{listingData.price}</span>
+                    {listingData.mrp && (
+                      <span className="text-xs text-gray-400 line-through ml-2">MRP ₹{listingData.mrp}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+              <ShieldCheck size={16} className="text-emerald-600" />
+              <span>100% Escrow Protection</span>
+            </div>
+          </div>
+
+          {/* Campus Meetup */}
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <MapPin size={16} className="text-[#6C4BF4]" />
+            <span>Campus Pickup Location: <strong className="text-[#17152A]">{listingData.pickupCampus || 'Main Campus Library'}</strong></span>
+          </div>
+        </div>
+
+        {/* Publication Checklist */}
+        <div className="space-y-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-emerald-600 font-semibold">
+            <CheckCircle2 size={16} /> All listing criteria complete and validated
+          </div>
+          <p className="text-[11px] text-gray-400 pl-6">
+            By publishing, your book will immediately appear in the Explore marketplace and be visible to students across your campus.
+          </p>
         </div>
 
         {/* Footer Navigation */}
         <div className="flex items-center justify-between pt-6 border-t border-gray-100">
           <button
+            type="button"
             onClick={() => navigate('/sell/price')}
-            className="px-6 py-3.5 border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl text-sm transition cursor-pointer font-inter"
+            className="inline-flex items-center gap-2 px-6 py-3.5 border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl text-sm transition cursor-pointer"
           >
-            Back
+            <ArrowLeft size={16} /> Back to Pricing
           </button>
+
           <button
-            onClick={() => navigate('/sell/success')}
-            className="px-8 py-3.5 bg-cta hover:bg-cta/90 text-white font-bold rounded-xl text-sm transition font-inter shadow-xs cursor-pointer"
+            type="button"
+            onClick={handlePublish}
+            disabled={isPublishing}
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#6C4BF4] hover:bg-[#5B3DE0] text-white font-extrabold rounded-xl text-sm transition shadow-lg shadow-[#6C4BF4]/30 cursor-pointer"
           >
-            Publish Listing
+            <Send size={16} />
+            {isPublishing ? 'Publishing to Campus...' : 'Publish Listing Now'}
           </button>
         </div>
+
       </div>
-    </div>
+    </ListingWizardLayout>
   );
 }
