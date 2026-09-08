@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Feather } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
@@ -38,9 +38,15 @@ function Login() {
         setIsLoading(false);
         login(formData.identifier);
         
-        // Redirect to protected target page, or fallback to dashboard
-        const from = location.state?.from?.pathname || "/dashboard";
-        navigate(from, { replace: true });
+        // Smart author detection
+        const isAuthor = formData.identifier.toLowerCase().includes("author");
+        if (isAuthor) {
+          navigate("/author", { replace: true });
+        } else {
+          // Redirect to protected target page, or fallback to dashboard
+          const from = location.state?.from?.pathname || "/dashboard";
+          navigate(from, { replace: true });
+        }
       }, 1500);
     }
   };
@@ -193,6 +199,20 @@ function Login() {
           Sign up
         </Link>
       </p>
+
+      {/* Author Portal Link */}
+      <div className="mt-6 pt-5 border-t border-gray-150 text-center">
+        <div className="inline-flex items-center gap-2 rounded-xl bg-[#F8F7FF] px-3.5 py-2 text-xs text-gray-600 border border-[#6C4BF4]/15">
+          <Feather size={14} className="text-[#6C4BF4] shrink-0" />
+          <span>Publishing with Bookify?</span>
+          <Link
+            to="/author/login"
+            className="font-bold text-[#6C4BF4] hover:text-[#5B3DE0] hover:underline"
+          >
+            Author Portal &rarr;
+          </Link>
+        </div>
+      </div>
     </AuthLayout>
   );
 }

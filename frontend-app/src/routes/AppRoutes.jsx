@@ -27,6 +27,7 @@ const Login = lazy(() => import("../pages/Auth/Login"));
 const Register = lazy(() => import("../pages/Auth/Register"));
 const OTPVerification = lazy(() => import("../pages/Auth/OTPVerification"));
 const AdminLogin = lazy(() => import("../pages/Auth/AdminLogin"));
+const AuthorLogin = lazy(() => import("../pages/Auth/AuthorLogin"));
 
 // Student Dashboard / Profile
 const Profile = lazy(() => import("../pages/Profile/Profile"));
@@ -208,6 +209,8 @@ function AppRoutes() {
         <Route path="/verify-otp" element={<OTPVerification />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/author/login" element={<AuthorLogin />} />
+        <Route path="/author-login" element={<AuthorLogin />} />
 
         {/* ================= STUDENT ================= */}
 

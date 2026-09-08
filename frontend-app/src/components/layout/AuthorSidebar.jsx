@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard,
   BookOpen,
@@ -18,6 +19,8 @@ import {
 
 function AuthorSidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const activePath = location.pathname;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -87,27 +90,29 @@ function AuthorSidebar({ isOpen, onClose }) {
       </nav>
 
       {/* Logout Footer Section */}
-      <div className="border-t border-white/15 pt-4 mt-4">
+      <div className="border-t border-white/15 pt-4 mt-4 space-y-1">
         <Link
-          to="/"
+          to="/dashboard"
           onClick={() => {
             if (onItemClick) onItemClick();
           }}
           className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer text-white/80 hover:text-white"
         >
           <Globe size={18} className="text-white/80" />
-          <span className="text-sm font-semibold">Switch to Dashboard</span>
+          <span className="text-sm font-semibold">Student Marketplace</span>
         </Link>
-        <Link
-          to="/login"
+        <button
+          type="button"
           onClick={() => {
             if (onItemClick) onItemClick();
+            if (logout) logout();
+            navigate("/author/login");
           }}
-          className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer text-white/80 hover:text-white"
+          className="w-full flex items-center gap-3.5 rounded-xl px-4 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer text-white/80 hover:text-white text-left"
         >
           <LogOut size={18} className="text-white/80" />
-          <span className="text-sm font-semibold">Logout</span>
-        </Link>
+          <span className="text-sm font-semibold">Sign Out</span>
+        </button>
       </div>
     </>
   );

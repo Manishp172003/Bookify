@@ -2,7 +2,7 @@
 // This file will contain API calls for authentication endpoints
 // Currently prepared for future backend integration
 
-const API_BASE_URL = process.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 /**
  * Login user with email/phone and password

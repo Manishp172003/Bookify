@@ -29,7 +29,7 @@ export default function Footer() {
                 { to: "/sell", label: "Sell a Book" },
                 { to: "/explore?mode=rent", label: "Rent Books" },
                 { to: "/want-board", label: "Want Board" },
-                { to: "/author", label: "Author Portal" },
+                { to: "/author/login", label: "Author Portal" },
                 { to: "/admin/login", label: "Admin Login" }
               ].map((link) => (
                 <li key={link.to}>
@@ -67,7 +67,7 @@ export default function Footer() {
           <p className="text-xs text-gray-500">&copy; 2026 Bookify. All rights reserved.</p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link to="/explore" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Marketplace</Link>
-            <Link to="/author" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Authors</Link>
+            <Link to="/author/login" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Authors</Link>
             <Link to="/admin/login" className="text-xs text-gray-400 hover:text-bookify-purple transition-colors font-semibold">Admin Portal</Link>
             <a href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Privacy Policy</a>
             <a href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Terms of Service</a>
