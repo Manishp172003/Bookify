@@ -25,10 +25,8 @@ export default function Navbar() {
   const centerLinks = [
     { path: "/", label: "Home" },
     { path: "/explore", label: "Explore" },
+    { path: "/want-board", label: "Want Board" },
     { path: "/sell", label: "Sell" },
-    { path: "/explore?type=rent", label: "Rent" },
-    { path: "/explore?type=exchange", label: "Exchange" },
-    { path: "/dashboard/want-board", label: "Want Board" },
   ];
 
   return (
