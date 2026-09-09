@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Lock, Mail, ShieldAlert, KeyRound } from "lucide-react";
+ import { Eye, EyeOff, Lock, Mail, ShieldAlert, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -39,7 +39,7 @@ function AdminLogin() {
     return errs;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateAdminLogin(formData);
@@ -48,11 +48,33 @@ function AdminLogin() {
 
     if (Object.keys(validationErrors).length === 0) {
       setIsLoading(true);
-      console.log("Admin Login form is valid:", formData);
-      setTimeout(() => {
-        setIsLoading(false);
+      try {
+        const response = await fetch("http://localhost:5000/api/auth/admin-login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            code: formData.code,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Admin authentication failed");
+        }
+
+        // Save token & redirect to admin panel
+        localStorage.setItem("token", data.token);
         navigate("/admin");
-      }, 1500);
+      } catch (err) {
+        setApiError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -161,23 +183,6 @@ function AdminLogin() {
           {errors.code && (
             <p className="mt-1 text-xs text-red-500">{errors.code}</p>
           )}
-        </div>
-
-        {/* Forgot password */}
-        <div className="flex items-center justify-between">
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-600">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 accent-[#6C4BF4]"
-            />
-            Remember Session
-          </label>
-          <button
-            type="button"
-            className="text-xs font-bold text-[#6C4BF4] hover:text-[#5B3DE0]"
-          >
-            Forgot Password?
-          </button>
         </div>
 
         {/* Submit */}

@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Lock, Mail, Feather } from "lucide-react";
+ import { Eye, EyeOff, Lock, Mail, Feather, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
@@ -15,6 +15,9 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  
+  // New state for success popup modal
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const [formData, setFormData] = useState({
     identifier: "",
@@ -34,20 +37,27 @@ function Login() {
     if (Object.keys(validationErrors).length === 0) {
       setIsLoading(true);
       console.log("Login form is valid:", formData);
+      
       setTimeout(() => {
         setIsLoading(false);
         login(formData.identifier);
         
-        // Smart author detection
-        const isAuthor = formData.identifier.toLowerCase().includes("author");
-        if (isAuthor) {
-          navigate("/author", { replace: true });
-        } else {
-          // Redirect to protected target page, or fallback to dashboard
-          const from = location.state?.from?.pathname || "/dashboard";
-          navigate(from, { replace: true });
-        }
-      }, 1500);
+        // Show success popup before navigating
+        setShowSuccessPopup(true);
+
+        setTimeout(() => {
+          // Smart author detection
+          const isAuthor = formData.identifier.toLowerCase().includes("author");
+          if (isAuthor) {
+            navigate("/author", { replace: true });
+          } else {
+            // Redirect to protected target page, or fallback to dashboard
+            const from = location.state?.from?.pathname || "/dashboard";
+            navigate(from, { replace: true });
+          }
+        }, 1500);
+
+      }, 1000);
     }
   };
 
@@ -58,6 +68,21 @@ function Login() {
       illustration={loginIllustration}
       isRegister={false}
     >
+      {/* Success Popup Modal Overlay */}
+      {showSuccessPopup && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs transition-all">
+          <div className="w-80 rounded-2xl bg-white p-6 text-center shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-[#17152A]">Logged In Successfully!</h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Welcome back! Redirecting to your dashboard...
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header with mini books & plant accent */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
