@@ -1,4 +1,4 @@
-import { Eye, EyeOff } from "lucide-react";
+ import { Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -12,6 +12,9 @@ function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  
+  // New state for success popup modal
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -24,21 +27,46 @@ function Register() {
 
   const [errors, setErrors] = useState({});
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateRegister(formData);
-
     setErrors(validationErrors);
     setApiError("");
 
     if (Object.keys(validationErrors).length === 0) {
       setIsLoading(true);
-      console.log("Register form is valid:", formData);
-      setTimeout(() => {
+      try {
+        const response = await fetch("http://localhost:5000/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fullName: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+            password: formData.password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Registration failed");
+        }
+
+        // Show success popup and redirect after 2 seconds
+        setShowSuccessPopup(true);
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+
+      } catch (err) {
+        setApiError(err.message);
+      } finally {
         setIsLoading(false);
-        navigate("/verify-otp");
-      }, 2000);
+      }
     }
   };
 
@@ -49,6 +77,21 @@ function Register() {
       illustration={registerIllustration}
       isRegister={true}
     >
+      {/* Success Popup Modal Overlay */}
+      {showSuccessPopup && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs transition-all">
+          <div className="w-80 rounded-2xl bg-white p-6 text-center shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-[#17152A]">Account Created!</h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Your account has been successfully created. Redirecting to login...
+            </p>
+          </div>
+        </div>
+      )}
+
       <form className="space-y-4" onSubmit={handleSubmit}>
 
         {/* Full Name */}
@@ -56,7 +99,6 @@ function Register() {
           <label className="mb-1.5 block text-xs font-bold text-[#17152A]">
             Full Name
           </label>
-
           <input
             type="text"
             placeholder="Enter your full name"
@@ -74,7 +116,6 @@ function Register() {
           <label className="mb-1.5 block text-xs font-bold text-[#17152A]">
             Email
           </label>
-
           <input
             type="email"
             placeholder="Enter your email"
@@ -92,7 +133,6 @@ function Register() {
           <label className="mb-1.5 block text-xs font-bold text-[#17152A]">
             Phone Number
           </label>
-
           <input
             type="tel"
             placeholder="Enter your phone number"
@@ -110,7 +150,6 @@ function Register() {
           <label className="mb-1.5 block text-xs font-bold text-[#17152A]">
             Password
           </label>
-
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -119,7 +158,6 @@ function Register() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-4 pr-11 text-sm outline-none transition placeholder:text-gray-400 focus:border-[#6C4BF4] focus:ring-4 focus:ring-[#6C4BF4]/10"
             />
-
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
@@ -138,7 +176,6 @@ function Register() {
           <label className="mb-1.5 block text-xs font-bold text-[#17152A]">
             Confirm Password
           </label>
-
           <div className="relative">
             <input
               type={showConfirmPassword ? "text" : "password"}
@@ -147,7 +184,6 @@ function Register() {
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-4 pr-11 text-sm outline-none transition placeholder:text-gray-400 focus:border-[#6C4BF4] focus:ring-4 focus:ring-[#6C4BF4]/10"
             />
-
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -183,7 +219,7 @@ function Register() {
           <p className="mt-1 text-xs text-red-500">{errors.terms}</p>
         )}
 
-        {/* Create Account */}
+        {/* Create Account Button */}
         <button
           type="submit"
           disabled={isLoading}
@@ -191,6 +227,7 @@ function Register() {
         >
           {isLoading ? "Creating account..." : "Create Account"}
         </button>
+
         {apiError && (
           <p className="mt-2 text-center text-xs text-red-500">{apiError}</p>
         )}

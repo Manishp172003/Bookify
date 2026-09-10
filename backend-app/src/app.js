@@ -1,5 +1,6 @@
-﻿import express from 'express';
+﻿ import express from 'express';
 import cors from 'cors';
+import authRoutes from './routes/authRoutes.js'; // <-- 1. Import your auth routes
 
 const app = express();
 
@@ -29,6 +30,11 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// ==========================================
+// API Routes
+// ==========================================
+app.use('/api/auth', authRoutes); // <-- 2. Mount auth routes here
 
 // 404 Handler
 app.use((req, res) => {

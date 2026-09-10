@@ -1,5 +1,6 @@
-﻿import http from 'http';
+﻿ import http from 'http';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose'; // 1. Import mongoose
 import { Server as SocketIOServer } from 'socket.io';
 import app from './app.js';
 
@@ -26,11 +27,21 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start listening
-server.listen(PORT, () => {
-  console.log(`=========================================`);
-  console.log(`🚀 Bookify API running on port: ${PORT}`);
-  console.log(`📡 Socket server initialized`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`=========================================`);
-});
+// 2. Connect to MongoDB and then start the server
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log(`📦 Connected to MongoDB successfully`);
+    
+    // Start listening only after DB connection succeeds
+    server.listen(PORT, () => {
+      console.log(`=========================================`);
+      console.log(`🚀 Bookify API running on port: ${PORT}`);
+      console.log(`📡 Socket server initialized`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`=========================================`);
+    });
+  })
+  .catch((err) => {
+    console.error(`❌ MongoDB connection error: ${err.message}`);
+    process.exit(1);
+  });
