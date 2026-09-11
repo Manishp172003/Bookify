@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false },
   adminCode: { type: String }, // Stores the 15-digit code for admins
 
-  // --- New Fields for Settings ---
+  // --- Settings Fields ---
   privacy: {
     showPhone: { type: Boolean, default: false },
     showHostel: { type: Boolean, default: true },
@@ -25,6 +25,14 @@ const userSchema = new mongoose.Schema({
     accountName: { type: String, default: '' },
     accountNumber: { type: String, default: '' },
     ifscCode: { type: String, default: '' }
+  },
+  // --- Added Notification Preferences ---
+  notifications: {
+    priceDrops: { type: Boolean, default: true },
+    orderPurchases: { type: Boolean, default: true },
+    swapRequests: { type: Boolean, default: false },
+    chatNotifications: { type: Boolean, default: true },
+    meetupReminders: { type: Boolean, default: true }
   }
 }, { timestamps: true });
 

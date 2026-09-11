@@ -62,6 +62,49 @@ export default function Settings() {
     "Payment Methods",
   ];
 
+  // Fetch all settings on mount
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.warn('No authentication token found. Please log in.');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/settings', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          const userData = data.profile || data;
+          setProfileData({
+            fullName: userData.fullName || userData.name || '',
+            email: userData.email || '',
+            phone: userData.phone || userData.phoneNumber || '',
+            location: userData.location || ''
+          });
+          if (data.payment) setPaymentData(data.payment);
+          if (data.notifications) setNotifications(data.notifications);
+          if (data.privacy) setPrivacy(data.privacy);
+          if (data.address) setAddressData(data.address);
+        } else {
+          if (response.status === 403 || response.status === 401) {
+            console.error('Session expired. Please log in again.');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch settings:', error);
+      }
+    };
+
+    fetchUserSettings();
+  }, []);
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -73,7 +116,8 @@ export default function Settings() {
         },
         body: JSON.stringify({
           fullName: profileData.fullName,
-          phone: profileData.phone
+          phone: profileData.phone,
+          location: profileData.location
         }),
       });
 
@@ -88,29 +132,102 @@ export default function Settings() {
     }
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirm) {
       alert("New passwords do not match!");
       return;
     }
-    alert("Password updated successfully!");
-    setPasswordData({ current: "", newPassword: "", confirm: "" });
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/settings/password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.current,
+          newPassword: passwordData.newPassword
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert("Password updated successfully!");
+        setPasswordData({ current: "", newPassword: "", confirm: "" });
+      } else {
+        alert(data.message || 'Failed to update password.');
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+    }
   };
 
-  const handleNotificationsSubmit = (e) => {
+  const handleNotificationsSubmit = async (e) => {
     e.preventDefault();
-    alert("Notification preferences saved!");
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/settings/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(notifications),
+      });
+
+      if (response.ok) {
+        alert("Notification preferences saved!");
+      } else {
+        alert("Failed to save notification preferences.");
+      }
+    } catch (error) {
+      console.error('Error saving notifications:', error);
+    }
   };
 
-  const handlePrivacySubmit = (e) => {
+  const handlePrivacySubmit = async (e) => {
     e.preventDefault();
-    alert("Privacy settings updated!");
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/settings/privacy', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(privacy),
+      });
+
+      if (response.ok) {
+        alert("Privacy settings updated!");
+      } else {
+        alert("Failed to update privacy settings.");
+      }
+    } catch (error) {
+      console.error('Error saving privacy settings:', error);
+    }
   };
 
-  const handleAddressSubmit = (e) => {
+  const handleAddressSubmit = async (e) => {
     e.preventDefault();
-    alert("Address and campus location saved!");
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/settings/address', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(addressData),
+      });
+
+      if (response.ok) {
+        alert("Address and campus location saved!");
+      } else {
+        alert("Failed to save address details.");
+      }
+    } catch (error) {
+      console.error('Error saving address:', error);
+    }
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -134,47 +251,6 @@ export default function Settings() {
       console.error('Error saving payment data:', error);
     }
   };
-
-  useEffect(() => {
-    const fetchUserSettings = async () => {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        console.warn('No authentication token found. Please log in.');
-        return;
-      }
-
-      try {
-        const response = await fetch('http://localhost:5000/api/auth/settings', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          if (data.profile || data) {
-            const userData = data.profile || data;
-            setProfileData({
-              fullName: userData.fullName || userData.name || '',
-              email: userData.email || '',
-              phone: userData.phone || userData.phoneNumber || '',
-              location: userData.location || ''
-            });
-          }
-          if (data.payment) setPaymentData(data.payment);
-        } else {
-          if (response.status === 403 || response.status === 401) {
-            console.error('Session expired. Please log in again.');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch settings:', error);
-      }
-    };
-
-    fetchUserSettings();
-  }, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">
@@ -647,7 +723,7 @@ export default function Settings() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                           <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                            Bank Account Number
+                            Account Number
                           </label>
                           <input
                             type="text"
@@ -673,12 +749,11 @@ export default function Settings() {
                         </div>
                       </div>
                     )}
-
                     <button
                       type="submit"
                       className="w-full sm:w-auto rounded-xl bg-[#6C4BF4] px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#6C4BF4]/20 transition hover:bg-[#5B3DE0] cursor-pointer"
                     >
-                      Save Payment Methods
+                      Save Payment Details
                     </button>
                   </form>
                 </div>

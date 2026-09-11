@@ -27,7 +27,6 @@ export const login = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
-    // Find user by email or phone
     const user = await User.findOne({ 
       $or: [{ email: identifier }, { phone: identifier }] 
     });
@@ -57,7 +56,8 @@ export const login = async (req, res) => {
         phone: user.phone,
         privacy: user.privacy,
         address: user.address,
-        payment: user.payment
+        payment: user.payment,
+        notifications: user.notifications
       }
     });
   } catch (error) {
@@ -99,7 +99,8 @@ export const adminLogin = async (req, res) => {
         email: user.email,
         privacy: user.privacy,
         address: user.address,
-        payment: user.payment
+        payment: user.payment,
+        notifications: user.notifications
       }
     });
   } catch (error) {
@@ -107,12 +108,12 @@ export const adminLogin = async (req, res) => {
   }
 };
 
-// --- New Controllers for Settings Tabs ---
+// --- Settings Controllers ---
 
 // Update Privacy Settings
 export const updatePrivacy = async (req, res) => {
   try {
-    const userId = req.user.id; // Assumes you have an auth middleware setting req.user
+    const userId = req.user.id;
     const { showPhone, showHostel, requirePin } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -121,9 +122,9 @@ export const updatePrivacy = async (req, res) => {
       { new: true }
     );
 
-    res.status(200).json({ message: 'Privacy settings updated successfully', privacy: updatedUser.privacy });
+    res.status(200).json({ success: true, message: 'Privacy settings updated successfully', privacy: updatedUser.privacy });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -139,9 +140,9 @@ export const updateAddress = async (req, res) => {
       { new: true }
     );
 
-    res.status(200).json({ message: 'Address details updated successfully', address: updatedUser.address });
+    res.status(200).json({ success: true, message: 'Address details updated successfully', address: updatedUser.address });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -157,14 +158,58 @@ export const updatePayment = async (req, res) => {
       { new: true }
     );
 
-    res.status(200).json({ message: 'Payment information updated successfully', payment: updatedUser.payment });
+    res.status(200).json({ success: true, message: 'Payment information updated successfully', payment: updatedUser.payment });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// Update Notification Preferences (Newly Added)
+export const updateNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { priceDrops, orderPurchases, swapRequests, chatNotifications, meetupReminders } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { notifications: { priceDrops, orderPurchases, swapRequests, chatNotifications, meetupReminders } } },
+      { new: true }
+    );
+
+    res.status(200).json({ success: true, message: 'Notification preferences updated successfully', notifications: updatedUser.notifications });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Change Password (Newly Added)
+export const updatePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Incorrect current password' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Fetch User Settings & Profile data on load
 export const getUserSettings = async (req, res) => {
   try {
-    // Assuming req.user.id is attached by your verifyToken middleware
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -173,12 +218,14 @@ export const getUserSettings = async (req, res) => {
     res.status(200).json({
       success: true,
       profile: {
-        fullName: user.fullName || user.name || '',
+        fullName: user.fullName || '',
         email: user.email || '',
-        phone: user.phone || '',
-        location: user.location || ''
+        phone: user.phone || ''
       },
-      payment: user.payment || { mode: 'UPI', upiId: '', accountNumber: '', ifscCode: '' }
+      address: user.address || { campus: '', hostelBlock: '', meetupSpot: '' },
+      payment: user.payment || { mode: 'UPI', upiId: '', accountName: '', accountNumber: '', ifscCode: '' },
+      privacy: user.privacy || { showPhone: false, showHostel: true, requirePin: false },
+      notifications: user.notifications || { priceDrops: true, orderPurchases: true, swapRequests: false, chatNotifications: true, meetupReminders: true }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -7,12 +7,11 @@ import {
   updateProfile, 
   updatePrivacy, 
   updateAddress, 
-  updatePayment 
+  updatePayment,
+  updateNotifications, // Newly added import
+  updatePassword       // Newly added import
 } from '../controllers/authController.js';
-// Change this line:
-// import verifyToken from '../middleware/authMiddleware.js';
 
-// To this:
 import { verifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -24,9 +23,11 @@ router.post('/admin-login', adminLogin);
 
 // Settings Routes (Protected by verifyToken middleware)
 router.get('/settings', verifyToken, getUserSettings);
-router.put('/settings/profile', verifyToken, updateProfile); // Route for basic info
+router.put('/settings/profile', verifyToken, updateProfile);
 router.put('/settings/privacy', verifyToken, updatePrivacy);
 router.put('/settings/address', verifyToken, updateAddress);
 router.put('/settings/payment', verifyToken, updatePayment);
+router.put('/settings/notifications', verifyToken, updateNotifications); // New Route
+router.put('/settings/password', verifyToken, updatePassword);           // New Route
 
 export default router;
