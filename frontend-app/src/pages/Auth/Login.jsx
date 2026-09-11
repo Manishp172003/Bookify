@@ -26,7 +26,7 @@ function Login() {
 
   const [errors, setErrors] = useState({});
 
-  const handleSubmit = (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateLogin(formData);
@@ -36,28 +36,52 @@ function Login() {
 
     if (Object.keys(validationErrors).length === 0) {
       setIsLoading(true);
-      console.log("Login form is valid:", formData);
       
-      setTimeout(() => {
+      try {
+        // 1. Send login credentials to backend API
+        const response = await fetch("http://localhost:5000/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            identifier: formData.identifier,
+            password: formData.password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // 2. Store the JWT token in localStorage
+          localStorage.setItem("token", data.token);
+
+          // 3. Update Auth Context state
+          login(data.user || formData.identifier);
+
+          setIsLoading(false);
+          setShowSuccessPopup(true);
+
+          // 4. Redirect after short popup delay
+          setTimeout(() => {
+            const isAuthor = formData.identifier.toLowerCase().includes("author");
+            if (isAuthor) {
+              navigate("/author", { replace: true });
+            } else {
+              const from = location.state?.from?.pathname || "/dashboard";
+              navigate(from, { replace: true });
+            }
+          }, 1500);
+        } else {
+          // Handle wrong password / user not found errors from backend
+          setIsLoading(false);
+          setApiError(data.message || "Login failed. Invalid credentials.");
+        }
+      } catch (error) {
         setIsLoading(false);
-        login(formData.identifier);
-        
-        // Show success popup before navigating
-        setShowSuccessPopup(true);
-
-        setTimeout(() => {
-          // Smart author detection
-          const isAuthor = formData.identifier.toLowerCase().includes("author");
-          if (isAuthor) {
-            navigate("/author", { replace: true });
-          } else {
-            // Redirect to protected target page, or fallback to dashboard
-            const from = location.state?.from?.pathname || "/dashboard";
-            navigate(from, { replace: true });
-          }
-        }, 1500);
-
-      }, 1000);
+        setApiError("Unable to connect to backend server. Make sure server is running on port 5000.");
+        console.error("Login fetch error:", error);
+      }
     }
   };
 

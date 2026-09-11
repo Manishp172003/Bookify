@@ -1,6 +1,6 @@
 ﻿ import express from 'express';
 import cors from 'cors';
-import authRoutes from './routes/authRoutes.js'; // <-- 1. Import your auth routes
+import authRoutes from './routes/authRoutes.js'; // Keep only this
 
 const app = express();
 
@@ -34,7 +34,7 @@ app.get('/api/health', (req, res) => {
 // ==========================================
 // API Routes
 // ==========================================
-app.use('/api/auth', authRoutes); // <-- 2. Mount auth routes here
+app.use('/api/auth', authRoutes); // This handles /api/auth/settings, /api/auth/privacy, etc.
 
 // 404 Handler
 app.use((req, res) => {
