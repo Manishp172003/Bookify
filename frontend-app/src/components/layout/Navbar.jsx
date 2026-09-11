@@ -32,16 +32,15 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E7E4F2] shadow-xs">
       <div className="max-w-[1440px] mx-auto px-6 md:px-10">
-        <div className="flex items-center justify-between h-16.5 gap-4">
+        <div className="flex items-center justify-between h-16 sm:h-17 gap-4">
           
-          {/* Left: Bookify Logo */}
-          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="w-8.5 h-8.5 bg-gradient-to-tr from-[#6C4BF4] to-[#8B6FF5] rounded-xl flex items-center justify-center font-bold text-white text-base shadow-sm">
-              B
-            </div>
-            <span className="font-[family-name:var(--font-heading)] font-extrabold text-lg text-[#17152A] tracking-wider">
-              BOOK<span className="text-[#6C4BF4]">IFY</span>
-            </span>
+          {/* Left: Brand Logo */}
+          <Link to="/" className="flex items-center flex-shrink-0 group py-0.5">
+            <img
+              src="/logo-transparent.png"
+              alt="Athenura Logo"
+              className="h-9.5 sm:h-10 md:h-11 w-auto max-w-[150px] sm:max-w-[175px] object-contain transition-transform duration-200 group-hover:scale-105"
+            />
           </Link>
 
           {/* Center Navigation Links (Hidden on Mobile) */}
