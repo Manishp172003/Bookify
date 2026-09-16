@@ -8,8 +8,8 @@ import {
   updatePrivacy, 
   updateAddress, 
   updatePayment,
-  updateNotifications, // Newly added import
-  updatePassword       // Newly added import
+  updateNotifications, 
+  updatePassword       
 } from '../controllers/authController.js';
 
 import { verifyToken } from '../middleware/authMiddleware.js';
