@@ -5,6 +5,120 @@ const isValidObjectId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
 };
 
+// ─── ISBN Lookup (Google Books + Open Library fallback) ─────────────────────
+
+/**
+ * Maps a Google Books volume item to Bookify's metadata shape.
+ */
+const mapGoogleVolume = (item) => {
+  const info = item?.volumeInfo || {};
+  return {
+    title: info.title || "",
+    author: (info.authors || []).join(", "),
+    publisher: info.publisher || "",
+    publishedDate: info.publishedDate || "",
+    description: info.description || "",
+    category: (info.categories || [])[0] || "General",
+    coverImage:
+      info.imageLinks?.thumbnail?.replace("http://", "https://") ||
+      info.imageLinks?.smallThumbnail?.replace("http://", "https://") ||
+      "",
+    pageCount: info.pageCount || null,
+    language: info.language || "en",
+    isbn: (info.industryIdentifiers || [])
+      .find((x) => x.type === "ISBN_13" || x.type === "ISBN_10")?.identifier || "",
+  };
+};
+
+export const lookupISBN = async (req, res) => {
+  const { isbn } = req.params;
+
+  if (!isbn || !/^[0-9Xx-]{10,17}$/.test(isbn.replace(/-/g, ""))) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid ISBN format",
+      data: null,
+    });
+  }
+
+  const cleanIsbn = isbn.replace(/-/g, "");
+
+  try {
+    // ── Primary: Google Books API ────────────────────────────────────────────
+    const googleUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1${
+      process.env.GOOGLE_BOOKS_API_KEY ? `&key=${process.env.GOOGLE_BOOKS_API_KEY}` : ""
+    }`;
+
+    let googleData = null;
+    try {
+      const googleRes = await fetch(googleUrl, { signal: AbortSignal.timeout(8000) });
+      const rawText = await googleRes.text();
+      googleData = rawText ? JSON.parse(rawText) : null;
+    } catch (gErr) {
+      console.warn("[ISBN] Google Books unavailable:", gErr.message);
+    }
+
+    if (googleData?.totalItems > 0 && googleData.items?.length > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Book metadata fetched from Google Books",
+        source: "google_books",
+        data: mapGoogleVolume(googleData.items[0]),
+      });
+    }
+
+    // ── Fallback: Open Library API ───────────────────────────────────────────
+    let olData = null;
+    try {
+      const olRes = await fetch(
+        `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`,
+        { signal: AbortSignal.timeout(8000) }
+      );
+      const rawText = await olRes.text();
+      olData = rawText ? JSON.parse(rawText) : null;
+    } catch (olErr) {
+      console.warn("[ISBN] Open Library unavailable:", olErr.message);
+    }
+
+    const olKey = `ISBN:${cleanIsbn}`;
+    if (olData && olData[olKey]) {
+      const book = olData[olKey];
+      const coverImage = book.cover?.large || book.cover?.medium || book.cover?.small || "";
+      return res.status(200).json({
+        success: true,
+        message: "Book metadata fetched from Open Library",
+        source: "open_library",
+        data: {
+          title: book.title || "",
+          author: (book.authors || []).map((a) => a.name).join(", "),
+          publisher: (book.publishers || []).map((p) => p.name).join(", "),
+          publishedDate: book.publish_date || "",
+          description: book.excerpts?.[0]?.text || "",
+          category: (book.subjects || [])[0]?.name || "General",
+          coverImage,
+          pageCount: book.number_of_pages || null,
+          language: book.languages?.[0]?.key?.replace("/languages/", "") || "en",
+          isbn: cleanIsbn,
+        },
+      });
+    }
+
+    // ── Not found in either source ────────────────────────────────────────────
+    return res.status(404).json({
+      success: false,
+      message: "No book found for this ISBN. Please enter details manually.",
+      data: null,
+    });
+  } catch (error) {
+    console.error("ISBN lookup error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "ISBN lookup service temporarily unavailable",
+      data: null,
+    });
+  }
+};
+
 export const getBooks = async (req, res) => {
   try {
     const {

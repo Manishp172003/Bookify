@@ -1,33 +1,47 @@
- import express from 'express';
-import { 
-  register, 
-  login, 
-  adminLogin, 
-  getUserSettings, 
-  updateProfile, 
-  updatePrivacy, 
-  updateAddress, 
+import express from "express";
+import {
+  register,
+  login,
+  adminLogin,
+  logout,
+  forgotPassword,
+  resetPassword,
+  verifyOTP,
+  resendOTP,
+  getUserSettings,
+  updateProfile,
+  updatePrivacy,
+  updateAddress,
   updatePayment,
-  updateNotifications, 
-  updatePassword       
-} from '../controllers/authController.js';
+  updateNotifications,
+  updatePassword,
+} from "../controllers/authController.js";
 
-import { verifyToken } from '../middleware/authMiddleware.js';
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Existing Auth routes
-router.post('/register', register);
-router.post('/login', login);
-router.post('/admin-login', adminLogin);
+// ─── Public Auth Routes ───────────────────────────────────────────────────────
+router.post("/register", register);
+router.post("/login", login);
+router.post("/admin-login", adminLogin);
+router.post("/logout", logout);
 
-// Settings Routes (Protected by verifyToken middleware)
-router.get('/settings', verifyToken, getUserSettings);
-router.put('/settings/profile', verifyToken, updateProfile);
-router.put('/settings/privacy', verifyToken, updatePrivacy);
-router.put('/settings/address', verifyToken, updateAddress);
-router.put('/settings/payment', verifyToken, updatePayment);
-router.put('/settings/notifications', verifyToken, updateNotifications); // New Route
-router.put('/settings/password', verifyToken, updatePassword);           // New Route
+// ─── Password Reset (public — no auth token required) ────────────────────────
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+
+// ─── OTP Verification (public) ───────────────────────────────────────────────
+router.post("/verify-otp", verifyOTP);
+router.post("/resend-otp", resendOTP);
+
+// ─── Settings Routes (Protected) ─────────────────────────────────────────────
+router.get("/settings", verifyToken, getUserSettings);
+router.put("/settings/profile", verifyToken, updateProfile);
+router.put("/settings/privacy", verifyToken, updatePrivacy);
+router.put("/settings/address", verifyToken, updateAddress);
+router.put("/settings/payment", verifyToken, updatePayment);
+router.put("/settings/notifications", verifyToken, updateNotifications);
+router.put("/settings/password", verifyToken, updatePassword);
 
 export default router;

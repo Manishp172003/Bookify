@@ -1,6 +1,9 @@
 import Book from "../models/Book.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
+import Coupon from "../models/Coupon.js";
+
+// ─── Platform Metrics ─────────────────────────────────────────────────────────
 
 export const getMetrics = async (req, res) => {
   try {
@@ -33,6 +36,8 @@ export const getMetrics = async (req, res) => {
     });
   }
 };
+
+// ─── Listing Moderation ───────────────────────────────────────────────────────
 
 export const getListings = async (req, res) => {
   try {
@@ -70,6 +75,8 @@ export const moderateListing = async (req, res) => {
   }
 };
 
+// ─── Escrow Management ────────────────────────────────────────────────────────
+
 export const getOrdersEscrow = async (req, res) => {
   try {
     const orders = await Order.find().populate("bookId").populate("buyerId sellerId", "fullName email");
@@ -106,9 +113,11 @@ export const updateEscrow = async (req, res) => {
   }
 };
 
+// ─── User Management ──────────────────────────────────────────────────────────
+
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    const users = await User.find().select("-password -otp -resetToken").sort({ createdAt: -1 });
     return res.status(200).json({
       success: true,
       message: "Users fetched successfully",
@@ -127,7 +136,11 @@ export const getUsers = async (req, res) => {
 export const verifyAuthor = async (req, res) => {
   try {
     const { isVerified } = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, { isVerified, role: "author" }, { new: true });
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isVerified, role: "author", isAdmin: false },
+      { new: true }
+    ).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found", data: null });
     }
@@ -141,6 +154,8 @@ export const verifyAuthor = async (req, res) => {
     });
   }
 };
+
+// ─── Dispute Handling ─────────────────────────────────────────────────────────
 
 export const getDisputes = async (req, res) => {
   try {
@@ -157,6 +172,143 @@ export const getDisputes = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch disputes",
+      data: null,
+    });
+  }
+};
+
+// ─── Admin Coupon Management ──────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/coupons
+ * Returns all coupons across the platform (admin view).
+ */
+export const getAdminCoupons = async (req, res) => {
+  try {
+    const coupons = await Coupon.find()
+      .populate("authorId", "fullName email role")
+      .sort({ createdAt: -1 });
+    return res.status(200).json({
+      success: true,
+      message: "All coupons fetched successfully",
+      data: coupons,
+    });
+  } catch (error) {
+    console.error("Get admin coupons error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch coupons",
+      data: null,
+    });
+  }
+};
+
+/**
+ * POST /api/admin/coupons
+ * Admin creates a platform-wide coupon (not tied to a specific author's books).
+ */
+export const createAdminCoupon = async (req, res) => {
+  try {
+    const { code, discountType, discountValue, expiresAt, maxUses, applicableBooks } = req.body;
+
+    if (!code || !discountType || discountValue === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "code, discountType and discountValue are required",
+        data: null,
+      });
+    }
+
+    const existing = await Coupon.findOne({ code: code.toUpperCase() });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "A coupon with this code already exists",
+        data: null,
+      });
+    }
+
+    const coupon = await Coupon.create({
+      authorId: req.user._id, // admin acts as creator
+      code: code.toUpperCase(),
+      discountType,
+      discountValue: Number(discountValue),
+      expiresAt: expiresAt || null,
+      maxUses: Number(maxUses) || 0,
+      applicableBooks: Array.isArray(applicableBooks) ? applicableBooks : [],
+      isActive: true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Platform coupon created successfully",
+      data: coupon,
+    });
+  } catch (error) {
+    console.error("Create admin coupon error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create coupon",
+      data: null,
+    });
+  }
+};
+
+/**
+ * PATCH /api/admin/coupons/:id
+ * Admin toggles or updates a coupon's fields (isActive, discountValue, expiresAt, maxUses).
+ */
+export const updateCouponStatus = async (req, res) => {
+  try {
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Coupon not found", data: null });
+    }
+
+    const { isActive, discountValue, expiresAt, maxUses } = req.body;
+
+    if (isActive !== undefined) coupon.isActive = Boolean(isActive);
+    if (discountValue !== undefined) coupon.discountValue = Number(discountValue);
+    if (expiresAt !== undefined) coupon.expiresAt = expiresAt;
+    if (maxUses !== undefined) coupon.maxUses = Number(maxUses);
+
+    await coupon.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Coupon ${coupon.isActive ? "activated" : "deactivated"} successfully`,
+      data: coupon,
+    });
+  } catch (error) {
+    console.error("Update coupon status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update coupon",
+      data: null,
+    });
+  }
+};
+
+/**
+ * DELETE /api/admin/coupons/:id
+ * Admin permanently deletes any coupon from the platform.
+ */
+export const deleteAdminCoupon = async (req, res) => {
+  try {
+    const coupon = await Coupon.findByIdAndDelete(req.params.id);
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Coupon not found", data: null });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Coupon deleted successfully",
+      data: null,
+    });
+  } catch (error) {
+    console.error("Delete admin coupon error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete coupon",
       data: null,
     });
   }

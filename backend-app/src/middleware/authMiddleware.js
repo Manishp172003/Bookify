@@ -1,6 +1,11 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
+/**
+ * protect — verifies JWT and attaches req.user.
+ * Ensures req.user.role is always set (falls back from isAdmin for
+ * documents that existed before the role field was added).
+ */
 export const protect = async (req, res, next) => {
   let token;
 
@@ -19,11 +24,11 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
 
-    req.user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select("-password");
 
-    if (!req.user) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: "User not found",
@@ -31,6 +36,12 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    // Backward-compatibility: if role is missing but isAdmin is true, synthesize it
+    if (!user.role) {
+      user.role = user.isAdmin ? "admin" : "student";
+    }
+
+    req.user = user;
     next();
   } catch (error) {
     return res.status(401).json({
@@ -41,6 +52,10 @@ export const protect = async (req, res, next) => {
   }
 };
 
+/**
+ * authorize — role-based access control guard.
+ * Usage: authorize("admin") or authorize("author", "admin")
+ */
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -54,7 +69,7 @@ export const authorize = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: "Forbidden: insufficient role",
+        message: `Forbidden: requires role '${roles.join("' or '")}'`,
         data: null,
       });
     }
@@ -63,4 +78,5 @@ export const authorize = (...roles) => {
   };
 };
 
-export const verifyToken = protect;
+// Alias for backward compatibility
+export const verifyToken = protect;
