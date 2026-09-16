@@ -5,6 +5,7 @@ export default function ScrollToTop() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    if (pathname.startsWith("/chat")) return;
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [pathname]);
 

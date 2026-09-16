@@ -24,7 +24,7 @@ function Chat() {
 
   const handleSelect = (id) => {
     selectConversation(id);
-    navigate(`/chat/${id}`);
+    window.history.replaceState(null, "", `/chat/${id}`);
     setShowMobileList(false);
   };
 
@@ -33,7 +33,7 @@ function Chat() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6 h-[calc(100vh-66px)] flex flex-col animate-fade-in">
+    <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-6 h-[calc(100vh-66px)] flex flex-col">
       {/* Top Banner / Breadcrumb */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>

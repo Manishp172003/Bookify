@@ -55,8 +55,8 @@ function ChatList({ conversations, activeId, onSelectConversation }) {
                 key={conv.id}
                 type="button"
                 onClick={() => onSelectConversation(conv.id)}
-                className={`flex w-full items-start gap-3 p-3.5 text-left transition cursor-pointer hover:bg-[#F8F7FF] ${
-                  isActive ? "bg-[#F0ECFF]/60 border-l-4 border-[#6C4BF4]" : ""
+                className={`flex w-full items-start gap-3 p-3.5 text-left border-l-4 transition-colors duration-150 cursor-pointer hover:bg-[#F8F7FF] ${
+                  isActive ? "bg-[#F0ECFF]/60 border-[#6C4BF4]" : "border-transparent"
                 }`}
               >
                 {/* Avatar with Online Status Indicator */}
