@@ -143,12 +143,19 @@ export default function Navbar() {
                 <Link 
                   to="/profile" 
                   className="flex h-9.5 w-9.5 items-center justify-center rounded-full overflow-hidden border border-gray-150 bg-[#EDE7FF] cursor-pointer hover:ring-2 hover:ring-[#6C4BF4]/30 hover:opacity-90 transition shrink-0 ml-1"
+                  title={user?.fullName || "Profile"}
                 >
-                  <img
-                    src={user?.avatar || "/images/profile-avatar.png"}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
+                  {user?.avatar && user.avatar !== "/images/profile-avatar.png" ? (
+                    <img
+                      src={user.avatar}
+                      alt={user?.fullName || "Profile"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="font-bold text-xs text-[#6C4BF4] uppercase">
+                      {user?.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) : "U"}
+                    </span>
+                  )}
                 </Link>
               </>
             ) : (

@@ -9,7 +9,16 @@ export function AuthProvider({ children }) {
 
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("bookify_user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.avatar === "/images/profile-avatar.png") {
+          parsed.avatar = null;
+        }
+        return parsed;
+      } catch {}
+    }
+    return null;
   });
 
   const login = (userData) => {
@@ -21,19 +30,27 @@ export function AuthProvider({ children }) {
         fullName: userData.fullName || "Student User",
         email: userData.email || "student@bookify.com",
         phone: userData.phone || "",
-        avatar: userData.avatar || "/images/profile-avatar.png",
+        avatar: userData.avatar && userData.avatar !== "/images/profile-avatar.png" ? userData.avatar : null,
       };
     } else {
       userObj = {
         id: `usr_${Date.now()}`,
         fullName: typeof userData === "string" && userData.includes("@") ? userData.split("@")[0] : "Student User",
         email: userData || "student@bookify.com",
-        avatar: "/images/profile-avatar.png",
+        avatar: null,
       };
     }
     localStorage.setItem("bookify_user", JSON.stringify(userObj));
     setIsAuthenticated(true);
     setUser(userObj);
+  };
+
+  const updateUser = (updates) => {
+    setUser((prev) => {
+      const updated = { ...(prev || {}), ...updates };
+      localStorage.setItem("bookify_user", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = () => {
@@ -44,7 +61,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,13 +1,27 @@
-import { Camera, CheckCircle, Share2, MapPin, Mail, Phone, Calendar, LogOut } from "lucide-react";
+import { useState, useRef } from "react";
+import { Camera, CheckCircle, Share2, MapPin, Mail, Phone, Calendar, LogOut, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 function ProfileHeader() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const fileInputRef = useRef(null);
+
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     alert("Profile link copied to clipboard!");
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateUser({ avatar: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -44,13 +58,28 @@ function ProfileHeader() {
           
           {/* Avatar Picture */}
           <div className="relative">
-            <img
-              src="/images/profile-avatar.png"
-              alt="Profile"
-              className="h-28 w-28 rounded-full border-4 border-white object-cover shadow-md"
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
             />
+            {user?.avatar && user.avatar !== "/images/profile-avatar.png" ? (
+              <img
+                src={user.avatar}
+                alt={user?.fullName || "Profile"}
+                className="h-28 w-28 rounded-full border-4 border-white object-cover shadow-md"
+              />
+            ) : (
+              <div className="h-28 w-28 rounded-full border-4 border-white bg-gradient-to-br from-[#6C4BF4] to-[#8B3FD9] text-white flex items-center justify-center text-3xl font-extrabold shadow-md">
+                {user?.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) : "U"}
+              </div>
+            )}
             <button
               type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload Profile Picture"
               className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md cursor-pointer hover:bg-gray-50 transition border border-gray-100"
             >
               <Camera size={15} className="text-[#6C4BF4]" />
@@ -92,7 +121,7 @@ function ProfileHeader() {
         <div className="mt-5">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-[#17152A]">
-              Manish Pawar
+              {user?.fullName || "Student User"}
             </h1>
 
             <span className="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-600 border border-green-100">
@@ -102,19 +131,19 @@ function ProfileHeader() {
           </div>
         </div>
 
-        {/* Metadata Grid (Two-Column Layout to fill empty space) */}
+        {/* Metadata Grid */}
         <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 pt-5">
           
           {/* Left Column Metadata */}
           <div className="space-y-3 text-sm text-gray-500 font-medium">
             <div className="flex items-center gap-2.5">
               <MapPin size={16} className="text-[#6C4BF4]" />
-              <span>Nagpur, Maharashtra</span>
+              <span>Campus Community, India</span>
             </div>
             
             <div className="flex items-center gap-2.5">
               <Calendar size={16} className="text-[#6C4BF4]" />
-              <span>Member since May 2004</span>
+              <span>Member since 2025</span>
             </div>
           </div>
 
@@ -122,12 +151,12 @@ function ProfileHeader() {
           <div className="space-y-3 text-sm text-gray-500 font-medium">
             <div className="flex items-center gap-2.5">
               <Mail size={16} className="text-[#6C4BF4]" />
-              <span>manishpawar@gmail.com</span>
+              <span>{user?.email || "student@bookify.com"}</span>
             </div>
 
             <div className="flex items-center gap-2.5">
               <Phone size={16} className="text-[#6C4BF4]" />
-              <span>+91 9876543210</span>
+              <span>{user?.phone || "+91 9876543210"}</span>
             </div>
           </div>
 

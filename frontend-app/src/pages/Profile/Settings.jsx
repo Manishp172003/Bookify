@@ -1,8 +1,11 @@
- import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { Eye, EyeOff, Camera, Trash2, Menu } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Settings() {
+  const { user, updateUser } = useAuth();
+  const fileInputRef = useRef(null);
   const [activeCategory, setActiveCategory] = useState("Profile Settings");
   
   // Profile Form State
@@ -307,12 +310,34 @@ export default function Settings() {
                   </div>
                   <form onSubmit={handleProfileSubmit} className="space-y-6">
                     <div className="bg-gray-50/55 rounded-2xl p-4 border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
-                      <div className="h-16 w-16 overflow-hidden rounded-full border border-gray-150 bg-[#EDE7FF] shrink-0">
-                        <img
-                          src="/images/profile-avatar.png"
-                          alt="Profile Preview"
-                          className="h-full w-full object-cover"
-                        />
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              updateUser({ avatar: reader.result });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <div className="h-16 w-16 overflow-hidden rounded-full border border-gray-150 bg-[#EDE7FF] flex items-center justify-center shrink-0">
+                        {user?.avatar && user.avatar !== "/images/profile-avatar.png" ? (
+                          <img
+                            src={user.avatar}
+                            alt="Profile Preview"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="font-bold text-lg text-[#6C4BF4] uppercase">
+                            {user?.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) : "U"}
+                          </span>
+                        )}
                       </div>
                       <div className="text-center sm:text-left flex-1">
                         <p className="text-xs font-bold text-[#17152A]">Profile Picture</p>
@@ -320,18 +345,22 @@ export default function Settings() {
                         <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
                           <button
                             type="button"
+                            onClick={() => fileInputRef.current?.click()}
                             className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-[10px] font-bold text-gray-700 transition hover:bg-gray-50 hover:text-[#6C4BF4] cursor-pointer"
                           >
                             <Camera size={12} />
                             Change Photo
                           </button>
-                          <button
-                            type="button"
-                            className="flex items-center gap-1 rounded-xl border border-red-100 bg-red-50 px-3.5 py-2 text-[10px] font-bold text-red-500 transition hover:bg-red-100 hover:text-red-700 cursor-pointer"
-                          >
-                            <Trash2 size={12} />
-                            Remove
-                          </button>
+                          {user?.avatar && user.avatar !== "/images/profile-avatar.png" && (
+                            <button
+                              type="button"
+                              onClick={() => updateUser({ avatar: null })}
+                              className="flex items-center gap-1 rounded-xl border border-red-100 bg-red-50 px-3.5 py-2 text-[10px] font-bold text-red-500 transition hover:bg-red-100 hover:text-red-700 cursor-pointer"
+                            >
+                              <Trash2 size={12} />
+                              Remove
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

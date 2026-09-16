@@ -11,6 +11,7 @@ import {
   Menu,
 } from "lucide-react";
 import { useCommerce } from "../../context/CommerceContext";
+import { useAuth } from "../../context/AuthContext";
 
 const INITIAL_NOTIFICATIONS = [
   {
@@ -48,6 +49,7 @@ const INITIAL_NOTIFICATIONS = [
 ];
 
 function DashboardHeader() {
+  const { user } = useAuth();
   const { cartCount } = useCommerce();
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -213,13 +215,20 @@ function DashboardHeader() {
         {/* Profile */}
         <Link
           to="/profile"
-          className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-gray-150 bg-[#EDE7FF] cursor-pointer hover:opacity-90 transition"
+          className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-gray-150 bg-[#EDE7FF] cursor-pointer hover:ring-2 hover:ring-[#6C4BF4]/30 hover:opacity-90 transition shrink-0"
+          title={user?.fullName || "My Profile"}
         >
-          <img
-            src="/images/profile-avatar.png"
-            alt="Manish Pawar avatar"
-            className="h-full w-full object-cover"
-          />
+          {user?.avatar && user.avatar !== "/images/profile-avatar.png" ? (
+            <img
+              src={user.avatar}
+              alt={user?.fullName || "User avatar"}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="font-bold text-xs text-[#6C4BF4] uppercase">
+              {user?.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) : "U"}
+            </span>
+          )}
         </Link>
       </div>
     </header>

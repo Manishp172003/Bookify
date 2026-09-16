@@ -107,12 +107,18 @@ function DashboardSidebar() {
           className="flex items-center justify-between rounded-xl px-3.5 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-full overflow-hidden border border-white/20 bg-[#EDE7FF] shrink-0">
-              <img
-                src={user?.avatar || "/images/profile-avatar.png"}
-                alt="User Avatar"
-                className="h-full w-full object-cover"
-              />
+            <div className="h-9 w-9 rounded-full overflow-hidden border border-white/20 bg-white/10 flex items-center justify-center shrink-0">
+              {user?.avatar && user.avatar !== "/images/profile-avatar.png" ? (
+                <img
+                  src={user.avatar}
+                  alt={user?.fullName || "User Avatar"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="font-bold text-xs text-white uppercase">
+                  {user?.fullName ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2) : "U"}
+                </span>
+              )}
             </div>
             <span className="text-sm font-semibold text-white truncate">Logout</span>
           </div>
