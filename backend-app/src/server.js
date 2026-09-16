@@ -1,9 +1,9 @@
-﻿import http from "http";
+import http from "http";
 import dotenv from "dotenv";
 
 import app from "./app.js";
 import connectDB from "./config/db.js";
-import { initSocket } from "./socket/socket.js";
+import { initSocket } from "./config/socket.js";
 
 dotenv.config();
 

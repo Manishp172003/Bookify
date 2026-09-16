@@ -3,12 +3,17 @@ import Razorpay from "razorpay";
 
 import Order from "../models/Order.js";
 import Book from "../models/Book.js";
-import { getIO } from "../socket/socket.js";
+import { getIO } from "../config/socket.js";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+const getRazorpay = () => {
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    return new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return null;
+};
 
 export const createOrder = async (req, res) => {
   try {
@@ -69,14 +74,18 @@ export const createOrder = async (req, res) => {
     let razorpayOrder = null;
 
     if (paymentMethod === "Razorpay") {
-      razorpayOrder = await razorpay.orders.create({
-        amount: Math.round(Number(amount) * 100),
-        currency: "INR",
-        receipt: order._id.toString(),
-      });
-
-      order.razorpayOrderId = razorpayOrder.id;
-
+      const razorpayInstance = getRazorpay();
+      if (razorpayInstance) {
+        razorpayOrder = await razorpayInstance.orders.create({
+          amount: Math.round(Number(amount) * 100),
+          currency: "INR",
+          receipt: order._id.toString(),
+        });
+        order.razorpayOrderId = razorpayOrder.id;
+      } else {
+        order.razorpayOrderId = `order_mock_${Date.now()}`;
+        razorpayOrder = { id: order.razorpayOrderId, amount: Math.round(Number(amount) * 100), currency: "INR" };
+      }
       await order.save();
     }
 
