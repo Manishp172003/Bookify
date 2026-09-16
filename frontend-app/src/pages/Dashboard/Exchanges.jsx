@@ -1,11 +1,14 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
-import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu } from "lucide-react";
+import { useCommerce } from "../../context/CommerceContext";
+import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck } from "lucide-react";
 
-const MOCK_RECEIVED = [
+const INITIAL_RECEIVED = [
   {
     id: "SWP-9021",
     partner: "Sneha Reddy",
+    partnerId: "usr_sneha",
     status: "Pending Decision",
     statusColor: "text-amber-600 bg-amber-50 border-amber-100",
     yourBook: {
@@ -21,10 +24,11 @@ const MOCK_RECEIVED = [
   }
 ];
 
-const MOCK_SENT = [
+const INITIAL_SENT = [
   {
     id: "SWP-3820",
     partner: "Aarav Sharma",
+    partnerId: "usr_aarav",
     status: "Accepted - Meetup Pending",
     statusColor: "text-green-600 bg-green-50 border-green-100",
     yourBook: {
@@ -41,12 +45,50 @@ const MOCK_SENT = [
 ];
 
 export default function Exchanges() {
+  const { showToast, startOrGetConversation } = useCommerce();
   const [activeTab, setActiveTab] = useState("Received");
+  const [receivedList, setReceivedList] = useState(INITIAL_RECEIVED);
+  const [sentList, setSentList] = useState(INITIAL_SENT);
+  const [selectedMeetup, setSelectedMeetup] = useState(null);
 
-  const list = activeTab === "Received" ? MOCK_RECEIVED : MOCK_SENT;
+  const list = activeTab === "Received" ? receivedList : sentList;
 
   const handleAction = (id, type) => {
-    alert(`Exchange proposal ${id} ${type} successfully (Mock swap event).`);
+    if (type === "Accepted") {
+      setReceivedList(prev =>
+        prev.map(item =>
+          item.id === id
+            ? {
+                ...item,
+                status: "Accepted - Meetup Pending",
+                statusColor: "text-green-600 bg-green-50 border-green-100"
+              }
+            : item
+        )
+      );
+      if (showToast) showToast(`Swap proposal ${id} accepted! You can now coordinate meetup at library.`, "success");
+    } else {
+      setReceivedList(prev =>
+        prev.map(item =>
+          item.id === id
+            ? {
+                ...item,
+                status: "Declined",
+                statusColor: "text-red-600 bg-red-50 border-red-100"
+              }
+            : item
+        )
+      );
+      if (showToast) showToast(`Swap proposal ${id} declined.`, "info");
+    }
+  };
+
+  const handleOpenChat = (item) => {
+    startOrGetConversation(
+      { id: item.partnerId || "partner_usr", name: item.partner },
+      { id: item.id, title: `${item.yourBook.title} ↔ ${item.theirBook.title}`, price: "Exchange" },
+      `Hi ${item.partner}, regarding our textbook exchange for "${item.yourBook.title}" with "${item.theirBook.title}".`
+    );
   };
 
   return (
@@ -67,8 +109,8 @@ export default function Exchanges() {
             </button>
 
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-[#17152A]">Exchanges</h1>
-              <p className="mt-0.5 text-xs text-gray-400">Swap and trade textbook copies with other college students on campus.</p>
+              <h1 className="text-xl md:text-2xl font-bold text-[#17152A]">Textbook Exchanges</h1>
+              <p className="mt-0.5 text-xs text-gray-400">Swap and trade textbook copies with other college students across campus.</p>
             </div>
           </div>
 
@@ -80,7 +122,7 @@ export default function Exchanges() {
                 activeTab === "Received" ? "border-[#6C4BF4] text-[#6C4BF4]" : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
-              Offers Received ({MOCK_RECEIVED.length})
+              Offers Received ({receivedList.length})
             </button>
             <button
               onClick={() => setActiveTab("Sent")}
@@ -88,7 +130,7 @@ export default function Exchanges() {
                 activeTab === "Sent" ? "border-[#6C4BF4] text-[#6C4BF4]" : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
-              Offers Sent ({MOCK_SENT.length})
+              Offers Sent ({sentList.length})
             </button>
           </div>
 
@@ -138,7 +180,7 @@ export default function Exchanges() {
                     </div>
 
                     {/* Their Book */}
-                    <div className="md:col-span-2 rounded-xl bg-gray-50 p-4 border border-gray-100 flex items-center gap-3">
+                    <div className="md:col-span-2 rounded-xl bg-[#F8F7FF] p-4 border border-[#E9E4FF] flex items-center gap-3">
                       <div className={`h-16 w-11 shrink-0 rounded bg-gradient-to-br ${item.theirBook.coverClass} flex items-center justify-center text-[7px] font-extrabold text-white uppercase border border-black/5`}>
                         {item.theirBook.title.split(' ').map(w => w[0]).join('')}
                       </div>
@@ -153,7 +195,7 @@ export default function Exchanges() {
 
                   {/* Actions footer */}
                   <div className="mt-6 flex justify-end gap-2 border-t border-gray-100 pt-4 flex-wrap">
-                    {activeTab === "Received" ? (
+                    {activeTab === "Received" && item.status === "Pending Decision" ? (
                       <>
                         <button
                           onClick={() => handleAction(item.id, "Accepted")}
@@ -172,25 +214,67 @@ export default function Exchanges() {
                       </>
                     ) : (
                       <button
-                        onClick={() => alert("Coordinate details opening...")}
+                        onClick={() => setSelectedMeetup(item)}
                         className="flex items-center gap-1.5 border border-[#6C4BF4] text-[#6C4BF4] hover:bg-[#6C4BF4]/5 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
                       >
                         <MapPin size={13} />
-                        Setup Meetup
+                        View Meetup Details
                       </button>
                     )}
-                    <button
-                      onClick={() => alert("Opening chat discussion...")}
-                      className="flex items-center justify-center p-2.5 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-pointer"
+                    <Link
+                      to="/chat"
+                      onClick={() => handleOpenChat(item)}
+                      className="flex items-center justify-center p-2.5 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-[#6C4BF4] hover:bg-purple-50 cursor-pointer transition"
+                      title="Chat with partner"
                     >
                       <MessageSquare size={14} />
-                    </button>
+                    </Link>
                   </div>
 
                 </div>
               ))
             )}
           </div>
+
+          {/* Meetup Modal */}
+          {selectedMeetup && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
+              <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-gray-100">
+                <h3 className="text-lg font-bold text-[#17152A] mb-1">Exchange Meetup Coordination</h3>
+                <p className="text-xs text-gray-400 mb-4">Coordinate book physical inspection and handover on campus.</p>
+                
+                <div className="rounded-xl bg-[#F8F7FF] border border-[#E9E4FF] p-4 text-xs space-y-2 mb-4">
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">Trading Partner</span>
+                    <p className="font-bold text-[#17152A] mt-0.5">{selectedMeetup.partner}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">Campus Location</span>
+                    <p className="font-bold text-[#6C4BF4] mt-0.5">Central Library Ground Floor Entrance</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedMeetup(null)}
+                    className="flex-1 rounded-xl bg-gray-100 text-gray-700 py-2.5 text-xs font-bold hover:bg-gray-200 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <Link
+                    to="/chat"
+                    onClick={() => {
+                      handleOpenChat(selectedMeetup);
+                      setSelectedMeetup(null);
+                    }}
+                    className="flex-1 text-center rounded-xl bg-[#6C4BF4] text-white py-2.5 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer"
+                  >
+                    Chat to Coordinate
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
 
         </main>
       </div>

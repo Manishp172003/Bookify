@@ -56,9 +56,12 @@ const SEED_ORDERS = [
 ];
 
 export default function MyOrders() {
-  const { orders: contextOrders } = useCommerce();
+  const { orders: contextOrders, startOrGetConversation, showToast } = useCommerce();
   const [activeTab, setActiveTab] = useState("All");
   const [selectedSeller, setSelectedSeller] = useState(null);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [selectedHelpOrder, setSelectedHelpOrder] = useState(null);
+  const [helpReason, setHelpReason] = useState("");
 
   // Normalize context orders and merge with seed orders
   const formattedContextOrders = (contextOrders || []).map((ord) => ({
@@ -76,10 +79,12 @@ export default function MyOrders() {
     coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
     step: ord.status === "delivered" ? 3 : ord.status === "shipped" ? 2 : 1,
     seller: {
+      id: ord.items?.[0]?.seller?.id || "usr_seller",
       name: ord.items?.[0]?.seller?.name || "Campus Peer",
       phone: "+91 98765 00000",
       meetup: ord.address?.meetupSpot || "Main Campus Library Entrance"
-    }
+    },
+    items: ord.items || [{ title: ord.title || "Academic Book", price: ord.total || 450 }]
   }));
 
   // Combine and deduplicate
@@ -93,8 +98,21 @@ export default function MyOrders() {
     return true;
   });
 
-  const downloadInvoice = (orderId) => {
-    alert(`Downloading invoice for Order ${orderId}... (Mock PDF success)`);
+  const openInvoice = (order) => {
+    setSelectedInvoice(order);
+  };
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
+  const handleHelpSubmit = (e) => {
+    e.preventDefault();
+    if (showToast) {
+      showToast("Help ticket submitted. Campus Escrow team will review within 24h.", "success");
+    }
+    setSelectedHelpOrder(null);
+    setHelpReason("");
   };
 
   return (
@@ -211,14 +229,15 @@ export default function MyOrders() {
                       </button>
                     )}
                     <button
-                      onClick={() => downloadInvoice(order.id)}
+                      onClick={() => openInvoice(order)}
                       className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-600 hover:text-[#6C4BF4] hover:bg-gray-50 cursor-pointer transition shadow-xs"
                     >
                       <Download size={14} />
                       Invoice
                     </button>
                     <button
-                      onClick={() => alert("Help ticket created. Support will contact you shortly.")}
+                      onClick={() => setSelectedHelpOrder(order)}
+                      title="Need Help / Escrow Support"
                       className="flex items-center justify-center p-2.5 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-pointer"
                     >
                       <HelpCircle size={15} />
@@ -237,35 +256,174 @@ export default function MyOrders() {
                 <h3 className="text-lg font-bold text-[#17152A] mb-1">Meetup Details</h3>
                 <p className="text-xs text-gray-400 mb-4">Coordinate with the seller on campus to receive your book.</p>
                 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="rounded-xl bg-gray-55 p-3.5 border border-gray-100">
                     <p className="text-[10px] text-gray-400 font-bold uppercase">Seller Name</p>
-                    <p className="text-sm font-bold text-[#17152A] mt-0.5">{selectedSeller.seller.name}</p>
+                    <p className="text-sm font-bold text-[#17152A] mt-0.5">{selectedSeller.seller?.name || "Campus Seller"}</p>
                   </div>
                   <div className="rounded-xl bg-gray-55 p-3.5 border border-gray-100">
                     <p className="text-[10px] text-gray-400 font-bold uppercase">Contact Number</p>
-                    <p className="text-sm font-bold text-[#17152A] mt-0.5">{selectedSeller.seller.phone}</p>
+                    <p className="text-sm font-bold text-[#17152A] mt-0.5">{selectedSeller.seller?.phone || "+91 98765 43210"}</p>
                   </div>
-                  <div className="rounded-xl bg-gray-55 p-3.5 border border-gray-100">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">Suggested Meetup Spot</p>
-                    <p className="text-sm font-bold text-[#6C4BF4] mt-0.5 leading-relaxed">{selectedSeller.seller.meetup}</p>
+                  <div className="rounded-xl bg-[#F0ECFF] p-3.5 border border-[#E9E4FF]">
+                    <p className="text-[10px] text-[#6C4BF4] font-bold uppercase">Suggested Meetup Spot</p>
+                    <p className="text-sm font-bold text-[#6C4BF4] mt-0.5 leading-relaxed">{selectedSeller.seller?.meetup || "Central Campus Library Entrance"}</p>
                   </div>
                 </div>
 
                 <div className="mt-6 flex gap-2">
                   <button
                     onClick={() => setSelectedSeller(null)}
-                    className="flex-1 rounded-xl bg-[#6C4BF4] text-white py-3 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer"
+                    className="flex-1 rounded-xl bg-gray-100 text-gray-700 py-3 text-xs font-bold hover:bg-gray-200 cursor-pointer"
                   >
-                    Got It
+                    Close
+                  </button>
+                  <Link
+                    to="/chat"
+                    onClick={() => {
+                      if (selectedSeller?.seller) {
+                        startOrGetConversation(
+                          selectedSeller.seller,
+                          { id: selectedSeller.id, title: selectedSeller.title, price: selectedSeller.price },
+                          `Hi ${selectedSeller.seller.name}, regarding order ${selectedSeller.id} for "${selectedSeller.title}". When can we meet?`
+                        );
+                      }
+                      setSelectedSeller(null);
+                    }}
+                    className="flex-1 text-center rounded-xl bg-[#6C4BF4] text-white py-3 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer"
+                  >
+                    Chat with Seller
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Printable Invoice & Order Receipt Modal */}
+          {selectedInvoice && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+              <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#6C4BF4] text-xs font-black text-white">B</span>
+                      <span className="font-extrabold text-lg text-[#17152A] tracking-wider">BOOKIFY RECEIPT</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1">Order #{selectedInvoice.id} · {selectedInvoice.date}</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                    ✓ Escrow Protected
+                  </span>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  <div className="grid grid-cols-2 gap-4 rounded-xl bg-gray-50 p-4">
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Seller</span>
+                      <p className="font-bold text-[#17152A] mt-0.5">{selectedInvoice.seller?.name || "Campus Peer"}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Payment Method</span>
+                      <p className="font-bold text-[#17152A] mt-0.5">UPI / Razorpay Escrow</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-bold text-gray-400 uppercase">Purchased Items</span>
+                    <div className="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-100 bg-white p-3">
+                      <div className="flex justify-between py-2 font-medium">
+                        <span className="font-bold text-[#17152A]">{selectedInvoice.title}</span>
+                        <span className="font-bold text-[#6C4BF4]">{selectedInvoice.price}</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 text-gray-500 text-[11px]">
+                        <span>Platform Escrow Protection Fee</span>
+                        <span className="text-emerald-600 font-semibold">FREE</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 text-gray-500 text-[11px]">
+                        <span>Campus Handover Delivery</span>
+                        <span className="text-emerald-600 font-semibold">FREE</span>
+                      </div>
+                      <div className="flex justify-between pt-2 text-sm font-black text-[#17152A] border-t border-gray-100">
+                        <span>Total Paid</span>
+                        <span className="text-[#6C4BF4]">{selectedInvoice.price}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-[#E9E4FF] bg-[#F8F7FF] p-3 text-[11px] text-gray-600 leading-relaxed">
+                    <span className="font-bold text-[#6C4BF4]">Bookify 100% Escrow Guarantee:</span> Your funds are held safely until you verify the book condition. If anything is wrong, you receive an instant full refund.
+                  </div>
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedInvoice(null)}
+                    className="flex-1 rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    Close
                   </button>
                   <button
-                    onClick={() => { setSelectedSeller(null); alert("Opening chat..."); }}
-                    className="flex-1 rounded-xl border border-gray-200 text-gray-600 py-3 text-xs font-bold hover:bg-gray-50 cursor-pointer"
+                    type="button"
+                    onClick={handlePrintReceipt}
+                    className="flex-1 rounded-xl bg-[#6C4BF4] text-white py-2.5 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                   >
-                    Send Message
+                    <Download size={14} /> Print / Save PDF
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Help & Escrow Dispute Support Modal */}
+          {selectedHelpOrder && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
+              <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-gray-100">
+                <h3 className="text-lg font-bold text-[#17152A] mb-1">Escrow & Order Support</h3>
+                <p className="text-xs text-gray-400 mb-4">Order #{selectedHelpOrder.id} · Need assistance or have a dispute?</p>
+                
+                <form onSubmit={handleHelpSubmit} className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-500 uppercase">Reason for Issue</label>
+                    <select
+                      value={helpReason}
+                      onChange={(e) => setHelpReason(e.target.value)}
+                      required
+                      className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs font-semibold text-[#17152A] outline-none focus:border-[#6C4BF4]"
+                    >
+                      <option value="">Select a reason...</option>
+                      <option value="not_met">Seller did not show up for meetup</option>
+                      <option value="condition">Book condition does not match listing photos</option>
+                      <option value="cancel">Request order cancellation and escrow refund</option>
+                      <option value="other">Other question about transaction</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-500 uppercase">Additional Comments (Optional)</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Describe what happened..."
+                      className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 p-2.5 text-xs font-medium text-[#17152A] outline-none focus:border-[#6C4BF4]"
+                    />
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedHelpOrder(null)}
+                      className="flex-1 rounded-xl bg-gray-100 text-gray-700 py-2.5 text-xs font-bold hover:bg-gray-200 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-xl bg-[#6C4BF4] text-white py-2.5 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer"
+                    >
+                      Submit Ticket
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

@@ -1,50 +1,109 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
-import { Calendar, ShieldCheck, Clock, MessageSquare, CornerUpLeft, Menu } from "lucide-react";
+import { useCommerce } from "../../context/CommerceContext";
+import { Calendar, ShieldCheck, Clock, MessageSquare, CornerUpLeft, Menu, PlusCircle, CheckCircle2 } from "lucide-react";
 
-const MOCK_RENTED = [
+const INITIAL_RENTED = [
   {
     id: "RNT-10928",
     title: "Operating System Concepts, 9th Edition",
     owner: "Dev Kumar",
+    ownerId: "usr_dev",
     deposit: "₹400",
     fee: "₹150/mo",
     daysLeft: 12,
     percentLeft: 40,
     dueDate: "06 Sep 2026",
-    coverClass: "from-[#0F172A] to-[#1E293B]"
+    coverClass: "from-[#0F172A] to-[#1E293B]",
+    status: "active"
   },
   {
     id: "RNT-51290",
     title: "Core Java: An Integrated Approach",
     owner: "Priya Patel",
+    ownerId: "usr_priya",
     deposit: "₹300",
     fee: "₹100/mo",
     daysLeft: 25,
     percentLeft: 83,
     dueDate: "19 Sep 2026",
-    coverClass: "from-[#4F46E5] to-[#7C3AED]"
+    coverClass: "from-[#4F46E5] to-[#7C3AED]",
+    status: "active"
   }
 ];
 
-const MOCK_LENT = [
+const INITIAL_LENT = [
   {
     id: "LNT-38290",
     title: "Database System Concepts",
     renter: "Amit Sen",
+    renterId: "usr_amit",
     deposit: "₹500",
     fee: "₹200/mo",
     daysLeft: 5,
     percentLeft: 16,
     dueDate: "30 Aug 2026",
-    coverClass: "from-[#047857] to-[#065F46]"
+    coverClass: "from-[#047857] to-[#065F46]",
+    status: "active"
   }
 ];
 
 export default function Rentals() {
+  const { showToast, startOrGetConversation } = useCommerce();
   const [activeTab, setActiveTab] = useState("Rented");
+  const [rentedList, setRentedList] = useState(INITIAL_RENTED);
+  const [lentList, setLentList] = useState(INITIAL_LENT);
+  const [selectedReturnItem, setSelectedReturnItem] = useState(null);
 
-  const list = activeTab === "Rented" ? MOCK_RENTED : MOCK_LENT;
+  const list = activeTab === "Rented" ? rentedList : lentList;
+
+  const handleExtendRental = (itemId) => {
+    setRentedList(prev =>
+      prev.map(item => {
+        if (item.id === itemId) {
+          const newDays = item.daysLeft + 15;
+          return {
+            ...item,
+            daysLeft: newDays,
+            percentLeft: Math.min(100, Math.round((newDays / 30) * 100)),
+            dueDate: "Extended +15 days"
+          };
+        }
+        return item;
+      })
+    );
+    if (showToast) showToast("Rental period extended by 15 days!", "success");
+  };
+
+  const handleConfirmReturn = () => {
+    if (!selectedReturnItem) return;
+    if (activeTab === "Rented") {
+      setRentedList(prev =>
+        prev.map(item =>
+          item.id === selectedReturnItem.id ? { ...item, status: "return_initiated", daysLeft: 0, percentLeft: 0 } : item
+        )
+      );
+      if (showToast) showToast(`Return initiated for "${selectedReturnItem.title}". Deposit holding will be refunded upon handover.`, "success");
+    } else {
+      setLentList(prev =>
+        prev.map(item =>
+          item.id === selectedReturnItem.id ? { ...item, status: "completed" } : item
+        )
+      );
+      if (showToast) showToast(`Return verified for "${selectedReturnItem.title}". Transaction closed.`, "success");
+    }
+    setSelectedReturnItem(null);
+  };
+
+  const handleMessageUser = (item) => {
+    const targetUser = activeTab === "Rented" ? { id: item.ownerId, name: item.owner } : { id: item.renterId, name: item.renter };
+    startOrGetConversation(
+      targetUser,
+      { id: item.id, title: item.title, price: item.deposit },
+      `Hi ${targetUser.name}, reaching out regarding rental for "${item.title}".`
+    );
+  };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">
@@ -64,8 +123,8 @@ export default function Rentals() {
             </button>
 
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-[#17152A]">Rentals</h1>
-              <p className="mt-0.5 text-xs text-gray-400">Track textbooks you have rented from others or lent out to students.</p>
+              <h1 className="text-xl md:text-2xl font-bold text-[#17152A]">Rentals & Lending</h1>
+              <p className="mt-0.5 text-xs text-gray-400">Track textbooks you have rented from others or lent out to campus students.</p>
             </div>
           </div>
 
@@ -77,7 +136,7 @@ export default function Rentals() {
                 activeTab === "Rented" ? "border-[#6C4BF4] text-[#6C4BF4]" : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
-              Rented Books ({MOCK_RENTED.length})
+              Rented Books ({rentedList.length})
             </button>
             <button
               onClick={() => setActiveTab("Lent")}
@@ -85,7 +144,7 @@ export default function Rentals() {
                 activeTab === "Lent" ? "border-[#6C4BF4] text-[#6C4BF4]" : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
-              Lent Books ({MOCK_LENT.length})
+              Lent Books ({lentList.length})
             </button>
           </div>
 
@@ -112,7 +171,7 @@ export default function Rentals() {
                         <span className="text-[10px] font-bold text-gray-400">{item.id}</span>
                         <span className="flex items-center gap-1 text-[9px] font-bold bg-[#6C4BF4]/5 text-[#6C4BF4] px-1.5 py-0.5 rounded border border-[#6C4BF4]/10">
                           <ShieldCheck size={10} />
-                          Escrow Active
+                          {item.status === "return_initiated" ? "Return In Progress" : "Escrow Active"}
                         </span>
                       </div>
                       <h3 className="font-bold text-[#17152A] text-sm mt-1.5 truncate">{item.title}</h3>
@@ -140,7 +199,7 @@ export default function Rentals() {
                         Due: {item.dueDate}
                       </span>
                       <span className={`${item.daysLeft <= 7 ? 'text-red-500 animate-pulse' : 'text-[#6C4BF4]'}`}>
-                        {item.daysLeft} days remaining
+                        {item.daysLeft > 0 ? `${item.daysLeft} days remaining` : "Returned"}
                       </span>
                     </div>
 
@@ -158,24 +217,77 @@ export default function Rentals() {
                   {/* Bottom Action buttons */}
                   <div className="mt-6 flex gap-2">
                     <button
-                      onClick={() => alert(`Return process initiated for ${item.title}`)}
+                      onClick={() => setSelectedReturnItem(item)}
                       className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-gray-250 bg-white text-gray-700 py-2.5 text-xs font-bold hover:bg-gray-50 cursor-pointer shadow-xs transition"
                     >
                       <CornerUpLeft size={13} />
-                      {activeTab === "Rented" ? "Return Book" : "Confirm Return"}
+                      {activeTab === "Rented" ? "Return Book" : "Verify Return"}
                     </button>
-                    <button
-                      onClick={() => alert("Chat window opening...")}
-                      className="flex items-center justify-center p-2.5 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-pointer"
+                    {activeTab === "Rented" && (
+                      <button
+                        onClick={() => handleExtendRental(item.id)}
+                        className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl bg-[#F0ECFF] text-[#6C4BF4] text-xs font-bold hover:bg-[#E9E4FF] cursor-pointer"
+                        title="Extend 15 Days"
+                      >
+                        <PlusCircle size={13} /> +15 Days
+                      </button>
+                    )}
+                    <Link
+                      to="/chat"
+                      onClick={() => handleMessageUser(item)}
+                      className="flex items-center justify-center p-2.5 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-[#6C4BF4] hover:bg-purple-50 cursor-pointer transition"
+                      title="Chat with owner/renter"
                     >
                       <MessageSquare size={14} />
-                    </button>
+                    </Link>
                   </div>
 
                 </div>
               ))
             )}
           </div>
+
+          {/* Return Confirmation Modal */}
+          {selectedReturnItem && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
+              <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-gray-100">
+                <h3 className="text-lg font-bold text-[#17152A] mb-1">
+                  {activeTab === "Rented" ? "Return Rental Book" : "Confirm Book Received"}
+                </h3>
+                <p className="text-xs text-gray-400 mb-4">
+                  {activeTab === "Rented"
+                    ? `Initiate return for "${selectedReturnItem.title}". Your ${selectedReturnItem.deposit} deposit will be refunded automatically.`
+                    : `Confirm you have received "${selectedReturnItem.title}" back from ${selectedReturnItem.renter}.`}
+                </p>
+
+                <div className="rounded-xl bg-[#F8F7FF] border border-[#E9E4FF] p-4 text-xs space-y-2 mb-4">
+                  <div className="flex justify-between font-medium">
+                    <span className="text-gray-500">Security Deposit:</span>
+                    <span className="font-bold text-[#17152A]">{selectedReturnItem.deposit}</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span className="text-gray-500">Escrow Refund:</span>
+                    <span className="font-bold text-emerald-600">100% Guaranteed</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedReturnItem(null)}
+                    className="flex-1 rounded-xl bg-gray-100 text-gray-700 py-2.5 text-xs font-bold hover:bg-gray-200 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmReturn}
+                    className="flex-1 rounded-xl bg-[#6C4BF4] text-white py-2.5 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer shadow-sm shadow-[#6C4BF4]/15"
+                  >
+                    {activeTab === "Rented" ? "Confirm Return Handover" : "Verify & Release"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </main>
       </div>

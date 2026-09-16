@@ -1,8 +1,9 @@
 import { useState } from "react";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
-import { Wallet, Landmark, Shield, AlertCircle, Menu } from "lucide-react";
+import { useCommerce } from "../../context/CommerceContext";
+import { Wallet, Landmark, Shield, AlertCircle, Menu, CheckCircle2, ArrowDownRight, ArrowUpRight, QrCode } from "lucide-react";
 
-const TRANSACTION_HISTORY = [
+const INITIAL_TRANSACTIONS = [
   { id: "TXN-00192", date: "24 Aug 2026", desc: "Sold Introduction to Algorithms", type: "credit", amount: "₹650", method: "Wallet Credit" },
   { id: "TXN-00154", date: "18 Aug 2026", desc: "Sold Cracking the Coding Interview", type: "credit", amount: "₹450", method: "Wallet Credit" },
   { id: "TXN-00120", date: "15 Aug 2026", desc: "Requested Payout to Bank Account", type: "debit", amount: "₹1,000", method: "Bank Transfer" },
@@ -10,29 +11,48 @@ const TRANSACTION_HISTORY = [
 ];
 
 export default function Earnings() {
-  const [totalEarned] = useState(1100);
+  const { showToast } = useCommerce();
+  const [totalEarned, setTotalEarned] = useState(1850);
   const [withdrawn, setWithdrawn] = useState(1000);
   const [escrowPending] = useState(650);
-  
-  const [availableToWithdraw, setAvailableToWithdraw] = useState(100);
+  const [availableToWithdraw, setAvailableToWithdraw] = useState(850);
+  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
 
   const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [payoutMethod, setPayoutMethod] = useState("upi"); // 'upi' or 'bank'
   const [upiId, setUpiId] = useState("manishpawar@okaxis");
+  const [isEditingUpi, setIsEditingUpi] = useState(false);
+  const [tempUpi, setTempUpi] = useState("manishpawar@okaxis");
+  const [bankAcc, setBankAcc] = useState("918273645019");
+  const [bankIfsc, setBankIfsc] = useState("HDFC0001245");
   const [payoutAmount, setPayoutAmount] = useState("");
 
   const handleWithdrawalRequest = (e) => {
     e.preventDefault();
     const amount = Number(payoutAmount);
     if (!amount || amount <= 0 || amount > availableToWithdraw) {
-      alert("Invalid payout amount.");
+      if (showToast) showToast("Please enter a valid payout amount.", "error");
       return;
     }
 
-    alert(`Payout of ₹${amount} initiated successfully to UPI: ${upiId}!`);
+    const newTxn = {
+      id: `TXN-${Math.floor(10000 + Math.random() * 90000)}`,
+      date: "Today",
+      desc: payoutMethod === "upi" ? `Payout to UPI (${upiId})` : `Payout to Bank (${bankAcc.slice(-4)})`,
+      type: "debit",
+      amount: `₹${amount}`,
+      method: payoutMethod === "upi" ? "Instant UPI Transfer" : "NEFT Bank Transfer"
+    };
+
+    setTransactions(prev => [newTxn, ...prev]);
     setWithdrawn(prev => prev + amount);
     setAvailableToWithdraw(prev => prev - amount);
     setPayoutAmount("");
     setShowPayoutModal(false);
+
+    if (showToast) {
+      showToast(`Payout of ₹${amount} initiated successfully! Transferred to ${payoutMethod === "upi" ? upiId : "Bank Account"}.`, "success");
+    }
   };
 
   // Simple pure CSS charts definition
@@ -43,7 +63,7 @@ export default function Earnings() {
     { label: "Thu", height: "h-8", amount: "₹80" },
     { label: "Fri", height: "h-24", amount: "₹240" },
     { label: "Sat", height: "h-14", amount: "₹140" },
-    { label: "Sun", height: "h-0", amount: "₹0" }
+    { label: "Sun", height: "h-6", amount: "₹50" }
   ];
 
   return (
@@ -70,48 +90,48 @@ export default function Earnings() {
           </div>
 
           {/* Metrics Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
             {/* Metric 1 */}
             <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
-                <Wallet size={20} />
+              <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Wallet size={22} />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Total Earned</p>
-                <p className="text-lg font-extrabold text-[#17152A] mt-0.5">₹{totalEarned}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Total Revenue</p>
+                <p className="text-lg font-extrabold text-[#17152A] mt-0.5">₹{totalEarned.toLocaleString()}</p>
               </div>
             </div>
 
             {/* Metric 2 */}
-            <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-[#6C4BF4]/5 text-[#6C4BF4] flex items-center justify-center">
-                <Landmark size={20} />
+            <div className="rounded-2xl bg-white border border-[#E9E4FF] bg-gradient-to-br from-white to-[#F8F7FF] p-5 shadow-sm flex items-center gap-4">
+              <div className="h-11 w-11 rounded-xl bg-[#6C4BF4]/10 text-[#6C4BF4] flex items-center justify-center">
+                <Landmark size={22} />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Available Payout</p>
-                <p className="text-lg font-extrabold text-[#17152A] mt-0.5">₹{availableToWithdraw}</p>
+                <p className="text-[10px] text-[#6C4BF4] font-bold uppercase">Available Payout</p>
+                <p className="text-lg font-extrabold text-[#6C4BF4] mt-0.5">₹{availableToWithdraw.toLocaleString()}</p>
               </div>
             </div>
 
             {/* Metric 3 */}
             <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Shield size={20} />
+              <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Shield size={22} />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Escrow Locked</p>
-                <p className="text-lg font-extrabold text-[#17152A] mt-0.5">₹{escrowPending}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Escrow Holding</p>
+                <p className="text-lg font-extrabold text-[#17152A] mt-0.5">₹{escrowPending.toLocaleString()}</p>
               </div>
             </div>
 
             {/* Metric 4 */}
             <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center">
-                <AlertCircle size={20} />
+              <div className="h-11 w-11 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center">
+                <AlertCircle size={22} />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Withdrawn</p>
-                <p className="text-lg font-extrabold text-[#17152A] mt-0.5">₹{withdrawn}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Total Withdrawn</p>
+                <p className="text-lg font-extrabold text-[#17152A] mt-0.5">₹{withdrawn.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -120,9 +140,14 @@ export default function Earnings() {
             
             {/* Chart Column (2/3 width) */}
             <div className="lg:col-span-2 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm flex flex-col justify-between">
-              <div>
-                <h3 className="font-bold text-sm text-[#17152A]">Weekly Income Analytics</h3>
-                <p className="text-[10px] text-gray-400 mt-0.5">Summary of book sales and rentals from last 7 days</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-sm text-[#17152A]">Weekly Income Analytics</h3>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Summary of book sales and rentals from last 7 days</p>
+                </div>
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                  +24% this week
+                </span>
               </div>
 
               {/* Chart Graphics */}
@@ -134,7 +159,7 @@ export default function Earnings() {
                       {col.amount}
                     </span>
                     {/* Bar */}
-                    <div className={`w-8 rounded-t bg-gradient-to-t from-[#6C4BF4] to-[#8B3FD9] ${col.height} transition-all duration-500`} />
+                    <div className={`w-8 rounded-t bg-gradient-to-t from-[#6C4BF4] to-[#8B3FD9] ${col.height} transition-all duration-500 hover:brightness-110`} />
                     <span className="text-[10px] font-bold text-gray-400">{col.label}</span>
                   </div>
                 ))}
@@ -145,20 +170,24 @@ export default function Earnings() {
             <div className="lg:col-span-1 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm flex flex-col justify-between">
               <div>
                 <h3 className="font-bold text-sm text-[#17152A]">Instant Payout</h3>
-                <p className="text-[10px] text-gray-400 mt-0.5">Transfer your earnings immediately to your bank.</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Transfer your earnings immediately to your bank or UPI.</p>
                 
-                <div className="mt-5 rounded-xl bg-gray-50 border border-gray-100 p-4">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">Linked UPI Address</p>
-                  <p className="text-xs font-bold text-[#17152A] mt-1">{upiId}</p>
+                <div className="mt-4 rounded-xl bg-[#F8F7FF] border border-[#E9E4FF] p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-[#6C4BF4] font-bold uppercase">Linked UPI ID</p>
+                    <span className="text-[10px] font-bold text-emerald-600">Verified</span>
+                  </div>
+                  <p className="text-xs font-bold text-[#17152A] mt-1 truncate">{upiId}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Zero processing fees for campus students</p>
                 </div>
               </div>
 
               <button
                 disabled={availableToWithdraw <= 0}
                 onClick={() => setShowPayoutModal(true)}
-                className="mt-6 w-full rounded-xl bg-[#6C4BF4] text-white py-3 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-[#6C4BF4]/15"
+                className="mt-6 w-full rounded-xl bg-[#6C4BF4] text-white py-3 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-[#6C4BF4]/15 active:scale-98 transition"
               >
-                Withdraw Funds
+                Withdraw Funds (₹{availableToWithdraw})
               </button>
             </div>
 
@@ -166,8 +195,9 @@ export default function Earnings() {
 
           {/* Ledger Table */}
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-bold text-sm text-[#17152A]">Transaction History</h3>
+              <span className="text-[11px] font-bold text-gray-400">{transactions.length} records</span>
             </div>
             
             <div className="overflow-x-auto">
@@ -182,14 +212,25 @@ export default function Earnings() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-gray-600 font-medium">
-                  {TRANSACTION_HISTORY.map((txn) => (
+                  {transactions.map((txn) => (
                     <tr key={txn.id} className="hover:bg-gray-50/50">
                       <td className="p-4 font-bold text-gray-400">{txn.id}</td>
-                      <td className="p-4">{txn.date}</td>
-                      <td className="p-4 text-[#17152A] font-semibold">{txn.desc}</td>
-                      <td className="p-4">{txn.method}</td>
-                      <td className={`p-4 text-right font-bold ${
-                        txn.type === "credit" ? "text-green-600" : "text-red-500"
+                      <td className="p-4 text-gray-500">{txn.date}</td>
+                      <td className="p-4 text-[#17152A] font-semibold flex items-center gap-1.5">
+                        {txn.type === "credit" ? (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shrink-0">
+                            <ArrowDownRight size={12} />
+                          </span>
+                        ) : (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-50 text-rose-500 shrink-0">
+                            <ArrowUpRight size={12} />
+                          </span>
+                        )}
+                        <span>{txn.desc}</span>
+                      </td>
+                      <td className="p-4 text-gray-500">{txn.method}</td>
+                      <td className={`p-4 text-right font-black ${
+                        txn.type === "credit" ? "text-emerald-600" : "text-rose-500"
                       }`}>
                         {txn.type === "credit" ? "+" : "-"}{txn.amount}
                       </td>
@@ -200,55 +241,136 @@ export default function Earnings() {
             </div>
           </div>
 
-          {/* Payout Modal */}
+          {/* Payout Withdrawal Modal */}
           {showPayoutModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
-              <form onSubmit={handleWithdrawalRequest} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-gray-100">
-                <h3 className="text-lg font-bold text-[#17152A] mb-1">Request Withdrawal</h3>
-                <p className="text-xs text-gray-400 mb-4">Transfer cash to your linked UPI address.</p>
-                
-                <div className="space-y-4">
-                  <div className="rounded-xl bg-gray-50 p-3.5 border border-gray-100 flex justify-between">
-                    <div>
-                      <p className="text-[9px] text-gray-400 font-bold uppercase">UPI Target</p>
-                      <p className="text-xs font-bold text-[#17152A] mt-0.5">{upiId}</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => { const newUpi = prompt("Enter new UPI ID:", upiId); if (newUpi) setUpiId(newUpi); }} 
-                      className="text-xs font-bold text-[#6C4BF4] hover:underline"
-                    >
-                      Change
-                    </button>
-                  </div>
+              <form onSubmit={handleWithdrawalRequest} className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-gray-100">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
                   <div>
-                    <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Withdrawal Amount (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      placeholder={`Max ₹${availableToWithdraw}`}
-                      max={availableToWithdraw}
-                      min="1"
-                      value={payoutAmount}
-                      onChange={(e) => setPayoutAmount(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs text-[#17152A] outline-none focus:border-[#6C4BF4]"
-                    />
+                    <h3 className="text-lg font-bold text-[#17152A]">Request Withdrawal</h3>
+                    <p className="text-xs text-gray-400">Transfer your available balance to bank or UPI.</p>
+                  </div>
+                  <span className="text-xs font-black text-[#6C4BF4] bg-[#F0ECFF] px-2.5 py-1 rounded-full">
+                    Max ₹{availableToWithdraw}
+                  </span>
+                </div>
+
+                {/* Method selector */}
+                <div className="flex rounded-xl bg-gray-100 p-1 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setPayoutMethod("upi")}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                      payoutMethod === "upi" ? "bg-white text-[#6C4BF4] shadow-xs" : "text-gray-500 hover:text-gray-900"
+                    }`}
+                  >
+                    UPI Transfer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPayoutMethod("bank")}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                      payoutMethod === "bank" ? "bg-white text-[#6C4BF4] shadow-xs" : "text-gray-500 hover:text-gray-900"
+                    }`}
+                  >
+                    Bank Account (NEFT)
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {payoutMethod === "upi" ? (
+                    <div className="rounded-xl bg-gray-50 p-3.5 border border-gray-100">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">UPI Address</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingUpi(!isEditingUpi)}
+                          className="text-[11px] font-bold text-[#6C4BF4] hover:underline cursor-pointer"
+                        >
+                          {isEditingUpi ? "Done" : "Change"}
+                        </button>
+                      </div>
+                      {isEditingUpi ? (
+                        <input
+                          type="text"
+                          value={tempUpi}
+                          onChange={(e) => setTempUpi(e.target.value)}
+                          onBlur={() => { setUpiId(tempUpi); setIsEditingUpi(false); }}
+                          className="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#17152A] outline-none"
+                        />
+                      ) : (
+                        <p className="text-xs font-bold text-[#17152A]">{upiId}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 rounded-xl bg-gray-50 p-3.5 border border-gray-100">
+                      <div>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">Account Number</span>
+                        <input
+                          type="text"
+                          value={bankAcc}
+                          onChange={(e) => setBankAcc(e.target.value)}
+                          className="mt-0.5 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#17152A] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">IFSC Code</span>
+                        <input
+                          type="text"
+                          value={bankIfsc}
+                          onChange={(e) => setBankIfsc(e.target.value)}
+                          className="mt-0.5 w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#17152A] outline-none uppercase"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">
+                      Withdrawal Amount (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400">₹</span>
+                      <input
+                        type="number"
+                        required
+                        placeholder={`e.g. ${availableToWithdraw}`}
+                        max={availableToWithdraw}
+                        min="1"
+                        value={payoutAmount}
+                        onChange={(e) => setPayoutAmount(e.target.value)}
+                        className="w-full rounded-xl border border-gray-200 bg-white pl-8 pr-3.5 py-2.5 text-sm font-bold text-[#17152A] outline-none focus:border-[#6C4BF4]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {[100, 250, 500, availableToWithdraw].filter(a => a <= availableToWithdraw && a > 0).map((amt, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setPayoutAmount(String(amt))}
+                        className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-bold text-gray-600 hover:border-[#6C4BF4] hover:text-[#6C4BF4] transition cursor-pointer"
+                      >
+                        ₹{amt}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
                 <div className="mt-6 flex gap-2">
                   <button
-                    type="submit"
-                    className="flex-grow rounded-xl bg-[#6C4BF4] text-white py-3 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer"
-                  >
-                    Confirm & Transfer
-                  </button>
-                  <button
                     type="button"
                     onClick={() => setShowPayoutModal(false)}
-                    className="rounded-xl border border-gray-200 text-gray-500 px-5 py-3 text-xs font-bold hover:bg-gray-55 cursor-pointer"
+                    className="flex-1 rounded-xl border border-gray-200 text-gray-600 py-3 text-xs font-bold hover:bg-gray-50 cursor-pointer"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-xl bg-[#6C4BF4] text-white py-3 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer shadow-sm shadow-[#6C4BF4]/15"
+                  >
+                    Confirm & Payout
                   </button>
                 </div>
               </form>
