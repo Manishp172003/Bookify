@@ -1,5 +1,37 @@
 const books = [
   {
+    "id": 1001,
+    "title": "Concepts of Physics (HC Verma Vol 1)",
+    "author": "H.C. Verma",
+    "isbn": "9788177091878",
+    "publisher": "Bharati Bhawan",
+    "category": "Academic",
+    "subCategory": "Physics & Engineering",
+    "coverImage": "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
+    "condition": "LIKE_NEW",
+    "askingPrice": 299,
+    "originalPrice": 495,
+    "mode": "sell",
+    "seller": {
+      "id": "seller1@bookify.com",
+      "name": "Aarav Seller",
+      "avatar": "https://i.pravatar.cc/150?img=33",
+      "college": "IIT Delhi (Hostel 4)",
+      "isVerified": true,
+      "rating": 5.0,
+      "totalSales": 12,
+      "location": "Delhi Campus"
+    },
+    "language": "English",
+    "description": "Essential physics textbook by Dr. HC Verma with complete problem sets and clean pages. Listed by student Aarav Seller for fast campus pickup.",
+    "photos": [
+      "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg"
+    ],
+    "postedDaysAgo": 1,
+    "isNegotiable": true,
+    "deliveryAvailable": true
+  },
+  {
     "id": 1,
     "title": "The Alchemist",
     "author": "Paulo Coelho",

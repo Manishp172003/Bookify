@@ -12,16 +12,28 @@ export function AuthProvider({ children }) {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const login = (email) => {
+  const login = (userData) => {
     localStorage.setItem("bookify_auth", "true");
-    const mockUser = {
-      fullName: "Manish Pawar",
-      email: email || "manishpawar@gmail.com",
-      avatar: "/images/profile-avatar.png",
-    };
-    localStorage.setItem("bookify_user", JSON.stringify(mockUser));
+    let userObj;
+    if (typeof userData === "object" && userData !== null) {
+      userObj = {
+        id: userData.id || userData._id || `usr_${Date.now()}`,
+        fullName: userData.fullName || "Student User",
+        email: userData.email || "student@bookify.com",
+        phone: userData.phone || "",
+        avatar: userData.avatar || "/images/profile-avatar.png",
+      };
+    } else {
+      userObj = {
+        id: `usr_${Date.now()}`,
+        fullName: typeof userData === "string" && userData.includes("@") ? userData.split("@")[0] : "Student User",
+        email: userData || "student@bookify.com",
+        avatar: "/images/profile-avatar.png",
+      };
+    }
+    localStorage.setItem("bookify_user", JSON.stringify(userObj));
     setIsAuthenticated(true);
-    setUser(mockUser);
+    setUser(userObj);
   };
 
   const logout = () => {

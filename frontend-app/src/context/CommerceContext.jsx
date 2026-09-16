@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { io } from "socket.io-client";
 
 const CommerceContext = createContext(null);
 
@@ -20,68 +21,7 @@ const INITIAL_ADDRESSES = [
   }
 ];
 
-const INITIAL_CONVERSATIONS = [
-  {
-    id: "chat_1",
-    active: true,
-    seller: {
-      id: "sel_1",
-      name: "Sneha Reddy",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      online: true,
-      verified: true,
-      college: "VNIT Nagpur",
-      lastSeen: "Online",
-      memberSince: "May 2024",
-      rating: 4.8,
-      totalSales: 24
-    },
-    book: {
-      id: 1,
-      title: "Introduction to Algorithms, 3rd Edition",
-      author: "Thomas H. Cormen",
-      price: 650,
-      originalPrice: 1200,
-      condition: "Very Good",
-      image: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&auto=format&fit=crop&q=60"
-    },
-    messages: [
-      { id: "m1", sender: "them", text: "Hey! Is the Introduction to Algorithms book still available?", time: "10:30 AM", status: "read" },
-      { id: "m2", sender: "me", text: "Yes, it is! The condition is very good, no highlight marks.", time: "10:35 AM", status: "read" },
-      { id: "m3", sender: "them", text: "Awesome. I'm willing to buy it for ₹650. Can we meet on campus?", time: "10:40 AM", status: "read" },
-      { id: "m4", sender: "me", text: "Sure, campus meetup works perfectly for me.", time: "10:42 AM", status: "read" },
-      { id: "m5", sender: "them", text: "Let's meet near the central library tomorrow?", time: "10:45 AM", status: "read" }
-    ]
-  },
-  {
-    id: "chat_2",
-    active: false,
-    seller: {
-      id: "sel_2",
-      name: "Aarav Sharma",
-      avatar: "https://i.pravatar.cc/150?img=11",
-      online: false,
-      verified: false,
-      college: "GHRCE Nagpur",
-      lastSeen: "2 hours ago",
-      memberSince: "Jan 2025",
-      rating: 4.5,
-      totalSales: 8
-    },
-    book: {
-      id: 2,
-      title: "Concepts of Physics Vol 1",
-      author: "H.C. Verma",
-      price: 350,
-      originalPrice: 480,
-      condition: "Good",
-      image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=60"
-    },
-    messages: [
-      { id: "m6", sender: "them", text: "Hello, interested in your Physics textbook. Is the price negotiable?", time: "Yesterday", status: "read" }
-    ]
-  }
-];
+const INITIAL_CONVERSATIONS = [];
 
 const INITIAL_ORDERS = [
   {
@@ -177,8 +117,123 @@ export function CommerceProvider({ children }) {
   }, [orders]);
 
   // Conversations State
-  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
+  const [conversations, setConversations] = useState(() => {
+    const saved = localStorage.getItem("bookify_conversations");
+    return saved ? JSON.parse(saved) : INITIAL_CONVERSATIONS;
+  });
   const [activeConversationId, setActiveConversationId] = useState("chat_1");
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("bookify_conversations", JSON.stringify(conversations));
+  }, [conversations]);
+
+  // Connect to live Socket.io Backend
+  useEffect(() => {
+    let savedUser = null;
+    try {
+      savedUser = JSON.parse(localStorage.getItem("bookify_user"));
+    } catch {}
+    const token = localStorage.getItem("token");
+
+    const newSocket = io("http://localhost:5000", {
+      auth: {
+        token: token || "",
+        user: savedUser || null,
+      },
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 5,
+    });
+
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("[Bookify Socket] Connected to backend on port 5000:", newSocket.id);
+      // Join default demo chat rooms
+      newSocket.emit("joinChat", "chat_1");
+      newSocket.emit("joinChat", "chat_2");
+    });
+
+    newSocket.on("newChatMessage", (data) => {
+      if (!data || !data.conversationId) return;
+
+      let currentUser = null;
+      try {
+        currentUser = JSON.parse(localStorage.getItem("bookify_user"));
+      } catch {}
+
+      const isMe =
+        currentUser &&
+        (currentUser.email === data.senderEmail ||
+          currentUser.fullName === data.senderName ||
+          currentUser.id === data.senderId);
+
+      const incomingMsg = {
+        id: data.id || `msg_live_${Date.now()}`,
+        sender: isMe ? "me" : "them",
+        text: data.text,
+        time: data.time || new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+        status: "read",
+      };
+
+      setConversations((prev) => {
+        const index = prev.findIndex((c) => c.id === data.conversationId);
+        if (index !== -1) {
+          const target = prev[index];
+          // Avoid duplicate message if already added by sender
+          const exists = target.messages.some((m) => m.id === incomingMsg.id || (m.text === incomingMsg.text && m.time === incomingMsg.time && m.sender === incomingMsg.sender));
+          if (exists) return prev;
+
+          const updatedChat = {
+            ...target,
+            messages: [...target.messages, incomingMsg],
+          };
+          const next = [...prev];
+          next[index] = updatedChat;
+          return next;
+        }
+
+        // If conversation does not exist yet on this user's screen, dynamically create thread
+        const newThread = {
+          id: data.conversationId,
+          active: true,
+          seller: {
+            id: isMe ? (data.recipientId || "peer_user") : (data.senderId || "peer_user"),
+            name: isMe ? "Aarav Seller" : (data.senderName || "Student Peer"),
+            avatar: isMe ? "https://i.pravatar.cc/150?img=33" : "https://i.pravatar.cc/150?img=12",
+            online: true,
+            verified: true,
+            college: "Campus College",
+          },
+          book: data.book || {
+            id: 1001,
+            title: "Concepts of Physics (HC Verma Vol 1)",
+            price: 299,
+            condition: "Like New",
+            image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
+          },
+          messages: [incomingMsg],
+        };
+        return [newThread, ...prev];
+      });
+
+      if (!isMe) {
+        setActiveConversationId(data.conversationId);
+        showToast(`New message from ${data.senderName || "Student"}: "${data.text.slice(0, 30)}..."`, "info");
+      }
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+
+  // Automatically join active conversation room on Socket.io
+  useEffect(() => {
+    if (socket && activeConversationId) {
+      socket.emit("joinChat", activeConversationId);
+    }
+  }, [socket, activeConversationId]);
 
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
@@ -423,9 +478,19 @@ export function CommerceProvider({ children }) {
 
   // Chats direct messaging
   const startOrGetConversation = (seller, book, customInitialMessage = null) => {
+    // Generate deterministic ID so both buyer and seller join the identical socket room
+    const safeSellerId = (seller?.id || seller?.name || "seller").toString().replace(/[^a-zA-Z0-9_]/g, "_");
+    const bookId = book?.id || "general";
+    const newChatId = `chat_${safeSellerId}_${bookId}`;
+
     const existing = conversations.find(
-      (c) => c.seller.id === seller.id && c.book?.id === book.id
+      (c) => c.id === newChatId || (c.seller?.id === seller.id && c.book?.id === book.id)
     );
+
+    let savedUser = null;
+    try {
+      savedUser = JSON.parse(localStorage.getItem("bookify_user"));
+    } catch {}
 
     if (existing) {
       if (customInitialMessage) {
@@ -437,12 +502,24 @@ export function CommerceProvider({ children }) {
           status: "sent"
         };
         existing.messages.push(newMsg);
+
+        if (socket && socket.connected) {
+          socket.emit("sendChatMessage", {
+            conversationId: existing.id,
+            text: customInitialMessage,
+            senderName: savedUser?.fullName || "Student Buyer",
+            senderEmail: savedUser?.email || "buyer@bookify.com",
+            senderId: savedUser?.id || "usr_buyer",
+            recipientId: seller.id,
+            book: book,
+            time: newMsg.time
+          });
+        }
       }
       selectConversation(existing.id);
       return existing.id;
     }
 
-    const newChatId = `chat_${Date.now()}`;
     const initialMsgText = customInitialMessage || `Hi! Thanks for showing interest in my book "${book.title}". Let me know if you have any questions!`;
     const newChat = {
       id: newChatId,
@@ -476,11 +553,31 @@ export function CommerceProvider({ children }) {
 
     setConversations((prev) => [newChat, ...prev]);
     setActiveConversationId(newChatId);
+
+    if (socket && socket.connected) {
+      socket.emit("joinChat", newChatId);
+      if (customInitialMessage) {
+        socket.emit("sendChatMessage", {
+          conversationId: newChatId,
+          text: customInitialMessage,
+          senderName: savedUser?.fullName || "Student Buyer",
+          senderEmail: savedUser?.email || "buyer@bookify.com",
+          senderId: savedUser?.id || "usr_buyer",
+          recipientId: seller.id,
+          book: book,
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+        });
+      }
+    }
+
     return newChatId;
   };
 
   const selectConversation = (id) => {
     setActiveConversationId(id);
+    if (socket && socket.connected) {
+      socket.emit("joinChat", id);
+    }
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, messages: c.messages.map(m => ({ ...m, status: "read" })) } : c))
     );
@@ -488,6 +585,14 @@ export function CommerceProvider({ children }) {
 
   const sendMessage = (conversationId, text) => {
     if (!text.trim()) return;
+
+    let savedUser = null;
+    try {
+      savedUser = JSON.parse(localStorage.getItem("bookify_user"));
+    } catch {}
+
+    const conv = conversations.find((c) => c.id === conversationId);
+
     const newMessage = {
       id: `msg_${Date.now()}`,
       sender: "me",
@@ -511,39 +616,20 @@ export function CommerceProvider({ children }) {
       })
     );
 
-    // Simulate seller automated reply for prototype high fidelity
-    setTimeout(() => {
-      const replies = [
-        "Sounds good! Let's coordinate the meetup spot.",
-        "Yes, we can meet near the library entrance tomorrow afternoon.",
-        "Cool. I'll make sure to bring the book copy with me.",
-        "Thanks for confirming. I'll see you there!"
-      ];
-      const randomReply = replies[Math.floor(Math.random() * replies.length)];
-      const replyMessage = {
-        id: `msg_${Date.now() + 1}`,
-        sender: "them",
-        text: randomReply,
-        time: new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit"
-        }),
-        status: "read"
-      };
-
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id === conversationId) {
-            return {
-              ...c,
-              messages: [...c.messages, replyMessage]
-            };
-          }
-          return c;
-        })
-      );
-      showToast("New message received!");
-    }, 2000);
+    // Emit live message over Socket.io
+    if (socket && socket.connected) {
+      socket.emit("sendChatMessage", {
+        id: newMessage.id,
+        conversationId,
+        text: text.trim(),
+        senderName: savedUser?.fullName || "Student",
+        senderEmail: savedUser?.email || "student@bookify.com",
+        senderId: savedUser?.id || "usr_me",
+        recipientId: conv?.seller?.id || null,
+        book: conv?.book || null,
+        time: newMessage.time
+      });
+    }
   };
 
   // Cart Pricing calculations

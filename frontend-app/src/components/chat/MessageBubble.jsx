@@ -1,12 +1,12 @@
 import { Check, CheckCheck } from "lucide-react";
 
 function MessageBubble({ message, sellerAvatar, sellerName }) {
-  const isBuyer = message.sender === "buyer";
+  const isMe = message.sender === "me" || message.sender === "buyer";
 
   return (
-    <div className={`flex w-full items-end gap-2.5 my-2.5 animate-message-pop ${isBuyer ? "justify-end" : "justify-start"}`}>
-      {/* Seller Avatar for incoming messages */}
-      {!isBuyer && (
+    <div className={`flex w-full items-end gap-2.5 my-2.5 animate-message-pop ${isMe ? "justify-end" : "justify-start"}`}>
+      {/* Avatar for incoming messages from peer */}
+      {!isMe && (
         <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-200 bg-[#E9E4FF] shadow-xs">
           {sellerAvatar ? (
             <img src={sellerAvatar} alt={sellerName} className="h-full w-full object-cover" />
@@ -21,7 +21,7 @@ function MessageBubble({ message, sellerAvatar, sellerName }) {
       {/* Bubble Box */}
       <div
         className={`relative max-w-[82%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 shadow-xs transition-all ${
-          isBuyer
+          isMe
             ? "bg-[#6C4BF4] text-white rounded-br-xs"
             : "bg-white text-[#17152A] border border-gray-100 rounded-bl-xs"
         }`}
@@ -32,10 +32,10 @@ function MessageBubble({ message, sellerAvatar, sellerName }) {
         </p>
 
         {/* Timestamp and Delivery Status */}
-        <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${isBuyer ? "text-white/75" : "text-gray-400"}`}>
-          <span>{message.timestamp}</span>
+        <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${isMe ? "text-white/75" : "text-gray-400"}`}>
+          <span>{message.time || message.timestamp || "Just now"}</span>
 
-          {isBuyer && (
+          {isMe && (
             <span className="inline-flex items-center">
               {message.status === "read" ? (
                 <CheckCheck size={13} className="text-[#38BDF8]" strokeWidth={2.5} />
