@@ -1,41 +1,11 @@
-// React imports omitted
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { Heart, Bell, BellOff, MessageCircle, ShoppingCart, Trash2, ArrowLeft, Menu } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCommerce } from "../../context/CommerceContext";
 
-const INITIAL_WISHLIST = [
-  {
-    id: 1,
-    title: "Introduction to Algorithms, 3rd Edition",
-    author: "Thomas H. Cormen",
-    price: "₹650",
-    condition: "Very Good",
-    alertActive: true,
-    coverClass: "from-[#111827] to-[#374151]"
-  },
-  {
-    id: 2,
-    title: "Concepts of Physics Vol 1",
-    author: "H.C. Verma",
-    price: "₹350",
-    condition: "Good",
-    alertActive: false,
-    coverClass: "from-[#6C4BF4] to-[#8B3FD9]"
-  },
-  {
-    id: 3,
-    title: "Compiler Design: Principles & Tools",
-    author: "Alfred V. Aho",
-    price: "₹450",
-    condition: "Like New",
-    alertActive: false,
-    coverClass: "from-[#059669] to-[#10B981]"
-  }
-];
-
 export default function Wishlist() {
-  const { wishlistItems: wishlist, toggleWishlist, toggleWishlistAlert } = useCommerce();
+  const navigate = useNavigate();
+  const { wishlistItems: wishlist, toggleWishlist, toggleWishlistAlert, addToCart, startOrGetConversation } = useCommerce();
 
   const toggleAlert = (id) => {
     toggleWishlistAlert(id);
@@ -43,6 +13,29 @@ export default function Wishlist() {
 
   const handleRemove = (id) => {
     toggleWishlist({ id });
+  };
+
+  const handleBuyNow = (item) => {
+    const rawPrice = typeof item.price === "string" ? parseInt(item.price.replace(/[^0-9]/g, "")) || 350 : (item.price || 350);
+    const cartBook = {
+      id: item.id,
+      title: item.title,
+      author: item.author,
+      price: rawPrice,
+      askingPrice: rawPrice,
+      condition: item.condition || "Good",
+      coverImage: item.coverImage || "",
+      image: item.coverImage || "",
+      seller: item.seller || { name: item.author || "Campus Seller" },
+    };
+    addToCart(cartBook, 1);
+    navigate("/checkout");
+  };
+
+  const handleChatSeller = (item) => {
+    const seller = item.seller || { id: `seller_${item.id}`, name: item.author || "Book Seller" };
+    const chatId = startOrGetConversation(seller, item);
+    navigate(`/chat/${chatId}`);
   };
 
   return (
@@ -162,17 +155,16 @@ export default function Wishlist() {
                     {/* Bottom Line: Buy & Contact CTAs */}
                     <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50">
                       <button
-                        onClick={() =>
-                          alert(`Redirecting to checkout for ${item.title}`)
-                        }
-                        className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#6C4BF4] hover:bg-[#5B3DE0] text-white py-2 text-xs font-bold transition cursor-pointer shadow-sm shadow-[#6C4BF4]/15"
+                        onClick={() => handleBuyNow(item)}
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#6C4BF4] hover:bg-[#5B3DE0] text-white py-2 text-xs font-bold transition cursor-pointer shadow-sm shadow-[#6C4BF4]/15 active:scale-[0.98]"
                       >
                         <ShoppingCart size={13} />
                         Buy Now
                       </button>
                       <button
-                        onClick={() => alert("Starting conversation with seller...")}
-                        className="flex items-center justify-center p-2 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handleChatSeller(item)}
+                        title="Chat with Seller"
+                        className="flex items-center justify-center p-2 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-[#6C4BF4] hover:border-[#6C4BF4]/40 hover:bg-[#F0ECFF]/40 transition cursor-pointer"
                       >
                         <MessageCircle size={14} />
                       </button>
