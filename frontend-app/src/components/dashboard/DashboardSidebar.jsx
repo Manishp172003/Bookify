@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useCommerce } from "../../context/CommerceContext";
 import {
   Home,
   ShoppingBag,
@@ -26,7 +27,7 @@ const menuItems = [
   { label: "Rentals", icon: Repeat2, path: "/dashboard/rentals" },
   { label: "Exchanges", icon: ArrowLeftRight, path: "/dashboard/exchanges" },
   { label: "Wishlist", icon: Heart, path: "/dashboard/wishlist" },
-  { label: "Messages", icon: MessageCircle, badge: 3, path: "/dashboard/messages" },
+  { label: "Messages", icon: MessageCircle, path: "/dashboard/messages" },
   { label: "Earnings", icon: Wallet, path: "/dashboard/earnings" },
   { label: "Want Board", icon: Lightbulb, path: "/dashboard/want-board" },
   { label: "Profile", icon: User, path: "/profile" },
@@ -36,6 +37,7 @@ const menuItems = [
 function DashboardSidebar() {
   const location = useLocation();
   const { logout, user } = useAuth();
+  const { unreadMessagesCount } = useCommerce();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -72,6 +74,12 @@ function DashboardSidebar() {
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
+          const badgeValue =
+            item.label === "Messages"
+              ? unreadMessagesCount > 0
+                ? unreadMessagesCount
+                : null
+              : item.badge;
 
           return (
             <Link
@@ -86,9 +94,9 @@ function DashboardSidebar() {
             >
               <Icon size={18} className={isActive ? "text-white" : "text-white/80"} />
               <span className="flex-1 text-left">{item.label}</span>
-              {item.badge && (
-                <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#6C4BF4]">
-                  {item.badge}
+              {badgeValue !== null && badgeValue !== undefined && (
+                <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#6C4BF4] transition-all">
+                  {badgeValue}
                 </span>
               )}
             </Link>

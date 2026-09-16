@@ -21,7 +21,114 @@ const INITIAL_ADDRESSES = [
   }
 ];
 
-const INITIAL_CONVERSATIONS = [];
+const INITIAL_CONVERSATIONS = [
+  {
+    id: "chat_1",
+    active: true,
+    seller: {
+      id: "usr_aarav",
+      name: "Aarav Sharma",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop",
+      online: true,
+      verified: true,
+      college: "IIT Bombay",
+      responseTime: "< 10 min",
+      rating: "4.9",
+      reviewsCount: 28,
+      memberSince: "Jan 2024",
+      totalSales: 22,
+      location: "Powai, Mumbai"
+    },
+    book: {
+      id: 101,
+      title: "Concepts of Physics (HC Verma Vol 1)",
+      author: "H.C. Verma",
+      price: 299,
+      originalPrice: 450,
+      condition: "Like New",
+      image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg"
+    },
+    lastMessage: "Is ₹280 fine with you? I can hand it over at the campus library today.",
+    lastMessageTimestamp: "10:30 AM",
+    unreadCount: 2,
+    messages: [
+      {
+        id: "m1",
+        sender: "them",
+        text: "Hey! Are you still interested in HC Verma Vol 1?",
+        time: "10:25 AM",
+        status: "read"
+      },
+      {
+        id: "m2",
+        sender: "me",
+        text: "Yes! Is the condition good with no markings?",
+        time: "10:28 AM",
+        status: "read"
+      },
+      {
+        id: "m3",
+        sender: "them",
+        text: "It is in pristine condition, no pen marks.",
+        time: "10:29 AM",
+        status: "delivered"
+      },
+      {
+        id: "m4",
+        sender: "them",
+        text: "Is ₹280 fine with you? I can hand it over at the campus library today.",
+        time: "10:30 AM",
+        status: "delivered"
+      }
+    ]
+  },
+  {
+    id: "chat_2",
+    active: true,
+    seller: {
+      id: "usr_sneha",
+      name: "Sneha Reddy",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+      online: true,
+      verified: true,
+      college: "BITS Pilani",
+      responseTime: "< 5 min",
+      rating: "4.8",
+      reviewsCount: 16,
+      memberSince: "Mar 2024",
+      totalSales: 14,
+      location: "Hyderabad"
+    },
+    book: {
+      id: 102,
+      title: "Introduction to Algorithms (CLRS 3rd Ed)",
+      author: "Thomas H. Cormen",
+      price: 650,
+      originalPrice: 1200,
+      condition: "Good",
+      image: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg"
+    },
+    lastMessage: "Yes, I can ship it by this evening through campus speed post.",
+    lastMessageTimestamp: "Yesterday",
+    unreadCount: 1,
+    messages: [
+      {
+        id: "m5",
+        sender: "me",
+        text: "Hi Sneha, when can you dispatch the Algorithms book?",
+        time: "Yesterday 4:15 PM",
+        status: "read"
+      },
+      {
+        id: "m6",
+        sender: "them",
+        text: "Yes, I can ship it by this evening through campus speed post.",
+        time: "Yesterday 4:20 PM",
+        status: "delivered"
+      }
+    ]
+  }
+];
 
 const INITIAL_ORDERS = [
   {
@@ -119,7 +226,13 @@ export function CommerceProvider({ children }) {
   // Conversations State
   const [conversations, setConversations] = useState(() => {
     const saved = localStorage.getItem("bookify_conversations");
-    return saved ? JSON.parse(saved) : INITIAL_CONVERSATIONS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_CONVERSATIONS;
   });
   const [activeConversationId, setActiveConversationId] = useState("chat_1");
   const [socket, setSocket] = useState(null);
@@ -168,12 +281,16 @@ export function CommerceProvider({ children }) {
           currentUser.fullName === data.senderName ||
           currentUser.id === data.senderId);
 
+      const isCurrentlyViewing =
+        window.location.pathname.includes(data.conversationId) ||
+        (window.location.pathname.startsWith("/chat") && activeConversationId === data.conversationId);
+
       const incomingMsg = {
         id: data.id || `msg_live_${Date.now()}`,
         sender: isMe ? "me" : "them",
         text: data.text,
         time: data.time || new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-        status: "read",
+        status: isMe || isCurrentlyViewing ? "read" : "delivered",
       };
 
       setConversations((prev) => {
@@ -181,11 +298,18 @@ export function CommerceProvider({ children }) {
         if (index !== -1) {
           const target = prev[index];
           // Avoid duplicate message if already added by sender
-          const exists = target.messages.some((m) => m.id === incomingMsg.id || (m.text === incomingMsg.text && m.time === incomingMsg.time && m.sender === incomingMsg.sender));
+          const exists = target.messages.some(
+            (m) =>
+              m.id === incomingMsg.id ||
+              (m.text === incomingMsg.text && m.time === incomingMsg.time && m.sender === incomingMsg.sender)
+          );
           if (exists) return prev;
 
           const updatedChat = {
             ...target,
+            lastMessage: incomingMsg.text,
+            lastMessageTimestamp: incomingMsg.time,
+            unreadCount: isMe || isCurrentlyViewing ? 0 : (target.unreadCount || 0) + 1,
             messages: [...target.messages, incomingMsg],
           };
           const next = [...prev];
@@ -199,8 +323,10 @@ export function CommerceProvider({ children }) {
           active: true,
           seller: {
             id: isMe ? (data.recipientId || "peer_user") : (data.senderId || "peer_user"),
-            name: isMe ? "Aarav Seller" : (data.senderName || "Student Peer"),
-            avatar: isMe ? "https://i.pravatar.cc/150?img=33" : "https://i.pravatar.cc/150?img=12",
+            name: isMe ? "Aarav Sharma" : (data.senderName || "Student Peer"),
+            avatar: isMe
+              ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop"
+              : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
             online: true,
             verified: true,
             college: "Campus College",
@@ -212,13 +338,15 @@ export function CommerceProvider({ children }) {
             condition: "Like New",
             image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
           },
+          lastMessage: incomingMsg.text,
+          lastMessageTimestamp: incomingMsg.time,
+          unreadCount: isMe || isCurrentlyViewing ? 0 : 1,
           messages: [incomingMsg],
         };
         return [newThread, ...prev];
       });
 
       if (!isMe) {
-        setActiveConversationId(data.conversationId);
         showToast(`New message from ${data.senderName || "Student"}: "${data.text.slice(0, 30)}..."`, "info");
       }
     });
@@ -579,7 +707,15 @@ export function CommerceProvider({ children }) {
       socket.emit("joinChat", id);
     }
     setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, messages: c.messages.map(m => ({ ...m, status: "read" })) } : c))
+      prev.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              unreadCount: 0,
+              messages: (c.messages || []).map((m) => ({ ...m, status: "read" })),
+            }
+          : c
+      )
     );
   };
 
@@ -609,6 +745,8 @@ export function CommerceProvider({ children }) {
         if (c.id === conversationId) {
           return {
             ...c,
+            lastMessage: text.trim(),
+            lastMessageTimestamp: newMessage.time,
             messages: [...c.messages, newMessage]
           };
         }
@@ -630,7 +768,65 @@ export function CommerceProvider({ children }) {
         time: newMessage.time
       });
     }
+
+    // Interactive Demo Simulation: If chatting with demo sellers (Aarav / Sneha), simulate an authentic auto-reply
+    const isDemoSeller =
+      conv?.seller?.name?.includes("Aarav") ||
+      conv?.seller?.name?.includes("Sneha") ||
+      conversationId.startsWith("chat_");
+
+    if (isDemoSeller) {
+      setTimeout(() => {
+        const demoReplies = [
+          "Sure, sounds great! Let's connect near the library.",
+          "I can bring the book today around 4 PM.",
+          "The condition is really good, exactly as shown in photos.",
+          "Yes, that price works for me! Happy to help a fellow student.",
+          "I will keep the book ready for pickup."
+        ];
+        const randomReply = demoReplies[Math.floor(Math.random() * demoReplies.length)];
+        const replyTime = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+        setConversations((currentConvs) => {
+          return currentConvs.map((c) => {
+            if (c.id === conversationId) {
+              const isViewing =
+                window.location.pathname.includes(conversationId) ||
+                (window.location.pathname.startsWith("/chat") && activeConversationId === conversationId);
+
+              const replyMsg = {
+                id: `msg_reply_${Date.now()}`,
+                sender: "them",
+                text: randomReply,
+                time: replyTime,
+                status: isViewing ? "read" : "delivered",
+              };
+
+              return {
+                ...c,
+                lastMessage: randomReply,
+                lastMessageTimestamp: replyTime,
+                unreadCount: isViewing ? 0 : (c.unreadCount || 0) + 1,
+                messages: [...c.messages, replyMsg],
+              };
+            }
+            return c;
+          });
+        });
+      }, 3500);
+    }
   };
+
+  // Unread Messages Calculation
+  const unreadMessagesCount = conversations.reduce((acc, conv) => {
+    if (typeof conv.unreadCount === "number") {
+      return acc + conv.unreadCount;
+    }
+    const unreadMsgs = (conv.messages || []).filter(
+      (m) => m.sender !== "me" && m.status !== "read"
+    ).length;
+    return acc + unreadMsgs;
+  }, 0);
 
   // Cart Pricing calculations
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -676,6 +872,7 @@ export function CommerceProvider({ children }) {
         selectConversation,
         startOrGetConversation,
         sendMessage,
+        unreadMessagesCount,
         showToast,
         wishlistItems,
         toggleWishlist,
