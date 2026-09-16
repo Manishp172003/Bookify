@@ -62,7 +62,7 @@ function Chat() {
       <div className="flex-1 min-h-0 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl flex">
         {/* Left Column: ChatList */}
         <div
-          className={`w-full lg:w-80 xl:w-96 shrink-0 border-r border-gray-100 animate-slide-in-left ${
+          className={`w-full lg:w-80 xl:w-96 shrink-0 border-r border-gray-100 ${
             showMobileList ? "block h-full" : "hidden lg:block h-full"
           }`}
         >
@@ -75,7 +75,7 @@ function Chat() {
 
         {/* Center Column: Active Chat Window */}
         <div
-          className={`flex-1 flex flex-col min-w-0 animate-fade-in ${
+          className={`flex-1 flex flex-col min-w-0 ${
             !showMobileList ? "block h-full" : "hidden lg:flex h-full"
           }`}
         >
@@ -100,7 +100,7 @@ function Chat() {
 
         {/* Right Column: Seller Profile / Escrow Info Panel (Desktop) */}
         {showInfoPanel && activeConversation && (
-          <div className="hidden xl:block w-72 shrink-0 border-l border-gray-100 h-full animate-slide-in-right">
+          <div className="hidden xl:block w-72 shrink-0 border-l border-gray-100 h-full">
             <SellerInfoPanel
               seller={activeConversation.seller}
               book={activeConversation.book}

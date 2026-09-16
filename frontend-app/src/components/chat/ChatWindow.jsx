@@ -13,16 +13,18 @@ function ChatWindow({
   onToggleInfoPanel
 }) {
   const messagesEndRef = useRef(null);
+  const currentConvIdRef = useRef(conversation?.id);
   const { addToCart } = useCommerce();
   const navigate = useNavigate();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [conversation?.messages]);
+    if (currentConvIdRef.current !== conversation?.id) {
+      currentConvIdRef.current = conversation?.id;
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversation?.id, conversation?.messages?.length]);
 
   if (!conversation) {
     return (
