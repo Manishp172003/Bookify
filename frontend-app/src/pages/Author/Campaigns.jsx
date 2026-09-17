@@ -3,72 +3,31 @@ import { Megaphone, Plus, Eye, MousePointer, Play, Pause, Trash2, Sparkles, X, T
 import { authorService } from "../../services/authorService";
 import { useCommerce } from "../../context/CommerceContext";
 
-const INITIAL_MOCK_CAMPAIGNS = [
-  {
-    id: "camp_1",
-    name: "Home Banner Spotlight",
-    type: "Home Boost",
-    status: "Running",
-    rate: "₹299 / day",
-    views: "14.8K",
-    clicks: "740",
-    ctr: "5.00%",
-    spent: "₹1,495",
-    book: "The Silent Mind"
-  },
-  {
-    id: "camp_2",
-    name: "Campus Category Boost",
-    type: "Category Boost",
-    status: "Running",
-    rate: "₹149 / day",
-    views: "9.2K",
-    clicks: "430",
-    ctr: "4.67%",
-    spent: "₹745",
-    book: "Inner Peace & Clarity"
-  }
-];
-
 function Campaigns() {
   const { showToast } = useCommerce();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [campaigns, setCampaigns] = useState(INITIAL_MOCK_CAMPAIGNS);
+  const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [newCampaign, setNewCampaign] = useState({
     name: "",
-    book: "The Silent Mind",
+    book: "",
     type: "Home Boost",
     budget: "299",
     targetCategory: "Self Help",
     days: "7"
   });
 
-  useEffect(() => {
-    let isMounted = true;
-    authorService.getCampaigns().then((apiCamps) => {
-      if (!isMounted || !Array.isArray(apiCamps) || apiCamps.length === 0) return;
-      const formatted = apiCamps.map((c) => ({
-        id: c._id || c.id,
-        name: c.title,
-        type: c.campaignType === "home_banner" ? "Home Boost" : "Category Boost",
-        status: c.status === "active" ? "Running" : "Paused",
-        rate: `₹${c.budget || 299} / day`,
-        views: (c.impressions || 0).toLocaleString(),
-        clicks: (c.clicks || 0).toLocaleString(),
-        ctr: c.impressions > 0 ? `${((c.clicks / c.impressions) * 100).toFixed(2)}%` : "0.00%",
-        spent: `₹${((c.budget || 100) * 5).toLocaleString()}`,
-        book: c.bookId?.title || "Published Book"
-      }));
-      setCampaigns(formatted);
+  const loadCampaigns = () => {
+    authorService.getCampaigns().then((camps) => {
+      setCampaigns(Array.isArray(camps) ? camps : []);
     }).finally(() => {
-      if (isMounted) setLoading(false);
+      setLoading(false);
     });
+  };
 
-    return () => {
-      isMounted = false;
-    };
+  useEffect(() => {
+    loadCampaigns();
   }, []);
 
   const handleCreate = async (e) => {
@@ -80,50 +39,45 @@ function Campaigns() {
       campaignType: newCampaign.type === "Home Boost" ? "home_banner" : "category_boost",
       targetCategory: newCampaign.targetCategory,
       budget: Number(newCampaign.budget) || 299,
+      book: newCampaign.book || "Published Book",
       endDate: new Date(Date.now() + Number(newCampaign.days || 7) * 24 * 60 * 60 * 1000)
     };
 
-    try {
-      await authorService.createCampaign(payload);
-    } catch {}
-
-    const localCamp = {
-      id: `camp_${Date.now()}`,
-      name: newCampaign.name,
-      type: newCampaign.type,
-      status: "Running",
-      rate: `₹${newCampaign.budget} / day`,
-      views: "0",
-      clicks: "0",
-      ctr: "0.00%",
-      spent: "₹0",
-      book: newCampaign.book
-    };
-
-    setCampaigns([localCamp, ...campaigns]);
+    const created = await authorService.createCampaign(payload);
+    setCampaigns((prev) => [created, ...prev]);
     setShowCreateModal(false);
-    setNewCampaign({ name: "", book: "The Silent Mind", type: "Home Boost", budget: "299", targetCategory: "Self Help", days: "7" });
-    showToast(`Campaign "${localCamp.name}" launched successfully!`, "success");
+    setNewCampaign({ name: "", book: "", type: "Home Boost", budget: "299", targetCategory: "Self Help", days: "7" });
+    showToast(`Campaign "${created.name}" launched successfully!`, "success");
   };
 
   const toggleStatus = async (id) => {
     const current = campaigns.find(c => c.id === id);
-    const newStatus = current?.status === "Running" ? "Paused" : "Running";
-    try {
-      await authorService.updateCampaignStatus(id, newStatus.toLowerCase());
-    } catch {}
-    setCampaigns(campaigns.map(c => c.id === id ? { ...c, status: newStatus } : c));
-    showToast(`Campaign ${newStatus === "Running" ? "resumed" : "paused"}.`, "info");
+    const newStatus = current?.status === "Running" ? "paused" : "running";
+    await authorService.updateCampaignStatus(id, newStatus);
+    setCampaigns((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status: newStatus === "running" ? "Running" : "Paused" } : c))
+    );
+    showToast(`Campaign ${newStatus === "running" ? "resumed" : "paused"}.`, "info");
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete campaign "${name}"?`)) return;
-    try {
-      await authorService.deleteCampaign(id);
-    } catch {}
-    setCampaigns(campaigns.filter(c => c.id !== id));
-    showToast(`Campaign "${name}" deleted.`, "info");
+    if (!window.confirm(`Delete campaign "${name}"? This cannot be undone.`)) return;
+    await authorService.deleteCampaign(id);
+    setCampaigns((prev) => prev.filter((c) => c.id !== id));
+    showToast(`Campaign "${name}" deleted permanently.`, "info");
   };
+
+  const totalViews = campaigns.reduce((sum, c) => {
+    const num = parseInt((c.views || "0").replace(/[^0-9]/g, ""), 10);
+    return sum + (isNaN(num) ? 0 : num);
+  }, 0);
+
+  const totalClicks = campaigns.reduce((sum, c) => {
+    const num = parseInt((c.clicks || "0").replace(/[^0-9]/g, ""), 10);
+    return sum + (isNaN(num) ? 0 : num);
+  }, 0);
+
+  const avgCtr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : "0.00";
 
   return (
     <div className="space-y-8 relative">
@@ -152,7 +106,9 @@ function Campaigns() {
             </div>
             <div>
               <span className="text-xs font-bold text-[#6B6880] uppercase tracking-wider">Total Impressions</span>
-              <h3 className="text-2xl font-bold text-[#17152A] font-poppins mt-0.5">24.0K</h3>
+              <h3 className="text-2xl font-bold text-[#17152A] font-poppins mt-0.5">
+                {totalViews > 0 ? `${(totalViews / 1000).toFixed(1)}K` : "0"}
+              </h3>
             </div>
           </div>
         </div>
@@ -163,7 +119,7 @@ function Campaigns() {
             </div>
             <div>
               <span className="text-xs font-bold text-[#6B6880] uppercase tracking-wider">Total Clicks</span>
-              <h3 className="text-2xl font-bold text-[#17152A] font-poppins mt-0.5">1,170</h3>
+              <h3 className="text-2xl font-bold text-[#17152A] font-poppins mt-0.5">{totalClicks.toLocaleString()}</h3>
             </div>
           </div>
         </div>
@@ -174,86 +130,110 @@ function Campaigns() {
             </div>
             <div>
               <span className="text-xs font-bold text-[#6B6880] uppercase tracking-wider">Average CTR</span>
-              <h3 className="text-2xl font-bold text-[#17152A] font-poppins mt-0.5">4.88%</h3>
+              <h3 className="text-2xl font-bold text-[#17152A] font-poppins mt-0.5">{avgCtr}%</h3>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Active Campaigns Table */}
+      {/* Active Campaigns Table or Clean Empty State */}
       <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden">
         <div className="p-6 border-b border-[#E7E4F2]">
           <h2 className="text-lg font-bold text-[#17152A] font-poppins">Active Campaigns</h2>
-          <p className="text-xs text-[#6B6880]">Real-time promotional campaigns and conversion performance.</p>
+          <p className="text-xs text-[#6B6880]">Promotional campaigns running on campus feeds.</p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-[#17152A]">
-            <thead className="bg-[#F8F7FF] text-xs font-bold text-[#6B6880] uppercase tracking-wider border-b border-[#E7E4F2]">
-              <tr>
-                <th className="py-3.5 px-6">Campaign</th>
-                <th className="py-3.5 px-6">Type</th>
-                <th className="py-3.5 px-6">Daily Rate</th>
-                <th className="py-3.5 px-6">Status</th>
-                <th className="py-3.5 px-6">Views</th>
-                <th className="py-3.5 px-6">Clicks</th>
-                <th className="py-3.5 px-6">CTR</th>
-                <th className="py-3.5 px-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E7E4F2]">
-              {campaigns.map((c) => (
-                <tr key={c.id} className="hover:bg-[#F8F7FF]/50 transition">
-                  <td className="py-4 px-6 font-bold font-poppins">
-                    <div>{c.name}</div>
-                    <div className="text-xs font-normal text-[#6B6880]">{c.book}</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EEEAFE] text-[#6C4BF4]">
-                      <Megaphone size={12} />
-                      {c.type}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 font-medium text-xs text-gray-700">{c.rate}</td>
-                  <td className="py-4 px-6">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      c.status === "Running" ? "bg-[#E8F8EE] text-[#22C55E]" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 font-medium text-xs">{c.views}</td>
-                  <td className="py-4 px-6 font-medium text-xs">{c.clicks}</td>
-                  <td className="py-4 px-6 font-bold text-[#6C4BF4] text-xs">{c.ctr}</td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleStatus(c.id)}
-                        className={`p-1.5 rounded-lg border transition cursor-pointer ${
-                          c.status === "Running" 
-                            ? "border-amber-200 text-amber-600 hover:bg-amber-50" 
-                            : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-                        }`}
-                        title={c.status === "Running" ? "Pause" : "Resume"}
-                      >
-                        {c.status === "Running" ? <Pause size={14} /> : <Play size={14} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(c.id, c.name)}
-                        className="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition cursor-pointer"
-                        title="Delete Campaign"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-4 border-[#6C4BF4] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-gray-400 font-bold">Loading campaigns...</p>
+          </div>
+        ) : campaigns.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-[#17152A]">
+              <thead className="bg-[#F8F7FF] text-xs font-bold text-[#6B6880] uppercase tracking-wider border-b border-[#E7E4F2]">
+                <tr>
+                  <th className="py-3.5 px-6">Campaign</th>
+                  <th className="py-3.5 px-6">Type</th>
+                  <th className="py-3.5 px-6">Daily Rate</th>
+                  <th className="py-3.5 px-6">Status</th>
+                  <th className="py-3.5 px-6">Views</th>
+                  <th className="py-3.5 px-6">Clicks</th>
+                  <th className="py-3.5 px-6">CTR</th>
+                  <th className="py-3.5 px-6 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-[#E7E4F2]">
+                {campaigns.map((c) => (
+                  <tr key={c.id} className="hover:bg-[#F8F7FF]/50 transition">
+                    <td className="py-4 px-6 font-bold font-poppins">
+                      <div>{c.name}</div>
+                      <div className="text-xs font-normal text-[#6B6880]">{c.book}</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EEEAFE] text-[#6C4BF4]">
+                        <Megaphone size={12} />
+                        {c.type}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 font-medium text-xs text-gray-700">{c.rate}</td>
+                    <td className="py-4 px-6">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        c.status === "Running" ? "bg-[#E8F8EE] text-[#22C55E]" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        {c.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 font-medium text-xs">{c.views}</td>
+                    <td className="py-4 px-6 font-medium text-xs">{c.clicks}</td>
+                    <td className="py-4 px-6 font-bold text-[#6C4BF4] text-xs">{c.ctr}</td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleStatus(c.id)}
+                          className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                            c.status === "Running" 
+                              ? "border-amber-200 text-amber-600 hover:bg-amber-50" 
+                              : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                          }`}
+                          title={c.status === "Running" ? "Pause" : "Resume"}
+                        >
+                          {c.status === "Running" ? <Pause size={14} /> : <Play size={14} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c.id, c.name)}
+                          className="p-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition cursor-pointer"
+                          title="Delete Campaign"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-16 px-4 space-y-3">
+            <div className="h-12 w-12 rounded-full bg-[#EEEAFE] text-[#6C4BF4] flex items-center justify-center mx-auto">
+              <Megaphone size={22} />
+            </div>
+            <h3 className="text-base font-bold text-[#17152A]">No Campaigns Created Yet</h3>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+              Promote your titles on the homepage banner or category tops to boost book discovery.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="mt-2 px-4 py-2 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5b3ed9] transition cursor-pointer"
+            >
+              Launch Your First Campaign
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal: Create Campaign */}
@@ -321,9 +301,10 @@ function Campaigns() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-1.5">Target Book</label>
+                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-1.5">Target Book Title</label>
                 <input
                   type="text"
+                  placeholder="e.g. My Textbook Title"
                   value={newCampaign.book}
                   onChange={(e) => setNewCampaign({ ...newCampaign, book: e.target.value })}
                   className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 px-4 text-xs outline-none focus:border-[#6C4BF4]"

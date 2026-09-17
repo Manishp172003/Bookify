@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { CircleDollarSign, ArrowUpRight, ArrowDownLeft, Wallet, CheckCircle, X, ShieldCheck } from "lucide-react";
-import { authorService } from "../../services/authorService";
+import { authorService, isDemoAuthor } from "../../services/authorService";
 import { useCommerce } from "../../context/CommerceContext";
 
 function Earnings() {
   const { showToast } = useCommerce();
+  const isDemo = isDemoAuthor();
+
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [balance, setBalance] = useState(32680);
-  const [totalEarnings, setTotalEarnings] = useState(48750);
-  const [totalWithdrawn, setTotalWithdrawn] = useState(14090);
-  const [escrowPending, setEscrowPending] = useState(1980);
+  const [balance, setBalance] = useState(isDemo ? 32680 : 0);
+  const [totalEarnings, setTotalEarnings] = useState(isDemo ? 48750 : 0);
+  const [totalWithdrawn, setTotalWithdrawn] = useState(isDemo ? 14090 : 0);
+  const [escrowPending, setEscrowPending] = useState(isDemo ? 1980 : 0);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [payoutMethod, setPayoutMethod] = useState("UPI");
   const [payoutDetails, setPayoutDetails] = useState({
@@ -19,12 +21,16 @@ function Earnings() {
     ifscCode: "SBIN0004921"
   });
 
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: "sale", label: "Book Royalties", desc: "The Silent Mind (5 Copies)", amount: "₹2,250", date: "Today", positive: true },
-    { id: 2, type: "sale", label: "Book Royalties", desc: "Inner Peace (3 Copies)", amount: "₹897", date: "Yesterday", positive: true },
-    { id: 3, type: "withdrawal", label: "UPI Payout", desc: "rahul.author@oksbi", amount: "₹5,000", date: "20 May 2026", positive: false },
-    { id: 4, type: "sale", label: "Rental Earnings", desc: "The Silent Mind (Weekly Rental)", amount: "₹299", date: "18 May 2026", positive: true }
-  ]);
+  const [transactions, setTransactions] = useState(
+    isDemo
+      ? [
+          { id: 1, type: "sale", label: "Book Royalties", desc: "The Silent Mind (5 Copies)", amount: "₹2,250", date: "Today", positive: true },
+          { id: 2, type: "sale", label: "Book Royalties", desc: "Inner Peace (3 Copies)", amount: "₹897", date: "Yesterday", positive: true },
+          { id: 3, type: "withdrawal", label: "UPI Payout", desc: "rahul.author@oksbi", amount: "₹5,000", date: "20 May 2026", positive: false },
+          { id: 4, type: "sale", label: "Rental Earnings", desc: "The Silent Mind (Weekly Rental)", amount: "₹299", date: "18 May 2026", positive: true }
+        ]
+      : []
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -152,25 +158,33 @@ function Earnings() {
           <h2 className="text-lg font-bold text-[#17152A] font-poppins">Recent Ledger</h2>
 
           <div className="divide-y divide-[#E7E4F2]/50">
-            {transactions.map((tx) => (
-              <div key={tx.id} className="flex justify-between items-center gap-2 py-3.5 first:pt-0 last:pb-0">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${tx.positive ? "bg-[#E8F8EE] text-[#22C55E]" : "bg-red-50 text-red-500"}`}>
-                    {tx.positive ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+            {transactions.length > 0 ? (
+              transactions.map((tx) => (
+                <div key={tx.id} className="flex justify-between items-center gap-2 py-3.5 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl ${tx.positive ? "bg-[#E8F8EE] text-[#22C55E]" : "bg-red-50 text-red-500"}`}>
+                      {tx.positive ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-[#17152A] font-poppins">{tx.label}</h4>
+                      <p className="text-xs text-[#6B6880]">{tx.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-[#17152A] font-poppins">{tx.label}</h4>
-                    <p className="text-xs text-[#6B6880]">{tx.desc}</p>
+                  <div className="text-right">
+                    <span className={`text-sm font-bold block ${tx.positive ? "text-[#22C55E]" : "text-red-600"}`}>
+                      {tx.positive ? `+${tx.amount}` : `-${tx.amount}`}
+                    </span>
+                    <span className="text-[10px] text-gray-400">{tx.date}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className={`text-sm font-bold block ${tx.positive ? "text-[#22C55E]" : "text-red-600"}`}>
-                    {tx.positive ? `+${tx.amount}` : `-${tx.amount}`}
-                  </span>
-                  <span className="text-[10px] text-gray-400">{tx.date}</span>
-                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center text-gray-400 space-y-1.5">
+                <CircleDollarSign size={24} className="mx-auto text-gray-300" />
+                <p className="text-xs font-bold text-gray-600">No Transactions Yet</p>
+                <p className="text-[11px] text-gray-400">Royalty credits and withdrawals will appear here automatically.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

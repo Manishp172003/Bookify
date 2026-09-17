@@ -8,47 +8,64 @@ import {
   Plus, 
   Sparkles, 
   ChevronRight,
-  ArrowUpRight,
-  Megaphone
+  ArrowUpRight
 } from "lucide-react";
 import { authorService } from "../../services/authorService";
 
 function AuthorDashboard() {
   const [statsData, setStatsData] = useState({
-    totalBooks: "4",
-    totalReaders: "12.4K",
-    totalSales: "₹48,750",
-    totalEarnings: "₹32,680"
+    totalBooks: 0,
+    totalReaders: "0",
+    totalSales: "₹0",
+    totalEarnings: "₹0",
+    isDemo: false
   });
 
-  const [recentActivity, setRecentActivity] = useState([
-    { id: 1, type: "review", text: "New 5-star review on The Silent Mind", detail: "Reader from IIT Delhi", time: "10m ago", iconBg: "bg-[#FFE8EF]" },
-    { id: 2, type: "sale", text: "New purchase order received", detail: "Inner Peace & Clarity", time: "35m ago", iconBg: "bg-[#E8F8EE]" },
-    { id: 3, type: "system", text: "Campaign 'Home Boost' is active", detail: "Active for next 6 days", time: "2h ago", iconBg: "bg-[#EEEAFE]" }
-  ]);
+  const [books, setBooks] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
-    authorService.getDashboardStats().then((data) => {
-      if (!isMounted || !data) return;
-      setStatsData({
-        totalBooks: (data.totalBooks || 4).toString(),
-        totalReaders: data.totalReaders ? `${(data.totalReaders / 1000).toFixed(1)}K` : "12.4K",
-        totalSales: `₹${(data.totalRevenue || 48750).toLocaleString()}`,
-        totalEarnings: `₹${(Math.round((data.totalRevenue || 48750) * 0.75)).toLocaleString()}`
-      });
-    });
+    Promise.all([authorService.getDashboardStats(), authorService.getMyBooks()]).then(
+      ([stats, myBooks]) => {
+        if (!isMounted) return;
+        setBooks(myBooks || []);
+
+        if (stats) {
+          setStatsData({
+            totalBooks: myBooks ? myBooks.length : (stats.totalBooks || 0),
+            totalReaders: stats.totalReaders ? stats.totalReaders.toString() : "0",
+            totalSales: stats.totalSales || "₹0",
+            totalEarnings: stats.totalEarnings || "₹0",
+            isDemo: stats.isDemo || false
+          });
+        }
+
+        if (myBooks && myBooks.length > 0) {
+          setRecentActivity([
+            { id: 1, type: "review", text: `Reader engagement on "${myBooks[0].title}"`, detail: "Active reading traffic across colleges", time: "15m ago", iconBg: "bg-[#FFE8EF]" },
+            { id: 2, type: "sale", text: "Catalog published & visible on marketplace", detail: "Verified Author status active", time: "1h ago", iconBg: "bg-[#E8F8EE]" }
+          ]);
+        } else {
+          setRecentActivity([
+            { id: 1, type: "system", text: "Welcome to Bookify Author Hub!", detail: "Submit your first book to begin publishing", time: "Just now", iconBg: "bg-[#EEEAFE]" }
+          ]);
+        }
+      }
+    );
 
     return () => {
       isMounted = false;
     };
   }, []);
 
+  const topBook = books.length > 0 ? books[0] : null;
+
   const stats = [
-    { label: "Total Books", value: statsData.totalBooks, change: "+2 this month", icon: BookOpen, color: "text-[#6C4BF4]", bg: "bg-[#EEEAFE]" },
-    { label: "Total Readers", value: statsData.totalReaders, change: "+12%", icon: Users, color: "text-[#38BDF8]", bg: "bg-sky-50" },
-    { label: "Total Sales", value: statsData.totalSales, change: "+24%", icon: TrendingUp, color: "text-[#FF8A3D]", bg: "bg-[#FFF0E6]" },
-    { label: "Author Royalties", value: statsData.totalEarnings, change: "+18%", icon: CircleDollarSign, color: "text-[#22C55E]", bg: "bg-[#E8F8EE]" }
+    { label: "Total Books", value: statsData.totalBooks.toString(), change: statsData.totalBooks > 0 ? "+Active" : "New", icon: BookOpen, color: "text-[#6C4BF4]", bg: "bg-[#EEEAFE]" },
+    { label: "Total Readers", value: statsData.totalReaders, change: statsData.totalBooks > 0 ? "+Active" : "0", icon: Users, color: "text-[#38BDF8]", bg: "bg-sky-50" },
+    { label: "Total Sales", value: statsData.totalSales, change: statsData.totalBooks > 0 ? "+Live" : "₹0", icon: TrendingUp, color: "text-[#FF8A3D]", bg: "bg-[#FFF0E6]" },
+    { label: "Author Royalties", value: statsData.totalEarnings, change: statsData.totalBooks > 0 ? "+Live" : "₹0", icon: CircleDollarSign, color: "text-[#22C55E]", bg: "bg-[#E8F8EE]" }
   ];
 
   return (
@@ -100,7 +117,7 @@ function AuthorDashboard() {
         })}
       </div>
 
-      {/* Charts & Analytics */}
+      {/* Charts & Top Performing */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Sales Chart Panel */}
         <div className="bg-white p-6 rounded-2xl border border-[#E7E4F2] lg:col-span-2 space-y-6">
@@ -109,11 +126,9 @@ function AuthorDashboard() {
               <h2 className="text-lg font-bold text-[#17152A] font-poppins">Sales & Reader Demand</h2>
               <p className="text-xs text-[#6B6880]">Monthly performance curve across campus colleges</p>
             </div>
-            <select className="text-xs font-medium border border-[#E7E4F2] rounded-lg px-3 py-1.5 outline-none bg-white text-[#6B6880]">
-              <option>This Month</option>
-              <option>Last 3 Months</option>
-              <option>This Year</option>
-            </select>
+            <span className="text-xs font-bold text-[#6C4BF4] bg-[#EEEAFE] px-3 py-1 rounded-full">
+              {books.length} Books Active
+            </span>
           </div>
 
           {/* Custom SVG Line Chart */}
@@ -169,40 +184,57 @@ function AuthorDashboard() {
             </Link>
           </div>
 
-          <div className="flex gap-4 p-4 rounded-xl bg-[#F8F7FF] border border-[#E7E4F2]/50">
-            <div className="w-16 h-24 bg-[#6C4BF4] rounded-lg shadow-xs shrink-0 flex items-center justify-center text-white font-extrabold text-xs relative overflow-hidden">
-              <span className="absolute rotate-12 text-[10px] opacity-20 uppercase font-black tracking-wider">SILENT MIND</span>
-              <span className="relative z-10 text-center px-1 font-poppins">The Silent Mind</span>
-            </div>
-            <div className="flex flex-col justify-between">
-              <div>
-                <h4 className="font-bold text-[#17152A] text-sm line-clamp-1">The Silent Mind</h4>
-                <p className="text-xs text-[#6B6880]">Self-Help & Mindset</p>
+          {topBook ? (
+            <div className="flex gap-4 p-4 rounded-xl bg-[#F8F7FF] border border-[#E7E4F2]/50">
+              <div className="w-16 h-24 bg-[#6C4BF4] rounded-lg shadow-xs shrink-0 flex items-center justify-center text-white font-extrabold text-xs relative overflow-hidden">
+                {topBook.cover ? (
+                  <img src={topBook.cover} alt={topBook.title} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="relative z-10 text-center px-1 font-poppins">{topBook.title}</span>
+                )}
               </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#6B6880]">Sales:</span>
-                  <span className="font-bold text-[#17152A]">3,200</span>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-[#17152A] text-sm line-clamp-1">{topBook.title}</h4>
+                  <p className="text-xs text-[#6B6880]">{topBook.category}</p>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#6B6880]">Royalties:</span>
-                  <span className="font-bold text-[#22C55E]">₹12,480</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-[#6B6880]">Sales:</span>
+                    <span className="font-bold text-[#17152A]">{topBook.sales || "0"}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-[#6B6880]">Royalties:</span>
+                    <span className="font-bold text-[#22C55E]">{topBook.earnings || `₹${topBook.price || 0}`}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-6 text-center rounded-xl bg-[#F8F7FF] border border-[#E7E4F2] space-y-2">
+              <BookOpen size={24} className="text-[#6C4BF4] mx-auto opacity-60" />
+              <h4 className="text-xs font-bold text-[#17152A]">No Books Published Yet</h4>
+              <p className="text-[11px] text-[#6B6880]">Submit your first manuscript to view reader metrics and royalties.</p>
+              <Link
+                to="/author/submit-book"
+                className="inline-block mt-2 px-3 py-1.5 bg-[#6C4BF4] text-white rounded-lg text-xs font-bold hover:bg-[#5b3ed9] transition"
+              >
+                Publish Book
+              </Link>
+            </div>
+          )}
 
-          {/* Quick Stats list */}
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between text-xs p-2.5 rounded-lg hover:bg-[#F8F7FF] transition">
-              <span className="text-[#6B6880] font-medium">Inner Peace & Clarity</span>
-              <span className="font-bold text-[#17152A]">₹9,750</span>
+          {/* Quick list */}
+          {books.length > 1 && (
+            <div className="space-y-2 pt-2">
+              {books.slice(1, 3).map((b) => (
+                <div key={b.id} className="flex items-center justify-between text-xs p-2.5 rounded-lg hover:bg-[#F8F7FF] transition">
+                  <span className="text-[#6B6880] font-medium truncate max-w-[150px]">{b.title}</span>
+                  <span className="font-bold text-[#17152A]">{b.earnings || `₹${b.price || 0}`}</span>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between text-xs p-2.5 rounded-lg hover:bg-[#F8F7FF] transition">
-              <span className="text-[#6B6880] font-medium">The Power of Micro Habits</span>
-              <span className="font-bold text-[#6C4BF4] bg-[#EEEAFE] px-2 py-0.5 rounded-md text-[10px]">Draft</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
