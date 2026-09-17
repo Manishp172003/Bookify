@@ -125,6 +125,7 @@ export const authorService = {
         authorAvatar: user?.authorAvatar || null,
         isVerified: true,
         authorVerificationStatus: "verified",
+        authorVerificationDocuments: [],
         socialLinks: {
           twitter: "https://twitter.com/rvwrites",
           instagram: "https://instagram.com/rvwrites",
@@ -143,6 +144,7 @@ export const authorService = {
       authorAvatar: user?.authorAvatar || user?.avatar || null,
       isVerified: user?.isVerified || false,
       authorVerificationStatus: user?.authorVerificationStatus || "unverified",
+      authorVerificationDocuments: user?.authorVerificationDocuments || [],
       socialLinks: user?.socialLinks || {},
     };
   },
@@ -178,16 +180,37 @@ export const authorService = {
     return updated;
   },
 
-  async submitVerification(documentTitle, documentUrl) {
+  async submitVerification(payload) {
+    let result = null;
     try {
       const res = await fetch(`${API_BASE_URL}/verify`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ documentTitle, documentUrl }),
+        body: JSON.stringify(payload),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const json = await res.json();
+        result = json.data;
+      }
     } catch {}
-    return { success: true };
+
+    // Synchronize locally to bookify_user
+    const user = getCurrentAuthor() || {};
+    const existingDocs = user.authorVerificationDocuments || [];
+    const newDoc = {
+      title: payload.documentTitle,
+      url: payload.documentFile || payload.documentUrl,
+      fileName: payload.fileName || "verification_document",
+      fileType: payload.fileType || "pdf",
+      uploadedAt: new Date().toISOString(),
+    };
+    const updated = {
+      ...user,
+      authorVerificationStatus: "pending",
+      authorVerificationDocuments: [newDoc, ...existingDocs],
+    };
+    localStorage.setItem("bookify_user", JSON.stringify(updated));
+    return { success: true, data: result || updated };
   },
 
   // ==========================================

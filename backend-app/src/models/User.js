@@ -50,6 +50,8 @@ const userSchema = new mongoose.Schema({
     {
       title: { type: String },
       url: { type: String },
+      fileName: { type: String, default: '' },
+      fileType: { type: String, default: '' },
       uploadedAt: { type: Date, default: Date.now },
     },
   ],

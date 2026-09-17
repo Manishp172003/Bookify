@@ -73,19 +73,26 @@ export const updateAuthorProfile = async (req, res) => {
 
 export const submitAuthorVerification = async (req, res) => {
   try {
-    const { documentTitle, documentUrl } = req.body;
+    const { documentTitle, documentUrl, documentFile, fileName, fileType } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, message: "Author not found", data: null });
     }
 
     user.authorVerificationStatus = "pending";
-    if (documentTitle && documentUrl) {
+    const filePayload = documentUrl || documentFile;
+    if (documentTitle && filePayload) {
       user.authorVerificationDocuments.push({
         title: documentTitle,
-        url: documentUrl,
+        url: filePayload,
+        fileName: fileName || "verification_doc",
+        fileType: fileType || (filePayload.startsWith("data:application/pdf") ? "pdf" : "image"),
         uploadedAt: new Date(),
       });
+    }
+
+    if (!user.isAuthor && user.role !== "admin") {
+      user.isAuthor = true;
     }
 
     await user.save();

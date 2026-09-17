@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom";
-import { MapPin, Star, Shield, Package, UserCheck } from "lucide-react";
+import { MapPin, Star, Shield, Package, UserCheck, ShieldCheck } from "lucide-react";
 import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
 export default function SellerCard({ seller, compact = false }) {
@@ -22,17 +21,17 @@ export default function SellerCard({ seller, compact = false }) {
             <span className="font-medium text-sm text-bookify-text truncate">
               {seller?.name}
             </span>
-            {seller?.isVerified && (
-              <Shield size={12} className="text-bookify-green flex-shrink-0" />
+            {(seller?.authorVerificationStatus === "verified" || seller?.isVerified) && (
+              <ShieldCheck size={13} className="text-emerald-600 flex-shrink-0" />
             )}
           </div>
           <p className="text-xs text-bookify-text-secondary truncate">
-            {seller?.college}
+            {seller?.college || (seller?.isAuthor ? "Author Studio" : "")}
           </p>
         </div>
         <div className="flex items-center gap-0.5 text-bookify-yellow text-xs">
           <Star size={11} fill="currentColor" />
-          <span className="font-medium">{seller?.rating}</span>
+          <span className="font-medium">{seller?.rating || "5.0"}</span>
         </div>
       </div>
     );
@@ -57,12 +56,17 @@ export default function SellerCard({ seller, compact = false }) {
             <h3 className="font-[family-name:var(--font-heading)] font-semibold text-bookify-text">
               {seller.name}
             </h3>
-            {seller.isVerified && (
+            {seller.authorVerificationStatus === "verified" ? (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <ShieldCheck size={12} className="text-emerald-600" />
+                Verified Author
+              </span>
+            ) : seller.isVerified ? (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-bookify-green bg-bookify-green-light px-2 py-0.5 rounded-full">
                 <UserCheck size={10} />
                 Verified Seller
               </span>
-            )}
+            ) : null}
           </div>
           <p className="text-sm text-bookify-text-secondary mt-0.5">
             {seller.college}

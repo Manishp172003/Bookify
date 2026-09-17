@@ -133,18 +133,77 @@ export const getUsers = async (req, res) => {
   }
 };
 
+export const getAuthorsForVerification = async (req, res) => {
+  try {
+    const authors = await User.find({
+      $or: [
+        { role: "author" },
+        { isAuthor: true },
+        { authorVerificationStatus: { $in: ["pending", "verified", "rejected"] } },
+        { "authorVerificationDocuments.0": { $exists: true } },
+      ],
+    })
+      .select("-password -otp -resetToken")
+      .sort({ updatedAt: -1 });
+
+    const authorIds = authors.map((a) => a._id);
+    const booksCount = await Book.aggregate([
+      { $match: { sellerId: { $in: authorIds } } },
+      { $group: { _id: "$sellerId", count: { $sum: 1 } } },
+    ]);
+    const bookCountMap = {};
+    booksCount.forEach((b) => {
+      bookCountMap[b._id.toString()] = b.count;
+    });
+
+    const enriched = authors.map((a) => {
+      const plain = a.toObject();
+      return {
+        ...plain,
+        booksCount: bookCountMap[a._id.toString()] || 0,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Authors for verification fetched successfully",
+      data: enriched,
+    });
+  } catch (error) {
+    console.error("Get authors for verification error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch authors for verification",
+      data: null,
+    });
+  }
+};
+
 export const verifyAuthor = async (req, res) => {
   try {
-    const { isVerified } = req.body;
+    const { status, isVerified } = req.body;
+    const verifiedFlag = isVerified !== undefined ? isVerified : status === "verified";
+    const verificationStatus = status || (verifiedFlag ? "verified" : "rejected");
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { isVerified, role: "author", isAdmin: false },
+      {
+        isVerified: verifiedFlag,
+        authorVerificationStatus: verificationStatus,
+        isAuthor: true,
+      },
       { new: true }
-    ).select("-password");
+    ).select("-password -otp -resetToken");
+
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found", data: null });
+      return res.status(404).json({ success: false, message: "Author not found", data: null });
     }
-    return res.status(200).json({ success: true, message: "Author verification updated", data: user });
+
+    return res.status(200).json({
+      success: true,
+      message: `Author verification status updated to ${verificationStatus}`,
+      data: user,
+    });
   } catch (error) {
     console.error("Verify author error:", error);
     return res.status(500).json({

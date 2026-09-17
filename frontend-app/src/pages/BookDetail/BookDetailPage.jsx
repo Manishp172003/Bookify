@@ -10,6 +10,7 @@ import {
   MapPin,
   Star,
   Shield,
+  ShieldCheck,
   Truck,
   Clock,
   RefreshCcw,
@@ -328,9 +329,17 @@ export default function BookDetailPage() {
             <h1 className="font-[family-name:var(--font-heading)] text-xl font-bold text-bookify-text mt-3">
               {book.title}
             </h1>
-            <p className="text-bookify-text-secondary text-sm mt-1">
-              by {book.author}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-bookify-text-secondary text-sm">
+                by <span className="font-semibold text-bookify-text">{book.author}</span>
+              </p>
+              {(book.isVerifiedAuthor || book.isAuthorOriginal || book.seller?.authorVerificationStatus === "verified" || book.seller?.isVerified) && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full" title="Official Verified Author">
+                  <ShieldCheck size={12} className="text-emerald-600" />
+                  Verified Author
+                </span>
+              )}
+            </div>
 
             <div className="mt-4 flex items-baseline gap-3">
               <span className="text-3xl font-bold text-bookify-text">

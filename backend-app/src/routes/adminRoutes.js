@@ -7,6 +7,7 @@ import {
   getOrdersEscrow,
   updateEscrow,
   getUsers,
+  getAuthorsForVerification,
   verifyAuthor,
   getDisputes,
   getAdminCoupons,
@@ -33,8 +34,9 @@ router.patch("/listings/:id", moderateListing);
 router.get("/orders-escrow", getOrdersEscrow);
 router.patch("/orders/:id/escrow", updateEscrow);
 
-// ─── User Management ──────────────────────────────────────────────────────────
+// ─── User Management & Author Verification ────────────────────────────────────
 router.get("/users", getUsers);
+router.get("/authors-verification", getAuthorsForVerification);
 router.patch("/authors-verification/:id", verifyAuthor);
 
 // ─── Dispute Handling ─────────────────────────────────────────────────────────
