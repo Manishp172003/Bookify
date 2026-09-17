@@ -1,10 +1,14 @@
+import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import ProfileHeader from "../../components/profile/ProfileHeader";
 import ProfileStats from "../../components/profile/ProfileStats";
 import AboutMe from "../../components/profile/AboutMe";
-import { Menu } from "lucide-react";
+import { Menu, Heart, ArrowRight } from "lucide-react";
+import { useCommerce } from "../../context/CommerceContext";
 
 function ProfileWidgets() {
+  const { wishlistItems } = useCommerce();
+
   return (
     <div className="space-y-6">
       {/* Account Status Widget */}
@@ -33,7 +37,7 @@ function ProfileWidgets() {
           <li className="flex items-center gap-2 text-gray-600">
             <span className="text-green-500 font-bold">✓</span> Add Mobile Number
           </li>
-          <li className="flex items-center gap-2 text-gray-405">
+          <li className="flex items-center gap-2 text-gray-400">
             <span className="text-gray-300">•</span> Link Bank Account (for payouts)
           </li>
         </ul>
@@ -41,28 +45,62 @@ function ProfileWidgets() {
 
       {/* Wishlist Quick-view Widget */}
       <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
-        <h3 className="font-bold text-[#17152A] text-sm mb-4">Saved Wishlist</h3>
-        
-        <div className="space-y-3">
-          {[
-            { title: "Introduction to Algorithms", price: "₹650", bgClass: "from-[#111827] to-[#374151]" },
-            { title: "Compiler Design", price: "₹450", bgClass: "from-[#065F46] to-[#047857]" }
-          ].map((book) => (
-            <div key={book.title} className="flex items-center gap-3">
-              <div className={`h-9 w-6.5 shrink-0 rounded bg-gradient-to-br ${book.bgClass} flex items-center justify-center text-[5px] font-extrabold text-white uppercase tracking-tighter select-none border border-black/5`}>
-                {book.title.split(' ').map(w => w[0]).join('')}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-[#17152A]">
-                  {book.title}
-                </p>
-                <p className="text-[10px] text-[#6C4BF4] font-semibold mt-0.5">
-                  {book.price}
-                </p>
-              </div>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-[#17152A] text-sm">Saved Wishlist</h3>
+          <Link to="/dashboard/wishlist" className="text-[11px] font-bold text-[#6C4BF4] hover:underline flex items-center gap-1">
+            View All ({wishlistItems?.length || 0})
+          </Link>
         </div>
+        
+        {(!wishlistItems || wishlistItems.length === 0) ? (
+          <div className="text-center py-6 text-gray-400">
+            <Heart size={22} className="mx-auto mb-1.5 text-gray-300" />
+            <p className="text-xs font-semibold">No saved books yet</p>
+            <Link to="/explore" className="text-[11px] text-[#6C4BF4] font-bold hover:underline mt-1.5 inline-flex items-center gap-1">
+              Explore Marketplace <ArrowRight size={11} />
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {wishlistItems.slice(0, 4).map((book) => (
+              <Link
+                key={book.id || book.title}
+                to={book.id ? `/book/${book.id}` : "/dashboard/wishlist"}
+                className="flex items-center gap-3 p-1.5 -mx-1.5 rounded-xl hover:bg-gray-50 transition group cursor-pointer"
+              >
+                {book.coverImage ? (
+                  <img
+                    src={book.coverImage}
+                    alt={book.title}
+                    className="h-10 w-7.5 shrink-0 rounded object-cover border border-gray-200 shadow-2xs"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="h-10 w-7.5 shrink-0 rounded bg-gradient-to-br from-[#6C4BF4] to-[#8B3FD9] flex items-center justify-center text-[7px] font-extrabold text-white uppercase tracking-tighter select-none border border-black/5">
+                    {book.title ? book.title.split(' ').map(w => w[0]).slice(0, 2).join('') : "BK"}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-[#17152A] group-hover:text-[#6C4BF4] transition">
+                    {book.title}
+                  </p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-[10px] text-[#6C4BF4] font-bold">
+                      {book.price}
+                    </p>
+                    {book.condition && (
+                      <span className="text-[9px] text-gray-400 font-medium">
+                        {book.condition}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

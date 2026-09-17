@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { Wallet, Landmark, Shield, AlertCircle, Menu, CheckCircle2, ArrowDownRight, ArrowUpRight, QrCode } from "lucide-react";
@@ -26,6 +26,22 @@ export default function Earnings() {
   const [bankAcc, setBankAcc] = useState("918273645019");
   const [bankIfsc, setBankIfsc] = useState("HDFC0001245");
   const [payoutAmount, setPayoutAmount] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bookify_user_payment');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.upiId) {
+          setUpiId(parsed.upiId);
+          setTempUpi(parsed.upiId);
+        }
+        if (parsed.accountNumber) setBankAcc(parsed.accountNumber);
+        if (parsed.ifscCode) setBankIfsc(parsed.ifscCode);
+        if (parsed.mode === 'Bank Account') setPayoutMethod('bank');
+      }
+    } catch {}
+  }, []);
 
   const handleWithdrawalRequest = (e) => {
     e.preventDefault();
