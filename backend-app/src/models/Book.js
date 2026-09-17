@@ -76,6 +76,62 @@ const bookSchema = new mongoose.Schema({
     default: false,
   },
 
+  // ---- Author Specific Publishing Fields ----
+  isAuthorOriginal: {
+    type: Boolean,
+    default: false,
+  },
+  subtitle: {
+    type: String,
+    default: "",
+  },
+  subCategory: {
+    type: String,
+    default: "",
+  },
+  language: {
+    type: String,
+    default: "English",
+  },
+  tags: [
+    {
+      type: String,
+    },
+  ],
+  bookType: {
+    type: String,
+    enum: ["eBook", "Paperback", "Hardcover"],
+    default: "eBook",
+  },
+  manuscriptUrl: {
+    type: String,
+    default: "",
+  },
+  sampleChapterUrl: {
+    type: String,
+    default: "",
+  },
+  rentalPrice: {
+    type: Number,
+    default: 0,
+  },
+  allowExchanges: {
+    type: Boolean,
+    default: true,
+  },
+  salesCount: {
+    type: Number,
+    default: 0,
+  },
+  totalEarnings: {
+    type: Number,
+    default: 0,
+  },
+  adminReviewNotes: {
+    type: String,
+    default: "",
+  },
+
   createdAt: {
     type: Date,
     default: Date.now,

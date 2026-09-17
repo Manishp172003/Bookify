@@ -27,8 +27,31 @@ const userSchema = new mongoose.Schema({
   resetToken: { type: String, default: null },
   resetTokenExpiry: { type: Date, default: null },
 
-  // ---- Author Verification ----
+  // ---- Author Profile & Verification ----
   isVerified: { type: Boolean, default: false },
+  authorVerificationStatus: {
+    type: String,
+    enum: ['unverified', 'pending', 'verified', 'rejected'],
+    default: 'unverified',
+  },
+  authorBio: { type: String, default: '' },
+  penName: { type: String, default: '' },
+  website: { type: String, default: '' },
+  socialLinks: {
+    linkedin: { type: String, default: '' },
+    twitter: { type: String, default: '' },
+    goodreads: { type: String, default: '' },
+    instagram: { type: String, default: '' },
+  },
+  publisherImprint: { type: String, default: '' },
+  authorAvatar: { type: String, default: null },
+  authorVerificationDocuments: [
+    {
+      title: { type: String },
+      url: { type: String },
+      uploadedAt: { type: Date, default: Date.now },
+    },
+  ],
 
   // ---- Settings: Privacy ----
   privacy: {

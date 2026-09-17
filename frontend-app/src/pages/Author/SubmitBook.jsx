@@ -8,6 +8,7 @@ import {
   CheckCircle,
   X
 } from "lucide-react";
+import { authorService } from "../../services/authorService";
 
 function SubmitBook() {
   const [step, setStep] = useState(1);
@@ -30,6 +31,7 @@ function SubmitBook() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleNext = () => {
     if (step === 1) {
@@ -83,9 +85,32 @@ function SubmitBook() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      await authorService.submitBook({
+        title: formData.title,
+        subtitle: formData.subtitle,
+        category: formData.category === "Other" ? formData.customCategory : formData.category,
+        subCategory: formData.subCategory === "Other" ? formData.customSubCategory : formData.subCategory,
+        language: formData.language === "Other" ? formData.customLanguage : formData.language,
+        tags: formData.tags,
+        description: formData.description,
+        bookType: formData.bookType,
+        price: Number(formData.sellingPrice) || 0,
+        originalPrice: Number(formData.sellingPrice) || 0,
+        rentalPrice: Number(formData.rentalPrice) || 0,
+        allowExchanges: formData.allowExchanges,
+        images: formData.coverFile ? [formData.coverFile] : ["https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg"],
+        status: "Active"
+      });
+    } catch (err) {
+      console.warn("Submit book error:", err);
+    } finally {
+      setSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   const stepsHeader = [
