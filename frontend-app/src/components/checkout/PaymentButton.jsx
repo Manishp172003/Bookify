@@ -3,6 +3,7 @@ import { Lock, Zap, Truck, CreditCard, ShieldCheck, Check, Loader2 } from "lucid
 
 function PaymentButton({
   total,
+  subtotal = 0,
   shippingMethod,
   onSelectShippingMethod,
   onPay,
@@ -48,7 +49,15 @@ function PaymentButton({
                 <h3 className="text-xs font-bold text-[#17152A]">Standard Delivery</h3>
                 <p className="text-[11px] text-gray-500 mt-0.5">Est. 3-5 business days</p>
                 <span className="mt-1 inline-block text-xs font-black text-[#6C4BF4]">
-                  ₹60 <span className="text-[10px] text-gray-400 font-normal">(Free over ₹999)</span>
+                  {subtotal >= 999 ? (
+                    <>
+                      <span className="line-through text-gray-400 font-normal mr-1">₹60</span> FREE
+                    </>
+                  ) : (
+                    <>
+                      ₹60 <span className="text-[10px] text-gray-400 font-normal">(Free over ₹999)</span>
+                    </>
+                  )}
                 </span>
               </div>
             </div>

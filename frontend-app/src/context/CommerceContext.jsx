@@ -6,7 +6,7 @@ const CommerceContext = createContext(null);
 const INITIAL_COUPONS = [
   { code: "CAMPUS100", discount: 100, description: "₹100 off on orders above ₹500" },
   { code: "BOKIFY50", discount: 50, description: "₹50 off on your first order" },
-  { code: "FREESHIP", discount: 40, description: "Free campus delivery credit" }
+  { code: "FREESHIP", discount: 60, description: "Free campus delivery credit (₹60 value)" }
 ];
 
 const INITIAL_ADDRESSES = [
@@ -216,7 +216,7 @@ export function CommerceProvider({ children }) {
   const [availableCoupons] = useState(INITIAL_COUPONS);
 
   // Shipping Method
-  const [shippingMethod, setShippingMethod] = useState("delivery");
+  const [shippingMethod, setShippingMethod] = useState("standard");
 
   // Orders State
   const [orders, setOrders] = useState(() => {
@@ -541,6 +541,14 @@ export function CommerceProvider({ children }) {
 
   // Checkout order generation
   const createOrder = ({ paymentMethod, transactionId }) => {
+    const isExpress = shippingMethod === "express";
+    const deliveryDays = isExpress ? 2 : 4;
+    const shippingMethodLabel = isExpress
+      ? "Express Campus Priority (1-2 Days)"
+      : shippingMethod === "pickup"
+      ? "Self Campus Pickup (Same Day)"
+      : "Standard Campus Delivery (3-5 Days)";
+
     const newOrder = {
       id: `BK${Math.floor(10000000 + Math.random() * 90000000)}`,
       orderDateFormatted: new Date().toLocaleDateString("en-IN", {
@@ -548,7 +556,7 @@ export function CommerceProvider({ children }) {
         month: "short",
         year: "numeric"
       }),
-      expectedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", {
+      expectedDelivery: new Date(Date.now() + deliveryDays * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric"
@@ -557,6 +565,8 @@ export function CommerceProvider({ children }) {
       statusLabel: "Payment Held in Escrow",
       escrowStatus: "held_in_escrow",
       paymentMethod,
+      shippingMethod,
+      shippingMethodLabel,
       transactionId,
       subtotal,
       deliveryFee,
@@ -565,8 +575,9 @@ export function CommerceProvider({ children }) {
       total,
       address: selectedAddress,
       courier: {
-        name: "Campus Delivery Network",
-        trackingNumber: `CN-${Math.floor(100000 + Math.random() * 900000)}-IN`
+        name: isExpress ? "Campus Express Air / Courier" : "Campus Delivery Network",
+        trackingNumber: `CN-${Math.floor(100000 + Math.random() * 900000)}-IN`,
+        supportPhone: "+91 9876543210"
       },
       items: [...cartItems],
       timeline: [
@@ -836,7 +847,16 @@ export function CommerceProvider({ children }) {
   // Cart Pricing calculations
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const deliveryFee = shippingMethod === "pickup" ? 0 : 40;
+  const deliveryFee =
+    cartItems.length === 0
+      ? 0
+      : shippingMethod === "express"
+      ? 120
+      : shippingMethod === "pickup"
+      ? 0
+      : subtotal >= 999
+      ? 0
+      : 60;
   const platformFee = cartItems.length > 0 ? 15 : 0;
   const discount = appliedCoupon ? appliedCoupon.discount : 0;
   const total = Math.max(0, subtotal + deliveryFee + platformFee - discount);

@@ -165,6 +165,7 @@ function Checkout() {
           {/* Shipping Method Selector & Pay Button */}
           <PaymentButton
             total={total}
+            subtotal={subtotal}
             shippingMethod={shippingMethod}
             onSelectShippingMethod={setShippingMethod}
             onPay={handlePayment}

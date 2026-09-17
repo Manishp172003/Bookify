@@ -248,7 +248,9 @@ function OrderTracking() {
 
             <div className="flex justify-between text-gray-600">
               <span>Delivery Service:</span>
-              <span className="font-semibold text-[#17152A]">{order.shippingMethodLabel}</span>
+              <span className="font-semibold text-[#17152A]">
+                {order.shippingMethodLabel || (order.shippingMethod === "express" ? "Express Campus Priority (1-2 Days)" : "Standard Campus Delivery (3-5 Days)")}
+              </span>
             </div>
 
             <div className="flex justify-between text-gray-600">
