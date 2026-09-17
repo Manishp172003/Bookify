@@ -155,10 +155,24 @@ function OrderConfirmation() {
             <div className="text-xs text-gray-600 space-y-1">
               <p className="font-bold text-sm text-[#17152A]">{order.address?.name}</p>
               <p className="text-gray-500">{order.address?.phone}</p>
-              <p className="mt-1">{order.address?.street}</p>
-              <p>
-                {order.address?.city}, {order.address?.state} - <span className="font-semibold">{order.address?.pincode}</span>
-              </p>
+              {order.address?.hostelBlock && (
+                <p className="mt-1 font-medium text-gray-700">{order.address?.hostelBlock}</p>
+              )}
+              {order.address?.campus && (
+                <p className="text-gray-500">{order.address?.campus}</p>
+              )}
+              {order.address?.meetupSpot && (
+                <p className="text-[11px] text-[#6C4BF4] font-semibold">📍 Meetup: {order.address?.meetupSpot}</p>
+              )}
+              {order.address?.street && !order.address?.hostelBlock && (
+                <p className="mt-1">{order.address?.street}</p>
+              )}
+              {(order.address?.city || order.address?.state || order.address?.pincode) && (
+                <p className="text-gray-500">
+                  {[order.address?.city, order.address?.state].filter(Boolean).join(", ")}
+                  {order.address?.pincode ? ` - ${order.address?.pincode}` : ""}
+                </p>
+              )}
             </div>
           </div>
 

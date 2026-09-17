@@ -276,11 +276,25 @@ function OrderTracking() {
             <p className="flex items-center gap-1.5 text-gray-500">
               <Phone size={12} /> {order.address?.phone}
             </p>
-            <p className="mt-2 text-gray-700 leading-relaxed">{order.address?.street}</p>
-            <p className="text-gray-700">
-              {order.address?.city}, {order.address?.state} -{" "}
-              <span className="font-bold text-[#17152A]">{order.address?.pincode}</span>
-            </p>
+            {order.address?.hostelBlock && (
+              <p className="mt-2 font-medium text-gray-700">{order.address?.hostelBlock}</p>
+            )}
+            {order.address?.campus && (
+              <p className="text-gray-500">{order.address?.campus}</p>
+            )}
+            {order.address?.meetupSpot && (
+              <p className="text-[11px] text-[#6C4BF4] font-semibold">📍 Meetup: {order.address?.meetupSpot}</p>
+            )}
+            {order.address?.street && !order.address?.hostelBlock && (
+              <p className="mt-2 text-gray-700 leading-relaxed">{order.address?.street}</p>
+            )}
+            {(order.address?.city || order.address?.state || order.address?.pincode) && (
+              <p className="text-gray-700">
+                {[order.address?.city, order.address?.state].filter(Boolean).join(", ")}
+                {order.address?.pincode ? ` - ` : ""}
+                <span className="font-bold text-[#17152A]">{order.address?.pincode || ""}</span>
+              </p>
+            )}
             <span className="inline-block mt-2 rounded bg-[#F0ECFF] px-2 py-0.5 text-[10px] font-bold text-[#6C4BF4]">
               {order.address?.type || "Campus / Hostel"}
             </span>

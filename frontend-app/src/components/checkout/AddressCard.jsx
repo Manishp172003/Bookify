@@ -98,12 +98,31 @@ function AddressCard({ addresses, selectedAddressId, onSelectAddress, onAddAddre
 
                 <h3 className="font-bold text-sm text-[#17152A]">{addr.name}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{addr.phone}</p>
-                <p className="mt-2 text-xs text-gray-600 leading-relaxed">
-                  {addr.street}
-                  {addr.landmark && `, Near ${addr.landmark}`}
-                  <br />
-                  {addr.city}, {addr.state} - <span className="font-semibold">{addr.pincode}</span>
-                </p>
+                <div className="mt-2 text-xs text-gray-600 leading-relaxed">
+                  {addr.hostelBlock && (
+                    <div className="font-medium text-gray-700">{addr.hostelBlock}</div>
+                  )}
+                  {addr.campus && (
+                    <div className="text-gray-500">{addr.campus}</div>
+                  )}
+                  {addr.meetupSpot && (
+                    <div className="text-[11px] text-[#6C4BF4] font-semibold mt-0.5">
+                      📍 Meetup: {addr.meetupSpot}
+                    </div>
+                  )}
+                  {addr.street && !addr.hostelBlock && (
+                    <div>
+                      {addr.street}
+                      {addr.landmark && `, Near ${addr.landmark}`}
+                    </div>
+                  )}
+                  {(addr.city || addr.state || addr.pincode) && (
+                    <div className="text-gray-500 mt-0.5">
+                      {[addr.city, addr.state].filter(Boolean).join(", ")}
+                      {addr.pincode ? ` - ${addr.pincode}` : ""}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );

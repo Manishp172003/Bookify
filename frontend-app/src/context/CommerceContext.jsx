@@ -14,9 +14,14 @@ const INITIAL_ADDRESSES = [
     id: "addr_1",
     name: "Manish Pawar",
     phone: "+91 9876543210",
+    type: "Campus / Hostel",
     campus: "Nagpur University Campus",
     hostelBlock: "Hostel Block A, Room 204",
     meetupSpot: "Central Library Entrance",
+    street: "Hostel Block A, Room 204, Nagpur University Campus",
+    city: "Nagpur",
+    state: "Maharashtra",
+    pincode: "440033",
     isDefault: true
   }
 ];
