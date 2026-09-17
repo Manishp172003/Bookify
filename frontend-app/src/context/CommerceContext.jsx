@@ -784,53 +784,6 @@ export function CommerceProvider({ children }) {
         time: newMessage.time
       });
     }
-
-    // Interactive Demo Simulation: If chatting with demo sellers (Aarav / Sneha), simulate an authentic auto-reply
-    const isDemoSeller =
-      conv?.seller?.name?.includes("Aarav") ||
-      conv?.seller?.name?.includes("Sneha") ||
-      conversationId.startsWith("chat_");
-
-    if (isDemoSeller) {
-      setTimeout(() => {
-        const demoReplies = [
-          "Sure, sounds great! Let's connect near the library.",
-          "I can bring the book today around 4 PM.",
-          "The condition is really good, exactly as shown in photos.",
-          "Yes, that price works for me! Happy to help a fellow student.",
-          "I will keep the book ready for pickup."
-        ];
-        const randomReply = demoReplies[Math.floor(Math.random() * demoReplies.length)];
-        const replyTime = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-
-        setConversations((currentConvs) => {
-          return currentConvs.map((c) => {
-            if (c.id === conversationId) {
-              const isViewing =
-                window.location.pathname.includes(conversationId) ||
-                (window.location.pathname.startsWith("/chat") && activeConversationId === conversationId);
-
-              const replyMsg = {
-                id: `msg_reply_${Date.now()}`,
-                sender: "them",
-                text: randomReply,
-                time: replyTime,
-                status: isViewing ? "read" : "delivered",
-              };
-
-              return {
-                ...c,
-                lastMessage: randomReply,
-                lastMessageTimestamp: replyTime,
-                unreadCount: isViewing ? 0 : (c.unreadCount || 0) + 1,
-                messages: [...c.messages, replyMsg],
-              };
-            }
-            return c;
-          });
-        });
-      }, 3500);
-    }
   };
 
   // Unread Messages Calculation

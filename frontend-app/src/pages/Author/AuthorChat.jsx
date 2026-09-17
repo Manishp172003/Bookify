@@ -48,27 +48,6 @@ function AuthorChat() {
     }));
 
     setNewMessage("");
-
-    // Simulate an automatic simple reply from Admin for demo purposes
-    setTimeout(() => {
-      setChats(prevChats => prevChats.map(chat => {
-        if (chat.id === activeChatId) {
-          const autoReplyTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          return {
-            ...chat,
-            lastMessage: "Thanks for contacting support. An administrator will review this shortly.",
-            time: autoReplyTime,
-            messages: [
-              ...chat.messages,
-              ...[
-                { id: chat.messages.length + 2, sender: "admin", text: "Thanks for contacting support. An administrator will review this shortly.", time: autoReplyTime }
-              ]
-            ]
-          };
-        }
-        return chat;
-      }));
-    }, 1500);
   };
 
   const selectChat = (id) => {
