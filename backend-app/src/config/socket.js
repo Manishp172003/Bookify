@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import ChatMessage from "../models/ChatMessage.js";
 
 let io;
 
@@ -80,33 +81,71 @@ export const initSocket = (server) => {
       }
     });
 
-    socket.on("sendChatMessage", (payload) => {
-      const { conversationId, text, senderName, senderEmail, senderId, book, recipientId, time } = payload || {};
+    socket.on("sendChatMessage", async (payload) => {
+      const { conversationId, text, senderName, senderEmail, senderId, senderAvatar, book, recipientId, recipientName, recipientEmail, time } = payload || {};
       if (!conversationId || !text) return;
 
-      const messageData = {
-        id: payload.id || `msg_live_${Date.now()}`,
-        conversationId,
-        senderId: senderId || userId,
-        senderName: senderName || socket.user.fullName,
-        senderEmail: senderEmail || socket.user.email,
-        text,
-        time: time || new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-        book: book || null,
-        status: "sent",
-        sentAt: new Date(),
-      };
+      const formattedTime = time || new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-      // Broadcast to all connected clients and rooms
-      io.emit("newChatMessage", messageData);
-
-      // Also send notification directly to recipient's personal user room if recipientId is known
-      if (recipientId) {
-        io.to(`user:${recipientId}`).emit("chatNotification", {
+      try {
+        const savedMsg = await ChatMessage.create({
           conversationId,
-          senderName: socket.user.fullName,
-          snippet: text,
+          senderId: senderId || userId,
+          senderName: senderName || socket.user.fullName || "Student User",
+          senderEmail: senderEmail || socket.user.email || "",
+          senderAvatar: senderAvatar || null,
+          recipientId: recipientId || null,
+          recipientName: recipientName || "Peer User",
+          recipientEmail: recipientEmail || "",
+          text,
+          time: formattedTime,
+          book: book || null,
+          status: "sent",
         });
+
+        const messageData = {
+          id: savedMsg._id.toString(),
+          conversationId,
+          senderId: savedMsg.senderId,
+          senderName: savedMsg.senderName,
+          senderEmail: savedMsg.senderEmail,
+          senderAvatar: savedMsg.senderAvatar,
+          recipientId: savedMsg.recipientId,
+          recipientName: savedMsg.recipientName,
+          text: savedMsg.text,
+          time: savedMsg.time,
+          book: savedMsg.book,
+          status: savedMsg.status,
+          createdAt: savedMsg.createdAt,
+        };
+
+        // Broadcast to all connected clients
+        io.emit("newChatMessage", messageData);
+
+        // Also send notification directly to recipient's personal user room if recipientId is known
+        if (recipientId) {
+          io.to(`user:${recipientId}`).emit("chatNotification", {
+            conversationId,
+            senderName: messageData.senderName,
+            snippet: text,
+          });
+        }
+      } catch (dbErr) {
+        console.error("[Socket] Failed to persist message to MongoDB:", dbErr);
+        // Fallback live broadcast if DB transiently fails
+        const messageData = {
+          id: payload.id || `msg_live_${Date.now()}`,
+          conversationId,
+          senderId: senderId || userId,
+          senderName: senderName || socket.user.fullName,
+          senderEmail: senderEmail || socket.user.email,
+          text,
+          time: formattedTime,
+          book: book || null,
+          status: "sent",
+          sentAt: new Date(),
+        };
+        io.emit("newChatMessage", messageData);
       }
     });
 

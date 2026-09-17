@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -8,6 +8,7 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import wantBoardRoutes from "./routes/wantBoardRoutes.js";
 import authorRoutes from "./routes/authorRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/want-board", wantBoardRoutes);
 app.use("/api/author", authorRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/chat", chatRoutes);
 
 // ==========================================
 // 404 Handler

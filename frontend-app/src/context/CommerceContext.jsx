@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import { chatService } from "../services/chatService";
 
 const CommerceContext = createContext(null);
 
@@ -361,11 +362,63 @@ export function CommerceProvider({ children }) {
     };
   }, []);
 
-  // Automatically join active conversation room on Socket.io
+  // Automatically join active conversation room on Socket.io and fetch history from MongoDB
   useEffect(() => {
     if (socket && activeConversationId) {
       socket.emit("joinChat", activeConversationId);
     }
+
+    if (!activeConversationId) return;
+
+    let isMounted = true;
+    chatService.getHistory(activeConversationId).then((dbMessages) => {
+      if (!isMounted || !Array.isArray(dbMessages) || dbMessages.length === 0) return;
+
+      let currentUser = null;
+      try {
+        currentUser = JSON.parse(localStorage.getItem("bookify_user"));
+      } catch {}
+
+      const formatted = dbMessages.map((m) => {
+        const isMe =
+          currentUser &&
+          (currentUser.email === m.senderEmail ||
+            currentUser.fullName === m.senderName ||
+            currentUser.id === m.senderId);
+
+        return {
+          id: m._id || m.id,
+          sender: isMe ? "me" : "them",
+          text: m.text,
+          time: m.time,
+          status: m.status || "delivered",
+        };
+      });
+
+      setConversations((prev) => {
+        return prev.map((c) => {
+          if (c.id === activeConversationId) {
+            const msgMap = new Map();
+            (c.messages || []).forEach((msg) => msgMap.set(msg.id || `${msg.sender}_${msg.text}`, msg));
+            formatted.forEach((msg) => msgMap.set(msg.id || `${msg.sender}_${msg.text}`, msg));
+            const merged = Array.from(msgMap.values());
+            const lastMsg = merged[merged.length - 1];
+
+            return {
+              ...c,
+              lastMessage: lastMsg ? lastMsg.text : c.lastMessage,
+              lastMessageTimestamp: lastMsg ? lastMsg.time : c.lastMessageTimestamp,
+              messages: merged,
+            };
+          }
+          return c;
+        });
+      });
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [socket, activeConversationId]);
 
   const activeConversation = conversations.find(
@@ -722,6 +775,14 @@ export function CommerceProvider({ children }) {
     if (socket && socket.connected) {
       socket.emit("joinChat", id);
     }
+
+    let savedUser = null;
+    try {
+      savedUser = JSON.parse(localStorage.getItem("bookify_user"));
+    } catch {}
+
+    chatService.markRead(id, savedUser?.id || "usr_me");
+
     setConversations((prev) =>
       prev.map((c) =>
         c.id === id
@@ -770,19 +831,26 @@ export function CommerceProvider({ children }) {
       })
     );
 
-    // Emit live message over Socket.io
+    const payload = {
+      id: newMessage.id,
+      conversationId,
+      text: text.trim(),
+      senderName: savedUser?.fullName || "Student",
+      senderEmail: savedUser?.email || "student@bookify.com",
+      senderId: savedUser?.id || "usr_me",
+      senderAvatar: savedUser?.avatar || null,
+      recipientId: conv?.seller?.id || null,
+      recipientName: conv?.seller?.name || "Peer User",
+      book: conv?.book || null,
+      time: newMessage.time
+    };
+
+    // 1. Persist directly to MongoDB via REST API
+    chatService.sendMessage(payload);
+
+    // 2. Emit live message over Socket.io for immediate real-time sync
     if (socket && socket.connected) {
-      socket.emit("sendChatMessage", {
-        id: newMessage.id,
-        conversationId,
-        text: text.trim(),
-        senderName: savedUser?.fullName || "Student",
-        senderEmail: savedUser?.email || "student@bookify.com",
-        senderId: savedUser?.id || "usr_me",
-        recipientId: conv?.seller?.id || null,
-        book: conv?.book || null,
-        time: newMessage.time
-      });
+      socket.emit("sendChatMessage", payload);
     }
   };
 
