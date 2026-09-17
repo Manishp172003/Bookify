@@ -34,7 +34,7 @@ const INITIAL_CONVERSATIONS = [
     seller: {
       id: "usr_aarav",
       name: "Aarav Sharma",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop",
+      avatar: null,
       online: true,
       verified: true,
       college: "IIT Bombay",
@@ -94,7 +94,7 @@ const INITIAL_CONVERSATIONS = [
     seller: {
       id: "usr_sneha",
       name: "Sneha Reddy",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+      avatar: null,
       online: true,
       verified: true,
       college: "BITS Pilani",
@@ -330,9 +330,7 @@ export function CommerceProvider({ children }) {
           seller: {
             id: isMe ? (data.recipientId || "peer_user") : (data.senderId || "peer_user"),
             name: isMe ? "Aarav Sharma" : (data.senderName || "Student Peer"),
-            avatar: isMe
-              ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop"
-              : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+            avatar: null,
             online: true,
             verified: true,
             college: "Campus College",

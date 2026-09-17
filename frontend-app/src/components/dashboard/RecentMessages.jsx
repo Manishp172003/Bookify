@@ -57,8 +57,15 @@ function RecentMessages() {
                       }}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center font-bold text-xs text-[#6C4BF4]">
-                      {conv.seller?.name ? conv.seller.name.charAt(0) : "S"}
+                    <div className="flex h-full w-full items-center justify-center font-black text-[10px] text-[#6C4BF4] select-none tracking-wider">
+                      {conv.seller?.name
+                        ? conv.seller.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join("")
+                            .toUpperCase()
+                        : "SP"}
                     </div>
                   )}
                 </div>

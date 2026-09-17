@@ -63,8 +63,15 @@ function ChatWindow({
               {seller?.avatar ? (
                 <img src={seller.avatar} alt={seller.name} className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center font-bold text-sm text-[#6C4BF4] bg-[#F0ECFF]">
-                  {seller?.name?.charAt(0)}
+                <div className="flex h-full w-full items-center justify-center font-black text-xs text-[#6C4BF4] bg-[#F0ECFF] select-none tracking-wider">
+                  {seller?.name
+                    ? seller.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase()
+                    : "SP"}
                 </div>
               )}
             </div>
