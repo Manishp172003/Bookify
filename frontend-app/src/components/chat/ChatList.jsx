@@ -1,17 +1,39 @@
 import { useState } from "react";
-import { Search, BookOpen, ShieldCheck } from "lucide-react";
+import { Search, BookOpen, ShieldCheck, Inbox, Clock } from "lucide-react";
 import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
 function ChatList({ conversations, activeId, onSelectConversation }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("all"); // "all" | "requests"
 
-  const filteredConversations = conversations.filter((conv) => {
-    const term = searchTerm.toLowerCase();
-    const sellerName = (conv.seller?.name || "").toLowerCase();
-    const bookTitle = (conv.book?.title || "").toLowerCase();
-    const lastMsg = (conv.lastMessage || "").toLowerCase();
-    return sellerName.includes(term) || bookTitle.includes(term) || lastMsg.includes(term);
-  });
+  let savedUser = null;
+  try {
+    savedUser = JSON.parse(localStorage.getItem("bookify_user"));
+  } catch {}
+  const myUserId = savedUser?.id || "usr_me";
+
+  const pendingRequestsCount = conversations.filter(
+    (c) => c.requestStatus === "pending" && c.requesterId !== myUserId
+  ).length;
+
+  const totalRequestsCount = conversations.filter(
+    (c) => c.requestStatus === "pending"
+  ).length;
+
+  const filteredConversations = conversations
+    .filter((conv) => {
+      if (activeTab === "requests") {
+        return conv.requestStatus === "pending";
+      }
+      return true;
+    })
+    .filter((conv) => {
+      const term = searchTerm.toLowerCase();
+      const sellerName = (conv.seller?.name || "").toLowerCase();
+      const bookTitle = (conv.book?.title || "").toLowerCase();
+      const lastMsg = (conv.lastMessage || "").toLowerCase();
+      return sellerName.includes(term) || bookTitle.includes(term) || lastMsg.includes(term);
+    });
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -22,6 +44,45 @@ function ChatList({ conversations, activeId, onSelectConversation }) {
           <span className="rounded-full bg-[#F0ECFF] px-2.5 py-0.5 text-xs font-bold text-[#6C4BF4]">
             {conversations.length} active
           </span>
+        </div>
+
+        {/* Tab Filters */}
+        <div className="flex items-center gap-1 rounded-xl bg-gray-100 p-1 mb-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab("all")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition cursor-pointer ${
+              activeTab === "all"
+                ? "bg-white text-[#17152A] shadow-xs"
+                : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            <Inbox size={13} />
+            <span>All Messages</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("requests")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition cursor-pointer ${
+              activeTab === "requests"
+                ? "bg-white text-[#6C4BF4] shadow-xs"
+                : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            <Clock size={13} />
+            <span>Requests</span>
+            {totalRequestsCount > 0 && (
+              <span
+                className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-black ${
+                  pendingRequestsCount > 0
+                    ? "bg-[#6C4BF4] text-white animate-pulse"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {totalRequestsCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Search Bar */}
@@ -45,12 +106,22 @@ function ChatList({ conversations, activeId, onSelectConversation }) {
         {filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
             <BookOpen size={32} className="mb-2 text-gray-300" />
-            <p className="text-sm font-semibold">No conversations found</p>
-            <p className="text-xs text-gray-400 mt-1">Try searching another name or book</p>
+            <p className="text-sm font-semibold">
+              {activeTab === "requests" ? "No pending chat requests" : "No conversations found"}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              {activeTab === "requests"
+                ? "When buyers request to chat, they will appear here"
+                : "Try searching another name or book"}
+            </p>
           </div>
         ) : (
           filteredConversations.map((conv) => {
             const isActive = conv.id === activeId;
+            const isPending = conv.requestStatus === "pending";
+            const isRejected = conv.requestStatus === "rejected";
+            const isMyRequest = conv.requesterId === myUserId;
+
             return (
               <button
                 key={conv.id}
@@ -100,14 +171,34 @@ function ChatList({ conversations, activeId, onSelectConversation }) {
                     </span>
                   </div>
 
-                  {/* Associated Book Tag */}
-                  {conv.book && (
-                    <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-[#6C4BF4] bg-[#F0ECFF]/80 rounded-md px-1.5 py-0.5 w-fit max-w-full truncate">
-                      <BookOpen size={11} className="shrink-0" />
-                      <span className="truncate">{conv.book.title}</span>
-                      <span className="text-gray-400 font-normal">· ₹{conv.book.price}</span>
-                    </div>
-                  )}
+                  {/* Associated Book Tag & Request Status Pill */}
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {conv.book && (
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-[#6C4BF4] bg-[#F0ECFF]/80 rounded-md px-1.5 py-0.5 max-w-full truncate">
+                        <BookOpen size={11} className="shrink-0" />
+                        <span className="truncate">{conv.book.title}</span>
+                        <span className="text-gray-400 font-normal">· ₹{conv.book.price}</span>
+                      </div>
+                    )}
+
+                    {isPending && !isMyRequest && (
+                      <span className="rounded-md bg-purple-100 text-[#6C4BF4] border border-purple-200 px-1.5 py-0.5 text-[10px] font-extrabold tracking-tight">
+                        Needs Approval
+                      </span>
+                    )}
+
+                    {isPending && isMyRequest && (
+                      <span className="rounded-md bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold">
+                        Request Sent
+                      </span>
+                    )}
+
+                    {isRejected && (
+                      <span className="rounded-md bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 text-[10px] font-bold">
+                        Declined
+                      </span>
+                    )}
+                  </div>
 
                   {/* Last Message Snippet */}
                   <p className="mt-1 text-xs text-gray-500 line-clamp-1">

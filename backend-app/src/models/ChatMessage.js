@@ -61,6 +61,16 @@ const chatMessageSchema = new mongoose.Schema(
       enum: ["sent", "delivered", "read"],
       default: "sent",
     },
+    requestStatus: {
+      type: String,
+      enum: ["pending", "accepted", "rejected"],
+      default: "accepted",
+      index: true,
+    },
+    requesterId: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { ArrowLeft, ShieldCheck, ShoppingBag, ExternalLink, Info, CheckCircle } from "lucide-react";
+import { ArrowLeft, ShieldCheck, ShoppingBag, ExternalLink, Info, CheckCircle, Clock, Check, MessageSquareQuote, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
@@ -15,8 +15,14 @@ function ChatWindow({
 }) {
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(conversation?.id);
-  const { addToCart } = useCommerce();
+  const { addToCart, acceptChatRequest, declineChatRequest } = useCommerce();
   const navigate = useNavigate();
+
+  let savedUser = null;
+  try {
+    savedUser = JSON.parse(localStorage.getItem("bookify_user"));
+  } catch {}
+  const currentUserId = savedUser?.id || "usr_me";
 
   useEffect(() => {
     if (currentConvIdRef.current !== conversation?.id) {
@@ -36,6 +42,10 @@ function ChatWindow({
   }
 
   const { seller, book, messages } = conversation;
+  const requestStatus = conversation.requestStatus || "accepted";
+  const isPending = requestStatus === "pending";
+  const isRejected = requestStatus === "rejected";
+  const isBuyerRequester = conversation.requesterId ? conversation.requesterId === currentUserId : false;
 
   const handleAddToCartAndCheckout = () => {
     if (book) {
@@ -174,6 +184,18 @@ function ChatWindow({
 
       {/* 4. Messages Container */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
+        {isPending && !isBuyerRequester && (
+          <div className="mx-auto my-2 max-w-md rounded-xl bg-purple-50 p-3 text-center border border-purple-200 text-xs text-[#6C4BF4]">
+            <span className="font-bold">Chat Request Received:</span> This student has sent an inquiry regarding your book. Review the message and accept below to start chatting.
+          </div>
+        )}
+
+        {isPending && isBuyerRequester && (
+          <div className="mx-auto my-2 max-w-md rounded-xl bg-amber-50 p-3 text-center border border-amber-200 text-xs text-amber-800">
+            <span className="font-bold">Request Sent:</span> Your request is awaiting seller approval. Messaging is paused until they accept.
+          </div>
+        )}
+
         {messages && messages.length > 0 ? (
           messages.map((msg) => (
             <MessageBubble
@@ -192,12 +214,70 @@ function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 5. Chat Input Area */}
-      <ChatInput
-        onSendMessage={(text) => onSendMessage(conversation.id, text)}
-        sellerName={seller?.name}
-        bookTitle={book?.title}
-      />
+      {/* 5. Chat Input Area / Request Actions */}
+      {isPending && !isBuyerRequester ? (
+        <div className="border-t border-purple-100 bg-white p-4 shadow-lg">
+          <div className="max-w-xl mx-auto rounded-2xl bg-linear-to-r from-[#F8F7FF] to-[#F0ECFF] p-4 border border-[#E9E4FF] text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#6C4BF4] text-white">
+                <MessageSquareQuote size={15} />
+              </span>
+              <h4 className="text-sm font-bold text-[#17152A]">
+                Chat Request from {seller?.name || "Student"}
+              </h4>
+            </div>
+            <p className="text-xs text-gray-600 mb-4 max-w-md mx-auto">
+              Accept this request to unlock real-time live messaging and negotiate pricing or campus handoff.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => declineChatRequest(conversation.id)}
+                className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-red-600 transition cursor-pointer"
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={() => acceptChatRequest(conversation.id)}
+                className="rounded-xl bg-[#6C4BF4] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#5B3DE0] active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Check size={14} /> Accept Request
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : isPending && isBuyerRequester ? (
+        <div className="border-t border-gray-100 bg-white p-4 shadow-sm">
+          <div className="max-w-xl mx-auto rounded-2xl bg-amber-50/80 border border-amber-200/70 p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-1.5">
+              <Clock size={16} className="text-amber-600" />
+              <h4 className="text-xs font-bold text-amber-900">Chat Request Sent — Awaiting Seller Approval</h4>
+            </div>
+            <p className="text-[11px] text-amber-700">
+              We've notified <strong>{seller?.name || "the seller"}</strong>. Live messaging will unlock automatically here as soon as they accept!
+            </p>
+          </div>
+        </div>
+      ) : isRejected ? (
+        <div className="border-t border-gray-100 bg-white p-4 text-center shadow-sm">
+          <div className="max-w-xl mx-auto rounded-2xl bg-red-50 border border-red-200/60 p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1 text-red-700 font-bold text-xs">
+              <AlertCircle size={15} />
+              <span>Chat Request Declined</span>
+            </div>
+            <p className="text-[11px] text-red-500">
+              This request was declined. You can explore other student listings in the catalog.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <ChatInput
+          onSendMessage={(text) => onSendMessage(conversation.id, text)}
+          sellerName={seller?.name}
+          bookTitle={book?.title}
+        />
+      )}
     </div>
   );
 }

@@ -71,4 +71,38 @@ export const chatService = {
       console.warn("[chatService] markRead error:", err.message);
     }
   },
+
+  /**
+   * Accept a chat request
+   */
+  async acceptRequest(conversationId) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/request/${conversationId}/accept`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to accept chat request");
+      return await res.json();
+    } catch (err) {
+      console.warn("[chatService] acceptRequest error:", err.message);
+      return null;
+    }
+  },
+
+  /**
+   * Decline a chat request
+   */
+  async declineRequest(conversationId) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/request/${conversationId}/decline`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to decline chat request");
+      return await res.json();
+    } catch (err) {
+      console.warn("[chatService] declineRequest error:", err.message);
+      return null;
+    }
+  },
 };

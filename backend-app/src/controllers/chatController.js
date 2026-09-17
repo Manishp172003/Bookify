@@ -61,6 +61,8 @@ export const getUserConversations = async (req, res) => {
           senderName: lastMessage.senderName,
           recipientName: lastMessage.recipientName,
           unreadCount,
+          requestStatus: lastMessage.requestStatus || "accepted",
+          requesterId: lastMessage.requesterId || null,
           updatedAt: lastMessage.createdAt,
         });
       }
@@ -97,6 +99,8 @@ export const sendMessage = async (req, res) => {
       recipientEmail,
       book,
       time,
+      requestStatus,
+      requesterId,
     } = req.body;
 
     if (!conversationId || !text) {
@@ -121,6 +125,8 @@ export const sendMessage = async (req, res) => {
       time: formattedTime,
       book: book || null,
       status: "sent",
+      requestStatus: requestStatus || "accepted",
+      requesterId: requesterId || senderId || null,
     });
 
     const payload = {
@@ -136,6 +142,8 @@ export const sendMessage = async (req, res) => {
       time: message.time,
       book: message.book,
       status: message.status,
+      requestStatus: message.requestStatus,
+      requesterId: message.requesterId,
       createdAt: message.createdAt,
     };
 
@@ -148,6 +156,7 @@ export const sendMessage = async (req, res) => {
           conversationId,
           senderName: message.senderName,
           snippet: text,
+          requestStatus: message.requestStatus,
         });
       }
     } catch (socketErr) {
@@ -160,6 +169,76 @@ export const sendMessage = async (req, res) => {
     });
   } catch (error) {
     console.error("[Chat Controller] sendMessage error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc Accept a chat request
+ * @route PUT /api/chat/request/:conversationId/accept
+ */
+export const acceptChatRequest = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    if (!conversationId) {
+      return res.status(400).json({ success: false, message: "conversationId is required" });
+    }
+
+    await ChatMessage.updateMany(
+      { conversationId },
+      { $set: { requestStatus: "accepted" } }
+    );
+
+    try {
+      const io = getIO();
+      io.emit("chatRequestAccepted", { conversationId, requestStatus: "accepted" });
+    } catch (socketErr) {
+      console.warn("[Chat Controller] Socket emit error:", socketErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Chat request accepted",
+      conversationId,
+      requestStatus: "accepted",
+    });
+  } catch (error) {
+    console.error("[Chat Controller] acceptChatRequest error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc Decline a chat request
+ * @route PUT /api/chat/request/:conversationId/decline
+ */
+export const declineChatRequest = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    if (!conversationId) {
+      return res.status(400).json({ success: false, message: "conversationId is required" });
+    }
+
+    await ChatMessage.updateMany(
+      { conversationId },
+      { $set: { requestStatus: "rejected" } }
+    );
+
+    try {
+      const io = getIO();
+      io.emit("chatRequestDeclined", { conversationId, requestStatus: "rejected" });
+    } catch (socketErr) {
+      console.warn("[Chat Controller] Socket emit error:", socketErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Chat request declined",
+      conversationId,
+      requestStatus: "rejected",
+    });
+  } catch (error) {
+    console.error("[Chat Controller] declineChatRequest error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
