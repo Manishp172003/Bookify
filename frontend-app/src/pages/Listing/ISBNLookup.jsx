@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ListingWizardLayout from '../../components/listing/ListingWizardLayout';
 import { useListing } from '../../context/ListingContext';
@@ -14,6 +14,7 @@ const DUMMY_PRESETS = [
     year: '2009',
     category: 'Computer Science & Engineering',
     mrp: 1450,
+    price: 699,
     cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300'
   },
   {
@@ -25,6 +26,7 @@ const DUMMY_PRESETS = [
     year: '2015',
     category: 'Placement & Competitive',
     mrp: 999,
+    price: 499,
     cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300'
   },
   {
@@ -36,6 +38,7 @@ const DUMMY_PRESETS = [
     year: '2023',
     category: 'JEE & Physics',
     mrp: 460,
+    price: 230,
     cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3edd3?auto=format&fit=crop&q=80&w=300'
   }
 ];
@@ -50,27 +53,57 @@ export default function ISBNLookup() {
   const [isSearching, setIsSearching] = useState(false);
   const [lookupSuccess, setLookupSuccess] = useState(true);
 
-  const handleIsbnSubmit = (e) => {
+  const handleIsbnSubmit = async (e) => {
     e.preventDefault();
-    if (!isbnInput.trim()) return;
+    const clean = isbnInput.trim().replace(/-/g, "");
+    if (!clean) return;
     setIsSearching(true);
 
-    setTimeout(() => {
-      setIsSearching(false);
-      const matched = DUMMY_PRESETS.find(b => b.isbn.includes(isbnInput.trim())) || DUMMY_PRESETS[0];
-      updateListingData({
-        isbn: isbnInput.trim(),
-        title: matched.title,
-        author: matched.author,
-        publisher: matched.publisher,
-        edition: matched.edition,
-        year: matched.year,
-        category: matched.category,
-        mrp: matched.mrp,
-        cover: matched.cover
-      });
-      setLookupSuccess(true);
-    }, 400);
+    try {
+      // Try backend Google Books / Open Library lookup first
+      const res = await fetch(`http://localhost:5000/api/books/isbn/${clean}`);
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        const book = data.data;
+        const estMrp = 800;
+        const estPrice = Math.round(estMrp * 0.5);
+        updateListingData({
+          isbn: book.isbn || clean,
+          title: book.title || "Found Textbook",
+          author: book.author || "Unknown Author",
+          publisher: book.publisher || "Academic Publisher",
+          edition: book.publishedDate || "Standard Edition",
+          category: book.category || "General Studies",
+          mrp: estMrp,
+          price: estPrice,
+          cover: book.coverImage || DUMMY_PRESETS[0].cover,
+          photos: book.coverImage ? [book.coverImage] : listingData.photos
+        });
+        setIsSearching(false);
+        setLookupSuccess(true);
+        return;
+      }
+    } catch {
+      // Fallback gracefully to presets
+    }
+
+    const matched = DUMMY_PRESETS.find(b => b.isbn.includes(clean)) || DUMMY_PRESETS[0];
+    const calcPrice = matched.price || Math.round((matched.mrp || 1000) * 0.5);
+    updateListingData({
+      isbn: isbnInput.trim(),
+      title: matched.title,
+      author: matched.author,
+      publisher: matched.publisher,
+      edition: matched.edition,
+      year: matched.year,
+      category: matched.category,
+      mrp: matched.mrp,
+      price: calcPrice,
+      cover: matched.cover,
+      photos: [matched.cover]
+    });
+    setIsSearching(false);
+    setLookupSuccess(true);
   };
 
   const handleTitleSubmit = (e) => {
@@ -81,6 +114,7 @@ export default function ISBNLookup() {
     setTimeout(() => {
       setIsSearching(false);
       const matched = DUMMY_PRESETS.find(b => b.title.toLowerCase().includes(titleInput.toLowerCase())) || DUMMY_PRESETS[1];
+      const calcPrice = matched.price || Math.round((matched.mrp || 1000) * 0.5);
       updateListingData({
         isbn: matched.isbn,
         title: titleInput.trim(),
@@ -90,16 +124,23 @@ export default function ISBNLookup() {
         year: matched.year,
         category: matched.category,
         mrp: matched.mrp,
-        cover: matched.cover
+        price: calcPrice,
+        cover: matched.cover,
+        photos: [matched.cover]
       });
       setLookupSuccess(true);
-    }, 400);
+    }, 300);
   };
 
   const handleSelectPreset = (preset) => {
     setIsbnInput(preset.isbn);
     setTitleInput(preset.title);
-    updateListingData(preset);
+    const calcPrice = preset.price || Math.round((preset.mrp || 1000) * 0.5);
+    updateListingData({
+      ...preset,
+      price: calcPrice,
+      photos: [preset.cover]
+    });
   };
 
   return (

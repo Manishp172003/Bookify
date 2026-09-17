@@ -22,16 +22,6 @@ export default function PreviewListing() {
   const { listingData, resetListing } = useListing();
   const [isPublishing, setIsPublishing] = useState(false);
 
-  const handlePublish = () => {
-    setIsPublishing(true);
-    setTimeout(() => {
-      listingService.createListing(listingData);
-      resetListing();
-      setIsPublishing(false);
-      navigate('/sell/success');
-    }, 600);
-  };
-
   const getConditionLabel = (id) => {
     switch (id) {
       case 'like-new': return 'Like New';
@@ -40,6 +30,56 @@ export default function PreviewListing() {
       case 'fair': return 'Fair';
       default: return 'Good';
     }
+  };
+
+  const mapConditionForBackend = (cond) => {
+    if (cond === 'like-new' || cond === 'very-good') return 'Like New';
+    if (cond === 'fair') return 'Fair';
+    return 'Good';
+  };
+
+  const mapModeForBackend = (m) => {
+    if (m === 'rent') return 'Rent';
+    if (m === 'exchange') return 'Exchange';
+    if (m === 'donate') return 'Donate';
+    return 'Sell';
+  };
+
+  const handlePublish = async () => {
+    setIsPublishing(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch('http://localhost:5000/api/books', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: listingData.title || 'Untitled Textbook',
+            author: listingData.author || 'Academic Author',
+            isbn: listingData.isbn || '',
+            category: listingData.category || 'Computer Science & Engineering',
+            condition: mapConditionForBackend(listingData.condition),
+            transactionMode: mapModeForBackend(listingData.mode),
+            price: Number(listingData.price) || (listingData.mode === 'donate' ? 0 : 399),
+            originalPrice: Number(listingData.mrp) || 999,
+            description: listingData.conditionNotes || `${getConditionLabel(listingData.condition)} textbook listing.`,
+            images: listingData.photos && listingData.photos.length > 0 ? listingData.photos : [listingData.cover],
+            location: listingData.pickupCampus || 'Main Campus Library'
+          })
+        });
+      }
+    } catch (err) {
+      console.warn("Backend save skipped or offline:", err);
+    }
+
+    listingService.createListing(listingData);
+    resetListing();
+    setIsPublishing(false);
+    navigate('/sell/success');
   };
 
   return (

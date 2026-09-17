@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ListingWizardLayout from '../../components/listing/ListingWizardLayout';
 import { useListing } from '../../context/ListingContext';
@@ -13,24 +13,77 @@ const SAMPLE_PHOTOS = [
 export default function UploadPhotos() {
   const navigate = useNavigate();
   const { listingData, updateListingData } = useListing();
+  const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const photos = listingData.photos || [];
 
+  const handleFiles = (files) => {
+    if (!files || files.length === 0) return;
+    const remainingSlots = 5 - photos.length;
+    if (remainingSlots <= 0) {
+      alert("You can upload a maximum of 5 photos.");
+      return;
+    }
+
+    const filesToRead = Array.from(files).slice(0, remainingSlots);
+    const newPhotos = [];
+
+    let processed = 0;
+    filesToRead.forEach((file) => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        newPhotos.push(e.target.result);
+        processed++;
+        if (processed === filesToRead.length) {
+          const updated = [...photos, ...newPhotos];
+          updateListingData({ 
+            photos: updated,
+            cover: updated[0] || listingData.cover
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = (e) => {
+    handleFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFiles(e.dataTransfer.files);
+  };
+
   const handleAddSample = (url) => {
-    if (photos.includes(url)) return;
-    updateListingData({ photos: [...photos, url] });
+    if (photos.includes(url) || photos.length >= 5) return;
+    const updated = [...photos, url];
+    updateListingData({ 
+      photos: updated,
+      cover: updated[0] || listingData.cover
+    });
   };
 
   const handleRemovePhoto = (index) => {
     const updated = photos.filter((_, i) => i !== index);
-    updateListingData({ photos: updated });
-  };
-
-  const handleSimulateUpload = (e) => {
-    e.preventDefault();
-    // Simulate user selecting files
-    const newMockPhoto = SAMPLE_PHOTOS[photos.length % SAMPLE_PHOTOS.length];
-    updateListingData({ photos: [...photos, newMockPhoto] });
+    updateListingData({ 
+      photos: updated,
+      cover: updated[0] || listingData.cover
+    });
   };
 
   return (
@@ -41,10 +94,27 @@ export default function UploadPhotos() {
     >
       <div className="space-y-8">
         
+        {/* Hidden Native File Input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/png,image/jpeg,image/webp,image/jpg"
+          multiple
+          className="hidden"
+        />
+
         {/* Upload Dropzone */}
         <div
-          onClick={handleSimulateUpload}
-          className="border-2 border-dashed border-[#6C4BF4]/40 hover:border-[#6C4BF4] bg-[#EEEAFE]/20 hover:bg-[#EEEAFE]/40 rounded-3xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3 ${
+            isDragging
+              ? 'border-[#6C4BF4] bg-[#EEEAFE]/50 scale-[1.01]'
+              : 'border-[#6C4BF4]/40 hover:border-[#6C4BF4] bg-[#EEEAFE]/20 hover:bg-[#EEEAFE]/40'
+          }`}
         >
           <div className="w-14 h-14 rounded-2xl bg-[#EEEAFE] text-[#6C4BF4] flex items-center justify-center shadow-xs">
             <Camera size={26} />
@@ -61,7 +131,7 @@ export default function UploadPhotos() {
             type="button"
             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-[#6C4BF4] font-bold text-xs rounded-xl shadow-2xs hover:bg-gray-50 transition pointer-events-none"
           >
-            <Upload size={14} /> Select from Files
+            <Upload size={14} /> Select from Your Device
           </button>
         </div>
 
@@ -106,7 +176,7 @@ export default function UploadPhotos() {
             {photos.length < 5 && (
               <button
                 type="button"
-                onClick={handleSimulateUpload}
+                onClick={() => fileInputRef.current?.click()}
                 className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-[#6C4BF4] bg-gray-50/50 hover:bg-[#EEEAFE]/20 flex flex-col items-center justify-center aspect-3/4 text-gray-400 hover:text-[#6C4BF4] transition cursor-pointer p-4 text-center"
               >
                 <Upload size={20} className="mb-1" />
