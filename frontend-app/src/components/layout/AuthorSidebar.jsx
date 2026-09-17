@@ -20,7 +20,7 @@ import {
 function AuthorSidebar({ isOpen, onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, hasStudentProfile } = useAuth();
   const activePath = location.pathname;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -91,17 +91,20 @@ function AuthorSidebar({ isOpen, onClose }) {
 
       {/* Logout Footer Section */}
       <div className="border-t border-white/15 pt-4 mt-4 space-y-1">
-        <Link
-          to="/dashboard"
-          onClick={() => {
-            if (onItemClick) onItemClick();
-          }}
-          className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 bg-white/10 text-[#FFD166] border border-white/20 hover:bg-white/20 transition duration-200 cursor-pointer text-sm font-semibold"
-          title="Switch to Student / Reader Marketplace"
-        >
-          <Globe size={18} className="text-[#FFD166]" />
-          <span>Student Marketplace 🎓</span>
-        </Link>
+        {/* Student Marketplace Switcher (Only visible if author also has an active student profile) */}
+        {hasStudentProfile && (
+          <Link
+            to="/dashboard"
+            onClick={() => {
+              if (onItemClick) onItemClick();
+            }}
+            className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 bg-white/10 text-[#FFD166] border border-white/20 hover:bg-white/20 transition duration-200 cursor-pointer text-sm font-semibold"
+            title="Switch to Student / Reader Marketplace"
+          >
+            <Globe size={18} className="text-[#FFD166]" />
+            <span>Student Marketplace 🎓</span>
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => {

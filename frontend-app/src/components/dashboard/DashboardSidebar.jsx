@@ -38,7 +38,7 @@ const menuItems = [
 
 function DashboardSidebar() {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, hasAuthorProfile, activateAuthorProfile } = useAuth();
   const { unreadMessagesCount } = useCommerce();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -54,6 +54,8 @@ function DashboardSidebar() {
       window.removeEventListener("close-sidebar", handleClose);
     };
   }, []);
+
+  const visibleMenuItems = menuItems.filter((item) => !item.isAuthorStudio || hasAuthorProfile);
 
   const renderSidebarContent = (onItemClick) => (
     <>
@@ -73,7 +75,7 @@ function DashboardSidebar() {
 
       {/* Navigation */}
       <nav className="flex-grow space-y-1 overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           const badgeValue =
@@ -110,6 +112,29 @@ function DashboardSidebar() {
             </Link>
           );
         })}
+
+        {/* Optional Student-to-Author Activation Card for single-role students */}
+        {!hasAuthorProfile && (
+          <div className="mt-4 p-3 rounded-2xl bg-white/10 border border-white/15 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#FFD166] mb-1">
+              <Feather size={13} />
+              <span>Publish on Bookify?</span>
+            </div>
+            <p className="text-[11px] text-white/80 leading-relaxed mb-2">
+              Publish study notes or books to earn student royalties.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (onItemClick) onItemClick();
+                activateAuthorProfile();
+              }}
+              className="w-full py-1.5 px-2.5 bg-[#FFD166] text-[#17152A] rounded-xl text-xs font-bold hover:bg-[#ffe082] transition shadow-xs cursor-pointer"
+            >
+              Activate Author Studio
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* Logout Footer Section */}

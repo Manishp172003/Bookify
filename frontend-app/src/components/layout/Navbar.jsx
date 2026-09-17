@@ -10,7 +10,7 @@ export default function Navbar() {
   
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, hasAuthorProfile } = useAuth();
   const { cartCount, wishlistItems, unreadMessagesCount } = useCommerce();
 
   const handleSearchSubmit = (e) => {
@@ -144,16 +144,18 @@ export default function Navbar() {
 
 
 
-                {/* Author Studio Switcher */}
-                <Link 
-                  to="/author" 
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold hover:opacity-95 shadow-xs shadow-[#6C4BF4]/25 transition duration-200 cursor-pointer shrink-0 ml-1"
-                  title="Switch to Author Studio"
-                >
-                  <Feather size={13} className="shrink-0" />
-                  <span className="hidden xl:inline">Author Studio</span>
-                  <span className="xl:hidden">Author</span>
-                </Link>
+                {/* Author Studio Switcher (Only visible to users who have an active Author Profile) */}
+                {hasAuthorProfile && (
+                  <Link 
+                    to="/author" 
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold hover:opacity-95 shadow-xs shadow-[#6C4BF4]/25 transition duration-200 cursor-pointer shrink-0 ml-1"
+                    title="Switch to Author Studio"
+                  >
+                    <Feather size={13} className="shrink-0" />
+                    <span className="hidden xl:inline">Author Studio</span>
+                    <span className="xl:hidden">Author</span>
+                  </Link>
+                )}
 
                 {/* User Avatar */}
                 <Link 
@@ -247,15 +249,17 @@ export default function Navbar() {
           {/* Mobile User Controls */}
           {isAuthenticated ? (
             <div className="space-y-3">
-              {/* Mobile Author Studio Switcher */}
-              <Link
-                to="/author"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold shadow-xs transition"
-              >
-                <Feather size={14} />
-                <span>Switch to Author Studio</span>
-              </Link>
+              {/* Mobile Author Studio Switcher (Only visible to users who have an active Author Profile) */}
+              {hasAuthorProfile && (
+                <Link
+                  to="/author"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold shadow-xs transition"
+                >
+                  <Feather size={14} />
+                  <span>Switch to Author Studio</span>
+                </Link>
+              )}
 
               <div className="flex items-center justify-between">
               <div className="flex gap-2">

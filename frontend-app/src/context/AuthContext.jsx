@@ -70,10 +70,56 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const isAuthor = Boolean(user?.isAuthor || user?.role === "author" || (user?.email && user.email.toLowerCase().includes("author")));
+  const isDemoUser = Boolean(
+    user?.email && (
+      user.email.toLowerCase() === "author@bookify.com" ||
+      user.email.toLowerCase() === "demo@bookify.com" ||
+      user.id === "demo_author"
+    )
+  );
+
+  // Active Author Profile check:
+  const hasAuthorProfile = Boolean(
+    isDemoUser ||
+    user?.hasAuthorProfile === true ||
+    user?.isAuthor === true ||
+    user?.role === "author" ||
+    Boolean(user?.penName) ||
+    user?.authorVerificationStatus === "verified" ||
+    user?.authorVerificationStatus === "pending"
+  );
+
+  // Active Student Profile check:
+  const hasStudentProfile = user?.hasStudentProfile !== false && user?.role !== "author_only";
+
+  // Dual Role check:
+  const isDualRole = Boolean(hasAuthorProfile && hasStudentProfile);
+
+  const activateAuthorProfile = (authorData = {}) => {
+    return updateUser({
+      hasAuthorProfile: true,
+      isAuthor: true,
+      hasStudentProfile: true,
+      penName: authorData.penName || user?.fullName || "Author",
+      authorBio: authorData.authorBio || "Passionate creator on Bookify.",
+      ...authorData,
+    });
+  };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, isAuthor, login, updateUser, logout }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        user,
+        hasAuthorProfile,
+        hasStudentProfile,
+        isDualRole,
+        activateAuthorProfile,
+        login,
+        updateUser,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
