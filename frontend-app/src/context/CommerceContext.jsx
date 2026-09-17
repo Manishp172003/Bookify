@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { chatService } from "../services/chatService";
+import { isRealUserAvatar } from "../utils/avatarUtils";
 
 const CommerceContext = createContext(null);
 
@@ -235,7 +236,15 @@ export function CommerceProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((c) => ({
+            ...c,
+            seller: {
+              ...c.seller,
+              avatar: isRealUserAvatar(c.seller?.avatar) ? c.seller.avatar : null,
+            },
+          }));
+        }
       } catch {}
     }
     return INITIAL_CONVERSATIONS;
@@ -722,7 +731,7 @@ export function CommerceProvider({ children }) {
       seller: {
         id: seller.id,
         name: seller.name,
-        avatar: seller.avatar || "https://i.pravatar.cc/150",
+        avatar: isRealUserAvatar(seller.avatar) ? seller.avatar : null,
         online: true,
         verified: seller.isVerified || false,
         college: seller.college || "Campus College"

@@ -1,4 +1,5 @@
 import { Check, CheckCheck } from "lucide-react";
+import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
 function MessageBubble({ message, sellerAvatar, sellerName }) {
   const isMe = message.sender === "me" || message.sender === "buyer";
@@ -8,18 +9,11 @@ function MessageBubble({ message, sellerAvatar, sellerName }) {
       {/* Avatar for incoming messages from peer */}
       {!isMe && (
         <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-200 bg-[#E9E4FF] shadow-xs">
-          {sellerAvatar ? (
+          {isRealUserAvatar(sellerAvatar) ? (
             <img src={sellerAvatar} alt={sellerName} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center font-black text-[10px] text-[#6C4BF4] bg-[#F0ECFF] select-none tracking-wider">
-              {sellerName
-                ? sellerName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .slice(0, 2)
-                    .join("")
-                    .toUpperCase()
-                : "SP"}
+              {getInitials(sellerName)}
             </div>
           )}
         </div>

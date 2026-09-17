@@ -1,6 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useCommerce } from "../../context/CommerceContext";
+import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
 function RecentMessages() {
   const navigate = useNavigate();
@@ -47,25 +48,15 @@ function RecentMessages() {
                 className="flex items-center gap-3 cursor-pointer hover:bg-gray-50/80 p-2 rounded-xl transition"
               >
                 <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gray-100 bg-[#EDE7FF]">
-                  {conv.seller?.avatar ? (
+                  {isRealUserAvatar(conv.seller?.avatar) ? (
                     <img 
                       src={conv.seller.avatar} 
                       alt={conv.seller?.name || "Seller"}
                       className="h-full w-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center font-black text-[10px] text-[#6C4BF4] select-none tracking-wider">
-                      {conv.seller?.name
-                        ? conv.seller.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .slice(0, 2)
-                            .join("")
-                            .toUpperCase()
-                        : "SP"}
+                      {getInitials(conv.seller?.name)}
                     </div>
                   )}
                 </div>

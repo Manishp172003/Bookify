@@ -67,7 +67,7 @@ export default function BookDetailPage() {
       if (book.mode === "exchange") {
         setIsExchangeModalOpen(true);
       } else if (book.mode === "donate") {
-        const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+        const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: null, college: "IIT Delhi" };
         const customText = `🎁 Donation Request:\nHi ${book.seller?.name?.split(" ")[0] || "there"}! I would love to request your free copy of "${book.title}" for my studies. Let me know when and where we can meet up on campus for the handoff!`;
         const chatId = startOrGetConversation(book.seller || defaultSeller, book, customText);
         navigate(`/chat/${chatId}`);
@@ -80,7 +80,7 @@ export default function BookDetailPage() {
 
   const handleChatClick = () => {
     if (book) {
-      const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+      const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: null, college: "IIT Delhi" };
       const chatId = startOrGetConversation(book.seller || defaultSeller, book);
       navigate(`/chat/${chatId}`);
     }
@@ -104,7 +104,7 @@ export default function BookDetailPage() {
       { id: "my_3", title: "Introduction to Java Programming", author: "Y. Daniel Liang" }
     ];
     const chosen = myBooks.find(b => b.id === selectedSwapBookId) || myBooks[0];
-    const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: "https://i.pravatar.cc/150?img=11", college: "IIT Delhi" };
+    const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: null, college: "IIT Delhi" };
     const customText = `🔄 Proposed swap for "${book.title}" in exchange for my "${chosen.title}" by ${chosen.author}.\n\nNote: ${proposalNote || "Let's meet up to exchange textbooks!"}`;
     const chatId = startOrGetConversation(book.seller || defaultSeller, book, customText);
     setIsExchangeModalOpen(false);

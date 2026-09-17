@@ -1,5 +1,6 @@
 import { ShieldCheck, Star, Clock, MapPin, Building2, Lock, Sparkles, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
 function SellerInfoPanel({ seller, book, onClose }) {
   if (!seller) return null;
@@ -10,18 +11,11 @@ function SellerInfoPanel({ seller, book, onClose }) {
       <div className="flex flex-col items-center text-center pb-5 border-b border-gray-100">
         <div className="relative mb-3">
           <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-[#E9E4FF] bg-gray-100 shadow-md">
-            {seller.avatar ? (
+            {isRealUserAvatar(seller.avatar) ? (
               <img src={seller.avatar} alt={seller.name} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center font-black text-xl text-[#6C4BF4] bg-[#F0ECFF] select-none tracking-wider">
-                {seller.name
-                  ? seller.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()
-                  : "SP"}
+                {getInitials(seller.name)}
               </div>
             )}
           </div>

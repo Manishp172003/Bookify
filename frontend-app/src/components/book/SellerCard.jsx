@@ -1,31 +1,38 @@
 import { Link } from "react-router-dom";
 import { MapPin, Star, Shield, Package, UserCheck } from "lucide-react";
+import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
 export default function SellerCard({ seller, compact = false }) {
   if (compact) {
     return (
       <div className="flex items-center gap-3 bg-white rounded-lg border border-bookify-border p-3">
-        <img
-          src={seller.avatar}
-          alt={seller.name}
-          className="w-10 h-10 rounded-full ring-2 ring-bookify-light-purple"
-        />
+        {isRealUserAvatar(seller?.avatar) ? (
+          <img
+            src={seller.avatar}
+            alt={seller?.name}
+            className="w-10 h-10 rounded-full ring-2 ring-bookify-light-purple object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full ring-2 ring-bookify-light-purple flex items-center justify-center font-bold text-xs text-[#6C4BF4] bg-[#F0ECFF] select-none">
+            {getInitials(seller?.name)}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="font-medium text-sm text-bookify-text truncate">
-              {seller.name}
+              {seller?.name}
             </span>
-            {seller.isVerified && (
+            {seller?.isVerified && (
               <Shield size={12} className="text-bookify-green flex-shrink-0" />
             )}
           </div>
           <p className="text-xs text-bookify-text-secondary truncate">
-            {seller.college}
+            {seller?.college}
           </p>
         </div>
         <div className="flex items-center gap-0.5 text-bookify-yellow text-xs">
           <Star size={11} fill="currentColor" />
-          <span className="font-medium">{seller.rating}</span>
+          <span className="font-medium">{seller?.rating}</span>
         </div>
       </div>
     );
@@ -34,11 +41,17 @@ export default function SellerCard({ seller, compact = false }) {
   return (
     <div className="bg-white rounded-xl border border-bookify-border p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-4">
-        <img
-          src={seller.avatar}
-          alt={seller.name}
-          className="w-14 h-14 rounded-full ring-2 ring-bookify-light-purple"
-        />
+        {isRealUserAvatar(seller?.avatar) ? (
+          <img
+            src={seller.avatar}
+            alt={seller?.name}
+            className="w-14 h-14 rounded-full ring-2 ring-bookify-light-purple object-cover"
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-full ring-2 ring-bookify-light-purple flex items-center justify-center font-black text-lg text-[#6C4BF4] bg-[#F0ECFF] select-none">
+            {getInitials(seller?.name)}
+          </div>
+        )}
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h3 className="font-[family-name:var(--font-heading)] font-semibold text-bookify-text">

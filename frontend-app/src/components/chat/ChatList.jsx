@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, BookOpen, ShieldCheck } from "lucide-react";
+import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
 function ChatList({ conversations, activeId, onSelectConversation }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,7 +63,7 @@ function ChatList({ conversations, activeId, onSelectConversation }) {
                 {/* Avatar with Online Status Indicator */}
                 <div className="relative shrink-0">
                   <div className="h-11 w-11 overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-xs">
-                    {conv.seller?.avatar ? (
+                    {isRealUserAvatar(conv.seller?.avatar) ? (
                       <img
                         src={conv.seller.avatar}
                         alt={conv.seller.name}
@@ -70,14 +71,7 @@ function ChatList({ conversations, activeId, onSelectConversation }) {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center font-black text-xs text-[#6C4BF4] bg-[#F0ECFF] select-none tracking-wider">
-                        {conv.seller?.name
-                          ? conv.seller.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .slice(0, 2)
-                              .join("")
-                              .toUpperCase()
-                          : "SP"}
+                        {getInitials(conv.seller?.name)}
                       </div>
                     )}
                   </div>
