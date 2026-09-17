@@ -14,6 +14,7 @@ const publicUser = (user) => ({
   fullName: user.fullName,
   email: user.email,
   phone: user.phone,
+  location: user.location || "",
   role: user.role || (user.isAdmin ? "admin" : "student"),
   isAdmin: user.isAdmin,
   isVerified: user.isVerified,
@@ -318,6 +319,7 @@ export const getUserSettings = async (req, res) => {
         fullName: user.fullName || "",
         email: user.email || "",
         phone: user.phone || "",
+        location: user.location || "",
         role: user.role || "student",
       },
       address: user.address || { campus: "", hostelBlock: "", meetupSpot: "" },
@@ -339,11 +341,11 @@ export const getUserSettings = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, phone } = req.body;
+    const { fullName, phone, location } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: { fullName, phone } },
+      { $set: { fullName, phone, location } },
       { new: true, runValidators: true }
     ).select("-password");
 
@@ -358,6 +360,7 @@ export const updateProfile = async (req, res) => {
         fullName: updatedUser.fullName,
         email: updatedUser.email,
         phone: updatedUser.phone,
+        location: updatedUser.location || "",
         role: updatedUser.role,
       },
     });

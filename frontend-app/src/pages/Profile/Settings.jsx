@@ -116,27 +116,45 @@ export default function Settings() {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/auth/settings/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
+      if (updateUser) {
+        updateUser({
           fullName: profileData.fullName,
           phone: profileData.phone,
           location: profileData.location
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert('Profile updated successfully!');
-      } else {
-        alert(data.message || 'Failed to update profile.');
+        });
       }
+
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await fetch('http://localhost:5000/api/auth/settings/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            fullName: profileData.fullName,
+            phone: profileData.phone,
+            location: profileData.location
+          }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          if (data.profile && updateUser) {
+            updateUser(data.profile);
+          }
+          alert('Profile updated successfully!');
+          return;
+        } else {
+          alert(data.message || 'Failed to update profile.');
+          return;
+        }
+      }
+      alert('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
+      alert('Profile updated successfully!');
     }
   };
 

@@ -167,7 +167,7 @@ function ProfileHeader() {
           <div className="space-y-3 text-sm text-gray-500 font-medium">
             <div className="flex items-center gap-2.5">
               <MapPin size={16} className="text-[#6C4BF4]" />
-              <span>Campus Community, India</span>
+              <span>{user?.location || "Campus Community, India"}</span>
             </div>
             
             <div className="flex items-center gap-2.5">
