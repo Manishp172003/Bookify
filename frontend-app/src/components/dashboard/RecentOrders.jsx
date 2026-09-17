@@ -64,15 +64,24 @@ function RecentOrders() {
           const price = order.total ? `₹${order.total}` : (order.price || "₹450");
           const bgClass = order.bgClass || (idx % 3 === 0 ? "from-[#2E189A] to-[#6C4BF4]" : idx % 3 === 1 ? "from-[#C2410C] to-[#F97316]" : "from-[#0F766E] to-[#14B8A6]");
 
+          const image = order.items?.[0]?.image || order.image;
+
           return (
-            <div
+            <Link
               key={order.id || idx}
-              className="flex items-center gap-3"
+              to={order.id ? `/orders/${order.id}/tracking` : "/dashboard/orders"}
+              className="flex items-center gap-3 group hover:bg-[#F8F7FF] -mx-2 p-2 rounded-xl transition cursor-pointer"
             >
-              <BookCover title={title} bgClass={bgClass} />
+              {image ? (
+                <div className="h-11 w-8 shrink-0 overflow-hidden rounded bg-gray-100 border border-black/5 shadow-2xs">
+                  <img src={image} alt={title} className="h-full w-full object-cover" />
+                </div>
+              ) : (
+                <BookCover title={title} bgClass={bgClass} />
+              )}
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[#17152A]">
+                <p className="truncate text-sm font-semibold text-[#17152A] group-hover:text-[#6C4BF4] transition">
                   {title}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-400">
@@ -83,7 +92,7 @@ function RecentOrders() {
               <span className="text-sm font-semibold text-[#17152A] shrink-0">
                 {price}
               </span>
-            </div>
+            </Link>
           );
         })}
       </div>

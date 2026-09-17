@@ -64,35 +64,66 @@ export default function MyOrders() {
   const [helpReason, setHelpReason] = useState("");
 
   // Normalize context orders and merge with seed orders
-  const formattedContextOrders = (contextOrders || []).map((ord) => ({
-    id: ord.id || `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
-    title: ord.items?.[0]?.title || ord.title || "Textbook Order",
-    author: ord.items?.[0]?.author || ord.author || "Academic Author",
-    price: ord.total ? `₹${ord.total}` : "₹499",
-    date: ord.orderDateFormatted || "Recently",
-    status: ord.status === "shipped" ? "Meetup Scheduled" : ord.status === "delivered" ? "Completed" : ord.status === "cancelled" ? "Cancelled" : "Meetup Scheduled",
-    statusColor: ord.status === "delivered" 
-      ? "text-green-600 bg-green-50 border-green-100" 
-      : ord.status === "cancelled" 
-      ? "text-red-600 bg-red-50 border-red-100" 
-      : "text-amber-600 bg-amber-50 border-amber-100",
-    coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
-    step: ord.status === "delivered" ? 3 : ord.status === "shipped" ? 2 : 1,
-    seller: {
-      id: ord.items?.[0]?.seller?.id || "usr_seller",
-      name: ord.items?.[0]?.seller?.name || "Campus Peer",
-      phone: "+91 98765 00000",
-      meetup: ord.address?.meetupSpot || "Main Campus Library Entrance"
-    },
-    items: ord.items || [{ title: ord.title || "Academic Book", price: ord.total || 450 }]
-  }));
+  const formattedContextOrders = (contextOrders || []).map((ord) => {
+    const primaryItem = ord.items?.[0];
+    const isMeetup = ord.shippingMethod === "pickup" || (!ord.shippingMethod && !ord.courier?.trackingNumber);
+    const isCompleted = ord.status === "delivered";
+    const isCancelled = ord.status === "cancelled";
+    const isShipped = ord.status === "shipped" || ord.status === "out_for_delivery";
+
+    const statusText = isCompleted
+      ? "Completed"
+      : isCancelled
+      ? "Cancelled"
+      : isShipped
+      ? "In Transit"
+      : isMeetup
+      ? "Meetup Scheduled"
+      : "Escrow Secured";
+
+    const statusColor = isCompleted
+      ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+      : isCancelled
+      ? "text-red-700 bg-red-50 border-red-200"
+      : isShipped
+      ? "text-blue-700 bg-blue-50 border-blue-200"
+      : "text-[#6C4BF4] bg-[#F0ECFF] border-[#E9E4FF]";
+
+    return {
+      id: ord.id || `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
+      title: primaryItem?.title || ord.title || "Textbook Order",
+      author: primaryItem?.author || ord.author || "Academic Author",
+      image: primaryItem?.image || ord.image || null,
+      totalItemsCount: ord.items?.length || 1,
+      price: ord.total ? `₹${ord.total}` : "₹499",
+      subtotal: ord.subtotal || ord.total || 450,
+      deliveryFee: ord.deliveryFee ?? 0,
+      platformFee: ord.platformFee ?? 15,
+      discount: ord.discount ?? 0,
+      date: ord.orderDateFormatted || "Recently",
+      expectedDelivery: ord.expectedDelivery,
+      shippingMethod: ord.shippingMethod,
+      shippingMethodLabel: ord.shippingMethodLabel,
+      status: statusText,
+      statusColor: statusColor,
+      coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
+      step: isCompleted ? 3 : isShipped ? 2 : 1,
+      seller: {
+        id: primaryItem?.seller?.id || "usr_seller",
+        name: primaryItem?.seller?.name || "Campus Peer",
+        phone: "+91 98765 00000",
+        meetup: ord.address?.meetupSpot || ord.address?.hostelBlock || "Main Campus Library Entrance"
+      },
+      items: ord.items || [{ title: ord.title || "Academic Book", price: ord.total || 450, image: ord.image }]
+    };
+  });
 
   // Combine and deduplicate
   const allOrders = [...formattedContextOrders, ...SEED_ORDERS.filter(s => !formattedContextOrders.some(c => c.id === s.id))];
 
   const filteredOrders = allOrders.filter(order => {
     if (activeTab === "All") return true;
-    if (activeTab === "Active") return order.status === "Meetup Scheduled" || order.status === "Processing";
+    if (activeTab === "Active") return order.status === "Meetup Scheduled" || order.status === "Escrow Secured" || order.status === "In Transit" || order.status === "Processing";
     if (activeTab === "Completed") return order.status === "Completed";
     if (activeTab === "Cancelled") return order.status === "Cancelled";
     return true;
@@ -169,9 +200,15 @@ export default function MyOrders() {
                   {/* Left Column: Details */}
                   <div className="flex gap-4">
                     {/* Cover block */}
-                    <div className={`h-20 w-14 shrink-0 rounded-lg bg-gradient-to-br ${order.coverClass} flex items-center justify-center text-[8px] font-extrabold text-white uppercase tracking-wider border border-black/5`}>
-                      {order.title.split(' ').map(w => w[0]).join('')}
-                    </div>
+                    {order.image ? (
+                      <div className="h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-black/5 shadow-2xs">
+                        <img src={order.image} alt={order.title} className="h-full w-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className={`h-20 w-14 shrink-0 rounded-lg bg-gradient-to-br ${order.coverClass} flex items-center justify-center text-[8px] font-extrabold text-white uppercase tracking-wider border border-black/5`}>
+                        {order.title.split(' ').map(w => w[0]).join('')}
+                      </div>
+                    )}
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -179,6 +216,11 @@ export default function MyOrders() {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${order.statusColor}`}>
                           {order.status}
                         </span>
+                        {order.totalItemsCount > 1 && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600">
+                            +{order.totalItemsCount - 1} more items
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-bold text-[#17152A] text-sm mt-1.5 truncate">{order.title}</h3>
                       <p className="text-xs text-gray-400 mt-0.5">Author: {order.author}</p>
@@ -193,22 +235,24 @@ export default function MyOrders() {
                   {order.status !== "Cancelled" && (
                     <div className="hidden lg:flex items-center gap-2 w-72">
                       <div className="flex flex-col items-center">
-                        <CheckCircle2 size={16} className="text-green-500" />
+                        <CheckCircle2 size={16} className="text-emerald-500" />
                         <span className="text-[9px] font-semibold text-gray-500 mt-1">Ordered</span>
                       </div>
-                      <div className={`h-0.5 flex-1 ${order.step >= 2 ? 'bg-green-500' : 'bg-gray-200'}`} />
+                      <div className={`h-0.5 flex-1 ${order.step >= 2 ? 'bg-emerald-500' : 'bg-gray-200'}`} />
                       <div className="flex flex-col items-center">
                         {order.step >= 2 ? (
-                          <CheckCircle2 size={16} className="text-green-500" />
+                          <CheckCircle2 size={16} className="text-emerald-500" />
                         ) : (
                           <Clock size={16} className="text-amber-500 animate-pulse" />
                         )}
-                        <span className="text-[9px] font-semibold text-gray-500 mt-1">Meetup</span>
+                        <span className="text-[9px] font-semibold text-gray-500 mt-1">
+                          {order.shippingMethod === "pickup" ? "Meetup" : "In Transit"}
+                        </span>
                       </div>
-                      <div className={`h-0.5 flex-1 ${order.step >= 3 ? 'bg-green-500' : 'bg-gray-200'}`} />
+                      <div className={`h-0.5 flex-1 ${order.step >= 3 ? 'bg-emerald-500' : 'bg-gray-200'}`} />
                       <div className="flex flex-col items-center">
                         {order.step >= 3 ? (
-                          <CheckCircle2 size={16} className="text-green-500" />
+                          <CheckCircle2 size={16} className="text-emerald-500" />
                         ) : (
                           <Truck size={16} className="text-gray-300" />
                         )}
@@ -218,19 +262,26 @@ export default function MyOrders() {
                   )}
 
                   {/* Right Column: Actions */}
-                  <div className="flex gap-2 w-full md:w-auto">
+                  <div className="flex gap-2 w-full md:w-auto flex-wrap sm:flex-nowrap">
                     {order.status === "Meetup Scheduled" && (
                       <button
                         onClick={() => setSelectedSeller(order)}
-                        className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-[#6C4BF4] text-white px-4 py-2.5 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer shadow-sm shadow-[#6C4BF4]/15"
+                        className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-[#F0ECFF] text-[#6C4BF4] px-3.5 py-2.5 text-xs font-bold hover:bg-[#E9E4FF] cursor-pointer transition shadow-2xs"
                       >
                         <Eye size={14} />
-                        View Seller & Meetup
+                        Seller Details
                       </button>
                     )}
+                    <Link
+                      to={`/orders/${order.id}/tracking`}
+                      className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-[#6C4BF4] text-white px-4 py-2.5 text-xs font-bold hover:bg-[#5B3DE0] cursor-pointer shadow-xs shadow-[#6C4BF4]/20 transition"
+                    >
+                      <Truck size={14} />
+                      Track
+                    </Link>
                     <button
                       onClick={() => openInvoice(order)}
-                      className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-600 hover:text-[#6C4BF4] hover:bg-gray-50 cursor-pointer transition shadow-xs"
+                      className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-bold text-gray-600 hover:text-[#6C4BF4] hover:bg-gray-50 cursor-pointer transition shadow-2xs"
                     >
                       <Download size={14} />
                       Invoice
@@ -331,18 +382,38 @@ export default function MyOrders() {
                   <div>
                     <span className="text-[11px] font-bold text-gray-400 uppercase">Purchased Items</span>
                     <div className="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-100 bg-white p-3">
-                      <div className="flex justify-between py-2 font-medium">
-                        <span className="font-bold text-[#17152A]">{selectedInvoice.title}</span>
-                        <span className="font-bold text-[#6C4BF4]">{selectedInvoice.price}</span>
+                      {selectedInvoice.items && selectedInvoice.items.length > 1 ? (
+                        selectedInvoice.items.map((it, idx) => (
+                          <div key={idx} className="flex justify-between py-2 font-medium">
+                            <span className="font-bold text-[#17152A]">{it.title} {it.quantity > 1 ? `(x${it.quantity})` : ""}</span>
+                            <span className="font-bold text-[#6C4BF4]">₹{it.price * (it.quantity || 1)}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex justify-between py-2 font-medium">
+                          <span className="font-bold text-[#17152A]">{selectedInvoice.title}</span>
+                          <span className="font-bold text-[#6C4BF4]">₹{selectedInvoice.subtotal || selectedInvoice.price}</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between py-1.5 text-gray-500 text-[11px]">
+                        <span>Shipping ({selectedInvoice.shippingMethod === "express" ? "Express Priority" : selectedInvoice.shippingMethod === "pickup" ? "Self Pickup" : "Standard"})</span>
+                        <span className="font-semibold text-gray-700">
+                          {selectedInvoice.deliveryFee === 0 ? "FREE" : `₹${selectedInvoice.deliveryFee}`}
+                        </span>
                       </div>
                       <div className="flex justify-between py-1.5 text-gray-500 text-[11px]">
                         <span>Platform Escrow Protection Fee</span>
-                        <span className="text-emerald-600 font-semibold">FREE</span>
+                        <span className="font-semibold text-gray-700">
+                          {selectedInvoice.platformFee === 0 ? "FREE" : `₹${selectedInvoice.platformFee}`}
+                        </span>
                       </div>
-                      <div className="flex justify-between py-1.5 text-gray-500 text-[11px]">
-                        <span>Campus Handover Delivery</span>
-                        <span className="text-emerald-600 font-semibold">FREE</span>
-                      </div>
+                      {selectedInvoice.discount > 0 && (
+                        <div className="flex justify-between py-1.5 text-emerald-600 text-[11px] font-semibold">
+                          <span>Coupon Discount</span>
+                          <span>-₹{selectedInvoice.discount}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between pt-2 text-sm font-black text-[#17152A] border-t border-gray-100">
                         <span>Total Paid</span>
                         <span className="text-[#6C4BF4]">{selectedInvoice.price}</span>
