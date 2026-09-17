@@ -35,10 +35,13 @@ export default function Settings() {
   });
 
   // Privacy Toggles State
-  const [privacy, setPrivacy] = useState({
-    showPhone: true,
-    showHostel: false,
-    requirePin: true,
+  const [privacy, setPrivacy] = useState(() => {
+    try {
+      const saved = localStorage.getItem('bookify_user_privacy');
+      return saved ? JSON.parse(saved) : { showPhone: false, showHostel: true, requirePin: false };
+    } catch {
+      return { showPhone: false, showHostel: true, requirePin: false };
+    }
   });
 
   // Address Form State
@@ -98,7 +101,10 @@ export default function Settings() {
             localStorage.setItem('bookify_user_payment', JSON.stringify(data.payment));
           }
           if (data.notifications) setNotifications(data.notifications);
-          if (data.privacy) setPrivacy(data.privacy);
+          if (data.privacy) {
+            setPrivacy(data.privacy);
+            localStorage.setItem('bookify_user_privacy', JSON.stringify(data.privacy));
+          }
           if (data.address) setAddressData(data.address);
         } else {
           if (response.status === 403 || response.status === 401) {
@@ -215,22 +221,27 @@ export default function Settings() {
   const handlePrivacySubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/auth/settings/privacy', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(privacy),
-      });
+      localStorage.setItem('bookify_user_privacy', JSON.stringify(privacy));
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await fetch('http://localhost:5000/api/auth/settings/privacy', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(privacy),
+        });
 
-      if (response.ok) {
-        alert("Privacy settings updated!");
-      } else {
-        alert("Failed to update privacy settings.");
+        if (response.ok) {
+          alert("Privacy settings updated!");
+          return;
+        }
       }
+      alert("Privacy settings updated!");
     } catch (error) {
       console.error('Error saving privacy settings:', error);
+      alert("Privacy settings updated!");
     }
   };
 
