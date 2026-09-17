@@ -4,38 +4,38 @@ export const mockBooks = [
   {
     id: "b1",
     title: "The Silent Mind",
-    author: "Current Author",
+    author: "Rahul Verma",
     category: "Self Help",
     status: "Published",
     price: 499,
-    isCurrentAuthor: true
+    isCurrentAuthor: false
   },
   {
     id: "b2",
     title: "Inner Peace",
-    author: "Current Author",
+    author: "Eckhart T.",
     category: "Self Help",
     status: "Published",
     price: 399,
-    isCurrentAuthor: true
+    isCurrentAuthor: false
   },
   {
     id: "b3",
     title: "The Power of Habit",
-    author: "Current Author",
+    author: "Charles Duhigg",
     category: "Personal Growth",
-    status: "Draft",
+    status: "Published",
     price: 299,
-    isCurrentAuthor: true
+    isCurrentAuthor: false
   },
   {
     id: "b4",
-    title: "Unlock Your Potential",
-    author: "Current Author",
+    title: "Atomic Habits",
+    author: "James Clear",
     category: "Motivation",
-    status: "Under Review",
+    status: "Published",
     price: 549,
-    isCurrentAuthor: true
+    isCurrentAuthor: false
   },
   {
     id: "b5",

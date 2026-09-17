@@ -15,17 +15,17 @@ function Earnings() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [payoutMethod, setPayoutMethod] = useState("UPI");
   const [payoutDetails, setPayoutDetails] = useState({
-    upiId: "rahul.author@oksbi",
-    accountName: "Rahul Verma",
-    accountNumber: "918237461928",
-    ifscCode: "SBIN0004921"
+    upiId: isDemo ? "rahul.author@oksbi" : "",
+    accountName: isDemo ? "Rahul Verma" : "",
+    accountNumber: isDemo ? "918237461928" : "",
+    ifscCode: isDemo ? "SBIN0004921" : ""
   });
 
   const [transactions, setTransactions] = useState(
     isDemo
       ? [
           { id: 1, type: "sale", label: "Book Royalties", desc: "The Silent Mind (5 Copies)", amount: "₹2,250", date: "Today", positive: true },
-          { id: 2, type: "sale", label: "Book Royalties", desc: "Inner Peace (3 Copies)", amount: "₹897", date: "Yesterday", positive: true },
+          { id: 2, type: "sale", label: "Book Royalties", desc: "The Silent Mind (Digital Edition)", amount: "₹897", date: "Yesterday", positive: true },
           { id: 3, type: "withdrawal", label: "UPI Payout", desc: "rahul.author@oksbi", amount: "₹5,000", date: "20 May 2026", positive: false },
           { id: 4, type: "sale", label: "Rental Earnings", desc: "The Silent Mind (Weekly Rental)", amount: "₹299", date: "18 May 2026", positive: true }
         ]

@@ -19,7 +19,7 @@ export const getCurrentAuthor = () => {
  */
 export const isDemoAuthor = (user = null) => {
   const current = user || getCurrentAuthor();
-  if (!current) return true; // Default unauthenticated visitors view demo account
+  if (!current) return false; // Unauthenticated visitors get a clean slate, NOT demo showcase data
   const email = (current.email || "").toLowerCase();
   const id = (current.id || current._id || "").toString();
   return (
@@ -473,9 +473,9 @@ export const authorService = {
     return {
       isDemo: true,
       totalBooks: books.length,
-      totalReaders: "12.4K",
-      totalSales: "₹48,750",
-      totalEarnings: "₹32,680",
+      totalReaders: books.length > 0 ? "12.4K" : "0",
+      totalSales: books.length > 0 ? "₹48,750" : "₹0",
+      totalEarnings: books.length > 0 ? "₹32,680" : "₹0",
       activeCampaigns: campaigns.filter((c) => c.status === "Running").length,
       recentOrders: [],
     };
