@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { User, Mail, Globe, Share2, Heart, Check, ShieldCheck, Upload, AlertCircle, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { User, Mail, Globe, Share2, Heart, Check, ShieldCheck, Upload, AlertCircle, Sparkles, Trash2 } from "lucide-react";
 import { authorService, getCurrentAuthor, isDemoAuthor } from "../../services/authorService";
 import { useCommerce } from "../../context/CommerceContext";
+import { useAuth } from "../../context/AuthContext";
 
 function AuthorProfile() {
   const { showToast } = useCommerce();
+  const { updateUser } = useAuth();
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -24,11 +27,19 @@ function AuthorProfile() {
     instagram: isDemo ? "https://instagram.com/rvwrites" : (current?.socialLinks?.instagram || ""),
     goodreads: isDemo ? "https://goodreads.com/rvwrites" : (current?.socialLinks?.goodreads || ""),
     publisherImprint: isDemo ? "Lotus Crest Publishing" : (current?.publisherImprint || ""),
+    authorAvatar: isDemo ? null : (current?.authorAvatar || current?.avatar || null),
     verificationStatus: isDemo ? "verified" : (current?.authorVerificationStatus || (current?.isVerified ? "verified" : "unverified")),
   });
 
   const [docTitle, setDocTitle] = useState("");
   const [docUrl, setDocUrl] = useState("");
+
+  const getInitials = (name) => {
+    if (!name || !name.trim()) return "AU";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -45,6 +56,7 @@ function AuthorProfile() {
         instagram: data.socialLinks?.instagram || prev.instagram,
         goodreads: data.socialLinks?.goodreads || prev.goodreads,
         publisherImprint: data.publisherImprint || prev.publisherImprint,
+        authorAvatar: data.authorAvatar !== undefined ? data.authorAvatar : prev.authorAvatar,
         verificationStatus: data.authorVerificationStatus || (data.isVerified ? "verified" : "unverified"),
       }));
     }).finally(() => {
@@ -56,22 +68,78 @@ function AuthorProfile() {
     };
   }, []);
 
+  const handlePhotoClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      showToast("Please select a valid image file (PNG, JPEG, WEBP)", "error");
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      showToast("Image size must be less than 3MB", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      setProfile((prev) => ({ ...prev, authorAvatar: base64String }));
+      showToast("Profile photo selected. Click 'Save Profile Changes' to save!", "info");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setProfile((prev) => ({ ...prev, authorAvatar: null }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    showToast("Profile photo removed. Remember to save changes!", "info");
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await authorService.updateProfile({
+      const payload = {
         fullName: profile.name,
         penName: profile.penName,
         authorBio: profile.bio,
         website: profile.website,
         publisherImprint: profile.publisherImprint,
+        authorAvatar: profile.authorAvatar,
         socialLinks: {
           twitter: profile.twitter,
           instagram: profile.instagram,
           goodreads: profile.goodreads,
         },
-      });
+      };
+
+      await authorService.updateProfile(payload);
+
+      if (updateUser) {
+        updateUser({
+          fullName: profile.name,
+          penName: profile.penName,
+          authorBio: profile.bio,
+          website: profile.website,
+          publisherImprint: profile.publisherImprint,
+          authorAvatar: profile.authorAvatar,
+          avatar: profile.authorAvatar || undefined,
+          socialLinks: payload.socialLinks,
+          isAuthor: true,
+          hasAuthorProfile: true,
+        });
+      }
+
       showToast("Author profile updated successfully!", "success");
     } catch (err) {
       showToast("Saved locally.", "info");
@@ -128,22 +196,64 @@ function AuthorProfile() {
           
           {/* Avatar upload & Author Badge */}
           <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-[#E7E4F2]/50">
-            <div className="h-24 w-24 rounded-full bg-[#EEEAFE] border-2 border-[#6C4BF4] flex items-center justify-center text-[#6C4BF4] overflow-hidden shrink-0 relative font-black text-2xl">
-              {profile.name.split(" ").map(n => n[0]).join("")}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/png, image/jpeg, image/webp"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+
+            <div className="relative group shrink-0">
+              <div className="h-24 w-24 rounded-full bg-[#EEEAFE] border-2 border-[#6C4BF4] flex items-center justify-center text-[#6C4BF4] overflow-hidden relative font-black text-2xl shadow-sm">
+                {profile.authorAvatar ? (
+                  <img
+                    src={profile.authorAvatar}
+                    alt={profile.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{getInitials(profile.name)}</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handlePhotoClick}
+                className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold cursor-pointer"
+                title="Change Photo"
+              >
+                <Upload size={20} />
+              </button>
             </div>
-            <div className="text-center sm:text-left space-y-1">
-              <h3 className="font-bold text-[#17152A] text-lg font-poppins flex items-center gap-2">
+
+            <div className="text-center sm:text-left space-y-1.5">
+              <h3 className="font-bold text-[#17152A] text-lg font-poppins flex items-center justify-center sm:justify-start gap-2">
                 {profile.name}
                 {profile.penName && <span className="text-xs text-[#6C4BF4] font-medium">({profile.penName})</span>}
               </h3>
               <p className="text-xs text-[#6B6880]">{profile.publisherImprint || "Independent Author"}</p>
-              <button 
-                type="button"
-                onClick={() => showToast("Avatar upload modal opened", "info")}
-                className="mt-2 px-4 py-1.5 bg-[#EEEAFE] text-[#6C4BF4] hover:bg-[#6C4BF4]/10 rounded-lg text-xs font-bold transition cursor-pointer"
-              >
-                Change Photo
-              </button>
+              
+              <div className="flex items-center gap-2 pt-1 justify-center sm:justify-start flex-wrap">
+                <button 
+                  type="button"
+                  onClick={handlePhotoClick}
+                  className="px-4 py-1.5 bg-[#EEEAFE] text-[#6C4BF4] hover:bg-[#6C4BF4]/15 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Upload size={13} />
+                  Change Photo
+                </button>
+                {profile.authorAvatar && (
+                  <button 
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Trash2 size={13} />
+                    Remove Photo
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-[#6B6880]/80">JPG, PNG or WEBP, max 3MB.</p>
             </div>
           </div>
 

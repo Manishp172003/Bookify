@@ -20,7 +20,7 @@ import {
 function AuthorSidebar({ isOpen, onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, hasStudentProfile } = useAuth();
+  const { user, logout, hasStudentProfile } = useAuth();
   const activePath = location.pathname;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -55,7 +55,7 @@ function AuthorSidebar({ isOpen, onClose }) {
       <Link
         to="/author"
         onClick={onItemClick}
-        className="mb-8 flex items-center gap-3 px-2.5 hover:opacity-90 transition"
+        className="mb-6 flex items-center gap-3 px-2.5 hover:opacity-90 transition"
       >
         <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-[#3E29A1] font-extrabold text-white text-base shadow-inner">
           B
@@ -63,6 +63,40 @@ function AuthorSidebar({ isOpen, onClose }) {
         <span className="text-lg font-[family-name:var(--font-heading)] font-extrabold text-white tracking-wider">
           BOOKIFY
         </span>
+      </Link>
+
+      {/* Author Mini Profile Card */}
+      <Link
+        to="/author/profile"
+        onClick={onItemClick}
+        className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 transition duration-200 mb-5 border border-white/10"
+      >
+        <div className="h-9 w-9 rounded-full overflow-hidden bg-white/20 flex items-center justify-center text-white font-bold text-xs shrink-0 border border-white/30">
+          {user?.authorAvatar || user?.avatar ? (
+            <img
+              src={user.authorAvatar || user.avatar}
+              alt={user?.penName || user?.fullName || "Author"}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span>
+              {(user?.penName || user?.fullName || "AU")
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-white truncate">
+            {user?.penName || user?.fullName || "Author"}
+          </p>
+          <p className="text-[10px] text-white/70 truncate">
+            {user?.publisherImprint || "Author Studio"}
+          </p>
+        </div>
       </Link>
 
       {/* Navigation */}

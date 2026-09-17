@@ -66,7 +66,13 @@ export const authorize = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const isAuthorAllowed =
+      roles.includes("author") &&
+      (req.user.role === "author" ||
+        req.user.isAuthor === true ||
+        Boolean(req.user.penName || req.user.authorBio || req.user.authorVerificationStatus === "verified"));
+
+    if (!roles.includes(req.user.role) && !isAuthorAllowed) {
       return res.status(403).json({
         success: false,
         message: `Forbidden: requires role '${roles.join("' or '")}'`,

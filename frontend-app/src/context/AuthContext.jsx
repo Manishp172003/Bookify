@@ -30,7 +30,8 @@ export function AuthProvider({ children }) {
         fullName: userData.fullName || "Student User",
         email: userData.email || "student@bookify.com",
         phone: userData.phone || "",
-        avatar: userData.avatar && userData.avatar !== "/images/profile-avatar.png" ? userData.avatar : null,
+        avatar: userData.avatar && userData.avatar !== "/images/profile-avatar.png" ? userData.avatar : (userData.authorAvatar || null),
+        authorAvatar: userData.authorAvatar || null,
         role: userData.role || "student",
         isAdmin: Boolean(userData.isAdmin),
         isAuthor: Boolean(userData.isAuthor || userData.role === "author"),
@@ -45,6 +46,7 @@ export function AuthProvider({ children }) {
         fullName: typeof userData === "string" && userData.includes("@") ? userData.split("@")[0] : "Student User",
         email: userData || "student@bookify.com",
         avatar: null,
+        authorAvatar: null,
         role: "student",
         isAuthor: false,
       };
@@ -56,7 +58,11 @@ export function AuthProvider({ children }) {
 
   const updateUser = (updates) => {
     setUser((prev) => {
-      const updated = { ...(prev || {}), ...updates };
+      const updated = {
+        ...(prev || {}),
+        ...updates,
+        avatar: updates.authorAvatar !== undefined ? (updates.authorAvatar || (updates.avatar !== undefined ? updates.avatar : null)) : (updates.avatar !== undefined ? updates.avatar : prev?.avatar),
+      };
       localStorage.setItem("bookify_user", JSON.stringify(updated));
       return updated;
     });

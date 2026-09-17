@@ -47,9 +47,19 @@ export const updateAuthorProfile = async (req, res) => {
     if (website !== undefined) user.website = website;
     if (socialLinks) user.socialLinks = { ...user.socialLinks, ...socialLinks };
     if (publisherImprint !== undefined) user.publisherImprint = publisherImprint;
-    if (authorAvatar !== undefined) user.authorAvatar = authorAvatar;
+    if (authorAvatar !== undefined) {
+      user.authorAvatar = authorAvatar;
+      if (!user.avatar || user.avatar === "/images/profile-avatar.png") {
+        user.avatar = authorAvatar;
+      }
+    }
     if (location !== undefined) user.location = location;
     if (payment) user.payment = { ...user.payment, ...payment };
+
+    // Ensure user is recognized as an author
+    if (!user.isAuthor && user.role !== "admin") {
+      user.isAuthor = true;
+    }
 
     await user.save();
 

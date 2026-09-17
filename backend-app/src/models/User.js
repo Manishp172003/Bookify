@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
     default: 'student',
   },
   isAdmin: { type: Boolean, default: false },
+  isAuthor: { type: Boolean, default: false },
   adminCode: { type: String }, // 15-digit code for admin verification
 
   // ---- OTP Verification Fields ----

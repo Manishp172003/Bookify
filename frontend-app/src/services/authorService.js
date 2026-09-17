@@ -104,7 +104,12 @@ export const authorService = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.data) return data.data;
+        if (data.data) {
+          return {
+            ...data.data,
+            authorAvatar: data.data.authorAvatar || user?.authorAvatar || user?.avatar || null,
+          };
+        }
       }
     } catch {}
 
@@ -117,6 +122,7 @@ export const authorService = {
         authorBio: "Passionate writer on self-help and personal transformation.",
         website: "https://rvwrites.com",
         publisherImprint: "Lotus Crest Publishing",
+        authorAvatar: user?.authorAvatar || null,
         isVerified: true,
         authorVerificationStatus: "verified",
         socialLinks: {
@@ -134,6 +140,7 @@ export const authorService = {
       authorBio: user?.authorBio || "",
       website: user?.website || "",
       publisherImprint: user?.publisherImprint || "",
+      authorAvatar: user?.authorAvatar || user?.avatar || null,
       isVerified: user?.isVerified || false,
       authorVerificationStatus: user?.authorVerificationStatus || "unverified",
       socialLinks: user?.socialLinks || {},
@@ -141,6 +148,7 @@ export const authorService = {
   },
 
   async updateProfile(profileData) {
+    let responseData = null;
     try {
       const res = await fetch(`${API_BASE_URL}/profile`, {
         method: "PUT",
@@ -149,13 +157,23 @@ export const authorService = {
       });
       if (res.ok) {
         const data = await res.json();
-        return data.data;
+        responseData = data.data;
       }
     } catch {}
 
-    // Save locally
+    // Save locally and synchronize bookify_user
     const user = getCurrentAuthor() || {};
-    const updated = { ...user, ...profileData };
+    const updated = {
+      ...user,
+      ...(responseData || {}),
+      ...profileData,
+      isAuthor: true,
+      hasAuthorProfile: true,
+      authorAvatar:
+        profileData.authorAvatar !== undefined
+          ? profileData.authorAvatar
+          : (responseData?.authorAvatar || user?.authorAvatar || user?.avatar || null),
+    };
     localStorage.setItem("bookify_user", JSON.stringify(updated));
     return updated;
   },
