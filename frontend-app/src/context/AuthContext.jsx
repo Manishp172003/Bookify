@@ -31,6 +31,13 @@ export function AuthProvider({ children }) {
         email: userData.email || "student@bookify.com",
         phone: userData.phone || "",
         avatar: userData.avatar && userData.avatar !== "/images/profile-avatar.png" ? userData.avatar : null,
+        role: userData.role || "student",
+        isAdmin: Boolean(userData.isAdmin),
+        isAuthor: Boolean(userData.isAuthor || userData.role === "author"),
+        penName: userData.penName || "",
+        authorBio: userData.authorBio || "",
+        authorVerificationStatus: userData.authorVerificationStatus || "unverified",
+        ...userData,
       };
     } else {
       userObj = {
@@ -38,6 +45,8 @@ export function AuthProvider({ children }) {
         fullName: typeof userData === "string" && userData.includes("@") ? userData.split("@")[0] : "Student User",
         email: userData || "student@bookify.com",
         avatar: null,
+        role: "student",
+        isAuthor: false,
       };
     }
     localStorage.setItem("bookify_user", JSON.stringify(userObj));
@@ -56,12 +65,15 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem("bookify_auth");
     localStorage.removeItem("bookify_user");
+    localStorage.removeItem("token");
     setIsAuthenticated(false);
     setUser(null);
   };
 
+  const isAuthor = Boolean(user?.isAuthor || user?.role === "author" || (user?.email && user.email.toLowerCase().includes("author")));
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, updateUser, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, isAuthor, login, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

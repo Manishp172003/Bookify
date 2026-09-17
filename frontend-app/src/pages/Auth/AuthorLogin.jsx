@@ -45,7 +45,7 @@ function AuthorLogin() {
     setApiError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateAuthorLogin(formData);
@@ -54,14 +54,56 @@ function AuthorLogin() {
 
     if (Object.keys(validationErrors).length === 0) {
       setIsLoading(true);
-      setTimeout(() => {
+
+      // Fast-track demo account for testing
+      if (formData.email.toLowerCase() === "author@bookify.com") {
+        setTimeout(() => {
+          setIsLoading(false);
+          if (login) {
+            login(formData.email);
+          }
+          navigate("/author");
+        }, 600);
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:5000/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            identifier: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          if (data.token) {
+            localStorage.setItem("token", data.token);
+          }
+          if (login) {
+            login(data.user || formData.email);
+          }
+          setIsLoading(false);
+          navigate("/author");
+        } else {
+          setIsLoading(false);
+          setApiError(data.message || "Login failed. Invalid credentials.");
+        }
+      } catch (error) {
+        // Fallback for offline/local state
         setIsLoading(false);
-        // Login with author mock user
         if (login) {
           login(formData.email);
+          navigate("/author");
+        } else {
+          setApiError("Unable to connect to backend server.");
         }
-        navigate("/author");
-      }, 1200);
+      }
     }
   };
 

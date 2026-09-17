@@ -96,10 +96,11 @@ function AuthorSidebar({ isOpen, onClose }) {
           onClick={() => {
             if (onItemClick) onItemClick();
           }}
-          className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer text-white/80 hover:text-white"
+          className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 bg-white/10 text-[#FFD166] border border-white/20 hover:bg-white/20 transition duration-200 cursor-pointer text-sm font-semibold"
+          title="Switch to Student / Reader Marketplace"
         >
-          <Globe size={18} className="text-white/80" />
-          <span className="text-sm font-semibold">Student Marketplace</span>
+          <Globe size={18} className="text-[#FFD166]" />
+          <span>Student Marketplace 🎓</span>
         </Link>
         <button
           type="button"

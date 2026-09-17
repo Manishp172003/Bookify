@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { User, Mail, Globe, Share2, Heart, Check, ShieldCheck, Upload, AlertCircle, Sparkles } from "lucide-react";
-import { authorService } from "../../services/authorService";
+import { authorService, getCurrentAuthor, isDemoAuthor } from "../../services/authorService";
 import { useCommerce } from "../../context/CommerceContext";
 
 function AuthorProfile() {
@@ -9,17 +9,22 @@ function AuthorProfile() {
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
+  const current = getCurrentAuthor();
+  const isDemo = isDemoAuthor(current);
+
   const [profile, setProfile] = useState({
-    name: "Rahul Verma",
-    penName: "R. V. Writes",
-    email: "rahulverma.author@gmail.com",
-    bio: "A passionate writer on self-help and personal transformation. Inspiring student communities to read and grow.",
-    website: "https://rvwrites.com",
-    twitter: "https://twitter.com/rvwrites",
-    instagram: "https://instagram.com/rvwrites",
-    goodreads: "https://goodreads.com/rvwrites",
-    publisherImprint: "Lotus Crest Publishing",
-    verificationStatus: "verified",
+    name: isDemo ? "Rahul Verma" : (current?.fullName || ""),
+    penName: isDemo ? "R. V. Writes" : (current?.penName || ""),
+    email: isDemo ? "author@bookify.com" : (current?.email || ""),
+    bio: isDemo
+      ? "A passionate writer on self-help and personal transformation. Inspiring student communities to read and grow."
+      : (current?.authorBio || ""),
+    website: isDemo ? "https://rvwrites.com" : (current?.website || ""),
+    twitter: isDemo ? "https://twitter.com/rvwrites" : (current?.socialLinks?.twitter || ""),
+    instagram: isDemo ? "https://instagram.com/rvwrites" : (current?.socialLinks?.instagram || ""),
+    goodreads: isDemo ? "https://goodreads.com/rvwrites" : (current?.socialLinks?.goodreads || ""),
+    publisherImprint: isDemo ? "Lotus Crest Publishing" : (current?.publisherImprint || ""),
+    verificationStatus: isDemo ? "verified" : (current?.authorVerificationStatus || (current?.isVerified ? "verified" : "unverified")),
   });
 
   const [docTitle, setDocTitle] = useState("");

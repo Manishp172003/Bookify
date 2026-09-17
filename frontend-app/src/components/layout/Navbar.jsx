@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Menu, X, Heart, MessageSquare, ShoppingCart } from "lucide-react";
+import { Search, Menu, X, Heart, MessageSquare, ShoppingCart, Feather } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useCommerce } from "../../context/CommerceContext";
 
@@ -144,6 +144,17 @@ export default function Navbar() {
 
 
 
+                {/* Author Studio Switcher */}
+                <Link 
+                  to="/author" 
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold hover:opacity-95 shadow-xs shadow-[#6C4BF4]/25 transition duration-200 cursor-pointer shrink-0 ml-1"
+                  title="Switch to Author Studio"
+                >
+                  <Feather size={13} className="shrink-0" />
+                  <span className="hidden xl:inline">Author Studio</span>
+                  <span className="xl:hidden">Author</span>
+                </Link>
+
                 {/* User Avatar */}
                 <Link 
                   to="/profile" 
@@ -235,7 +246,18 @@ export default function Navbar() {
 
           {/* Mobile User Controls */}
           {isAuthenticated ? (
-            <div className="flex items-center justify-between">
+            <div className="space-y-3">
+              {/* Mobile Author Studio Switcher */}
+              <Link
+                to="/author"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold shadow-xs transition"
+              >
+                <Feather size={14} />
+                <span>Switch to Author Studio</span>
+              </Link>
+
+              <div className="flex items-center justify-between">
               <div className="flex gap-2">
                 <Link 
                   to="/dashboard/wishlist" 
@@ -286,6 +308,7 @@ export default function Navbar() {
                 </div>
               </Link>
             </div>
+          </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 pt-1">
               <Link 
