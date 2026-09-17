@@ -1063,7 +1063,8 @@ export function CommerceProvider({ children }) {
         wishlistItems,
         toggleWishlist,
         toggleWishlistAlert,
-        isBookWishlisted
+        isBookWishlisted,
+        socket
       }}
     >
       {children}

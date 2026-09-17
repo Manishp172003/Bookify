@@ -12,7 +12,7 @@ import {
   LogOut,
   Shield,
   Globe,
-  MessageSquare,
+  Headphones,
   Ticket,
   X
 } from "lucide-react";
@@ -45,7 +45,7 @@ function AuthorSidebar({ isOpen, onClose }) {
     { name: "Coupons", path: "/author/coupons", icon: Ticket },
     { name: "Analytics", path: "/author/analytics", icon: BarChart3 },
     { name: "Earnings", path: "/author/earnings", icon: CircleDollarSign },
-    { name: "Chat", path: "/author/chat", icon: MessageSquare },
+    { name: "Author Support", path: "/author/chat", icon: Headphones },
     { name: "Profile", path: "/author/profile", icon: User },
   ];
 
