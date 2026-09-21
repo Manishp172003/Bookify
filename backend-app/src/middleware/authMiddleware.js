@@ -1,11 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-/**
- * protect — verifies JWT and attaches req.user.
- * Ensures req.user.role is always set (falls back from isAdmin for
- * documents that existed before the role field was added).
- */
 export const protect = async (req, res, next) => {
   let token;
 
@@ -36,7 +31,6 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // Backward-compatibility: if role is missing but isAdmin is true, synthesize it
     if (!user.role) {
       user.role = user.isAdmin ? "admin" : "student";
     }
@@ -52,10 +46,6 @@ export const protect = async (req, res, next) => {
   }
 };
 
-/**
- * authorize — role-based access control guard.
- * Usage: authorize("admin") or authorize("author", "admin")
- */
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -78,5 +68,4 @@ export const authorize = (...roles) => {
   };
 };
 
-// Alias for backward compatibility
 export const verifyToken = protect;

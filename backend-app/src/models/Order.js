@@ -22,6 +22,7 @@ const orderSchema = new mongoose.Schema({
   orderType: {
     type: String,
     enum: ["Buy", "Rent", "Exchange", "Donate"],
+    required: true,
   },
 
   amount: {
@@ -45,6 +46,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     enum: ["Razorpay", "COD", "Wallet"],
+    required: true,
   },
 
   paymentStatus: {
@@ -55,10 +57,15 @@ const orderSchema = new mongoose.Schema({
 
   razorpayOrderId: {
     type: String,
+    index: true,
   },
 
   razorpayPaymentId: {
     type: String,
+  },
+
+  paidAt: {
+    type: Date,
   },
 
   escrowStatus: {

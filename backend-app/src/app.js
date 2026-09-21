@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import cors from "cors";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -12,10 +12,6 @@ import chatRoutes from "./routes/chatRoutes.js";
 
 const app = express();
 
-// ==========================================
-// Global Middlewares
-// ==========================================
-
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
@@ -26,10 +22,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ==========================================
-// Root Route
-// ==========================================
-
 app.get("/", (req, res) => {
   res.json({
     name: "Bookify Backend API",
@@ -39,10 +31,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// ==========================================
-// Health Check
-// ==========================================
-
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
@@ -50,10 +38,6 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
-
-// ==========================================
-// API Routes
-// ==========================================
 
 app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
@@ -65,10 +49,6 @@ app.use("/api/author", authorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", chatRoutes);
 
-// ==========================================
-// 404 Handler
-// ==========================================
-
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -76,10 +56,6 @@ app.use((req, res) => {
     data: null,
   });
 });
-
-// ==========================================
-// Global Error Handler
-// ==========================================
 
 app.use((err, req, res, next) => {
   console.error("[Error]", err);

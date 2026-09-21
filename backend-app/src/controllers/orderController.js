@@ -1,35 +1,71 @@
-import crypto from "crypto";
-import Razorpay from "razorpay";
-
 import Order from "../models/Order.js";
 import Book from "../models/Book.js";
 import { getIO } from "../config/socket.js";
+import {
+  createRazorpayOrder,
+  isRazorpayConfigured,
+  verifyRazorpaySignature,
+} from "../services/razorpayService.js";
+import { sendOrderEmails } from "../services/orderEmailService.js";
 
-const getRazorpay = () => {
-  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-    return new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
+const USER_CONTACT_FIELDS = "fullName email phone mobile";
+
+const emitToRoom = (room, event, payload) => {
+  try {
+    getIO().to(room).emit(event, payload);
+  } catch (error) {
+    console.error(`Socket emit failed (${event}):`, error.message);
   }
-  return null;
+};
+
+const getOrderAmount = (book, orderType) => {
+  if (orderType === "Rent" && book.rentPrice) {
+    return Number(book.rentPrice);
+  }
+
+  return Number(book.price);
+};
+
+const reserveBook = async (bookId, orderType) => {
+  const book = await Book.findById(bookId);
+
+  if (!book) {
+    return;
+  }
+
+  book.status = orderType === "Rent" ? "Rented" : "Pending";
+  await book.save();
+};
+
+const notifyOrderParties = async (orderId) => {
+  const order = await Order.findById(orderId)
+    .populate("buyerId", USER_CONTACT_FIELDS)
+    .populate("sellerId", USER_CONTACT_FIELDS)
+    .populate("bookId", "title");
+
+  if (!order) {
+    return;
+  }
+
+  await sendOrderEmails({
+    order,
+    buyer: order.buyerId,
+    seller: order.sellerId,
+    book: order.bookId,
+  });
 };
 
 export const createOrder = async (req, res) => {
-  try {
-    const {
-      bookId,
-      orderType,
-      amount,
-      paymentMethod,
-      shippingAddress,
-      couponCode,
-    } = req.body;
+  let order = null;
 
-    if (!bookId || !orderType || !amount || !paymentMethod) {
+  try {
+    const { bookId, orderType, paymentMethod, shippingAddress, couponCode } =
+      req.body;
+
+    if (!bookId || !orderType || !paymentMethod) {
       return res.status(400).json({
         success: false,
-        message: "bookId, orderType, amount and paymentMethod are required",
+        message: "bookId, orderType and paymentMethod are required",
         data: null,
       });
     }
@@ -60,12 +96,30 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const order = await Order.create({
+    const finalAmount = getOrderAmount(book, orderType);
+
+    if (!Number.isFinite(finalAmount) || finalAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Book price is invalid",
+        data: null,
+      });
+    }
+
+    if (paymentMethod === "Razorpay" && finalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Online payment is not possible for a free book",
+        data: null,
+      });
+    }
+
+    order = await Order.create({
       buyerId: req.user._id,
       sellerId: book.sellerId,
       bookId,
       orderType,
-      amount,
+      amount: finalAmount,
       paymentMethod,
       shippingAddress,
       couponCode,
@@ -74,30 +128,21 @@ export const createOrder = async (req, res) => {
     let razorpayOrder = null;
 
     if (paymentMethod === "Razorpay") {
-      const razorpayInstance = getRazorpay();
-      if (razorpayInstance) {
-        razorpayOrder = await razorpayInstance.orders.create({
-          amount: Math.round(Number(amount) * 100),
-          currency: "INR",
-          receipt: order._id.toString(),
-        });
-        order.razorpayOrderId = razorpayOrder.id;
-      } else {
-        order.razorpayOrderId = `order_mock_${Date.now()}`;
-        razorpayOrder = { id: order.razorpayOrderId, amount: Math.round(Number(amount) * 100), currency: "INR" };
-      }
+      razorpayOrder = await createRazorpayOrder({
+        amount: finalAmount,
+        receipt: order._id.toString(),
+      });
+
+      order.razorpayOrderId = razorpayOrder.id;
       await order.save();
+    } else {
+      await reserveBook(bookId, orderType);
+      notifyOrderParties(order._id).catch((error) =>
+        console.error("Order notification error:", error)
+      );
     }
 
-    book.status = orderType === "Rent" ? "Rented" : "Pending";
-
-    await book.save();
-
-    const io = getIO();
-
-    io.to(`user:${book.sellerId.toString()}`).emit("newOrder", {
-      order,
-    });
+    emitToRoom(`user:${book.sellerId.toString()}`, "newOrder", { order });
 
     return res.status(201).json({
       success: true,
@@ -106,13 +151,17 @@ export const createOrder = async (req, res) => {
         order,
         razorpayOrder,
         razorpayKeyId:
-          paymentMethod === "Razorpay"
+          paymentMethod === "Razorpay" && isRazorpayConfigured()
             ? process.env.RAZORPAY_KEY_ID
             : null,
       },
     });
   } catch (error) {
     console.error("Create order error:", error);
+
+    if (order && order.paymentMethod === "Razorpay" && !order.razorpayOrderId) {
+      await Order.findByIdAndDelete(order._id).catch(() => null);
+    }
 
     return res.status(500).json({
       success: false,
@@ -124,17 +173,10 @@ export const createOrder = async (req, res) => {
 
 export const verifyPayment = async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
 
-    if (
-      !razorpay_order_id ||
-      !razorpay_payment_id ||
-      !razorpay_signature
-    ) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({
         success: false,
         message: "Payment verification data is incomplete",
@@ -142,59 +184,73 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(
-        `${razorpay_order_id}|${razorpay_payment_id}`
-      )
-      .digest("hex");
-
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(expectedSignature),
-        Buffer.from(razorpay_signature)
-      )
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Payment verification failed",
-        data: null,
+    if (isRazorpayConfigured()) {
+      const isValid = verifyRazorpaySignature({
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        signature: razorpay_signature,
       });
-    }
 
-    const order = await Order.findOne({
-      razorpayOrderId: razorpay_order_id,
-      buyerId: req.user._id,
-    });
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-        data: null,
-      });
-    }
-
-    order.razorpayPaymentId = razorpay_payment_id;
-    order.paymentStatus = "Completed";
-    order.status = "Processing";
-
-    await order.save();
-
-    const io = getIO();
-
-    io.to(`user:${order.buyerId.toString()}`).emit(
-      "paymentSuccess",
-      {
-        order,
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment verification failed",
+          data: null,
+        });
       }
+    } else if (process.env.NODE_ENV === "production") {
+      return res.status(500).json({
+        success: false,
+        message: "Payment gateway is not configured",
+        data: null,
+      });
+    }
+
+    const order = await Order.findOneAndUpdate(
+      {
+        razorpayOrderId: razorpay_order_id,
+        buyerId: req.user._id,
+        paymentStatus: { $ne: "Completed" },
+      },
+      {
+        $set: {
+          razorpayPaymentId: razorpay_payment_id,
+          paymentStatus: "Completed",
+          status: "Processing",
+          paidAt: new Date(),
+        },
+      },
+      { new: true }
     );
 
-    io.to(`user:${order.sellerId.toString()}`).emit(
-      "paymentSuccess",
-      {
-        order,
+    if (!order) {
+      const existingOrder = await Order.findOne({
+        razorpayOrderId: razorpay_order_id,
+        buyerId: req.user._id,
+      });
+
+      if (!existingOrder) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found",
+          data: null,
+        });
       }
+
+      return res.status(200).json({
+        success: true,
+        message: "Payment already verified",
+        data: existingOrder,
+      });
+    }
+
+    await reserveBook(order.bookId, order.orderType);
+
+    emitToRoom(`user:${order.buyerId.toString()}`, "paymentSuccess", { order });
+    emitToRoom(`user:${order.sellerId.toString()}`, "paymentSuccess", { order });
+
+    notifyOrderParties(order._id).catch((error) =>
+      console.error("Order notification error:", error)
     );
 
     return res.status(200).json({
@@ -215,11 +271,9 @@ export const verifyPayment = async (req, res) => {
 
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({
-      buyerId: req.user._id,
-    })
+    const orders = await Order.find({ buyerId: req.user._id })
       .populate("bookId")
-      .populate("sellerId", "fullName email")
+      .populate("sellerId", USER_CONTACT_FIELDS)
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -240,11 +294,9 @@ export const getMyOrders = async (req, res) => {
 
 export const getMySales = async (req, res) => {
   try {
-    const orders = await Order.find({
-      sellerId: req.user._id,
-    })
+    const orders = await Order.find({ sellerId: req.user._id })
       .populate("bookId")
-      .populate("buyerId", "fullName email")
+      .populate("buyerId", USER_CONTACT_FIELDS)
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -295,10 +347,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     const userId = req.user._id.toString();
-
-    const isSeller =
-      order.sellerId.toString() === userId;
-
+    const isSeller = order.sellerId.toString() === userId;
     const isAdmin = req.user.role === "admin";
 
     if (!isSeller && !isAdmin) {
@@ -310,7 +359,6 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     order.status = status;
-
     await order.save();
 
     if (status === "Delivered") {
@@ -322,22 +370,9 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
-    const io = getIO();
-
-    io.to(`order:${order._id.toString()}`).emit(
-      "orderStatusUpdated",
-      order
-    );
-
-    io.to(`user:${order.buyerId.toString()}`).emit(
-      "orderStatusUpdated",
-      order
-    );
-
-    io.to(`user:${order.sellerId.toString()}`).emit(
-      "orderStatusUpdated",
-      order
-    );
+    emitToRoom(`order:${order._id.toString()}`, "orderStatusUpdated", order);
+    emitToRoom(`user:${order.buyerId.toString()}`, "orderStatusUpdated", order);
+    emitToRoom(`user:${order.sellerId.toString()}`, "orderStatusUpdated", order);
 
     return res.status(200).json({
       success: true,

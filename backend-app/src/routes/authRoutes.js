@@ -1,47 +1,46 @@
 import express from "express";
-import {
-  register,
-  login,
-  adminLogin,
-  logout,
-  forgotPassword,
-  resetPassword,
-  verifyOTP,
-  resendOTP,
-  getUserSettings,
-  updateProfile,
-  updatePrivacy,
-  updateAddress,
-  updatePayment,
-  updateNotifications,
-  updatePassword,
-} from "../controllers/authController.js";
 
-import { verifyToken } from "../middleware/authMiddleware.js";
+import {
+  getMyBooks,
+  submitBook,
+  updateBook,
+  deleteBook,
+  getAnalytics,
+  getEarnings,
+  requestPayout,
+  getPayouts,
+  createCoupon,
+  getCoupons,
+  toggleCoupon,
+  deleteCoupon,
+  validateCoupon,
+  updateAuthorProfile,
+} from "../controllers/authorController.js";
+
+import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// ─── Public Auth Routes ───────────────────────────────────────────────────────
-router.post("/register", register);
-router.post("/login", login);
-router.post("/admin-login", adminLogin);
-router.post("/logout", logout);
+router.post("/coupons/validate", protect, validateCoupon);
 
-// ─── Password Reset (public — no auth token required) ────────────────────────
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+router.use(protect, authorize("author", "admin"));
 
-// ─── OTP Verification (public) ───────────────────────────────────────────────
-router.post("/verify-otp", verifyOTP);
-router.post("/resend-otp", resendOTP);
+router.put("/profile", updateAuthorProfile);
 
-// ─── Settings Routes (Protected) ─────────────────────────────────────────────
-router.get("/settings", verifyToken, getUserSettings);
-router.put("/settings/profile", verifyToken, updateProfile);
-router.put("/settings/privacy", verifyToken, updatePrivacy);
-router.put("/settings/address", verifyToken, updateAddress);
-router.put("/settings/payment", verifyToken, updatePayment);
-router.put("/settings/notifications", verifyToken, updateNotifications);
-router.put("/settings/password", verifyToken, updatePassword);
+router.get("/my-books", getMyBooks);
+router.post("/books", submitBook);
+router.put("/books/:id", updateBook);
+router.delete("/books/:id", deleteBook);
+
+router.get("/analytics", getAnalytics);
+
+router.get("/earnings", getEarnings);
+router.get("/payouts", getPayouts);
+router.post("/payouts", requestPayout);
+
+router.get("/coupons", getCoupons);
+router.post("/coupons", createCoupon);
+router.patch("/coupons/:id/toggle", toggleCoupon);
+router.delete("/coupons/:id", deleteCoupon);
 
 export default router;
