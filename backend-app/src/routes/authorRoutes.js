@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 
 import {
   getAuthorProfile,
@@ -22,6 +22,9 @@ import {
   getPayouts,
   getDashboardStats,
   getAnalytics,
+  updateProfile,
+  submitVerification,
+  toggleCoupon,
 } from "../controllers/authorController.js";
 
 import {
@@ -29,22 +32,46 @@ import {
   authorize,
 } from "../middleware/authMiddleware.js";
 
+import {
+  uploadSingle,
+  uploadMultiple,
+} from "../middleware/uploadMiddleware.js";
+
 const router = express.Router();
 
-// Public coupon validation route (used at student checkout)
+// ─── Public coupon validation route (used at student checkout) ───────────────
 router.post("/coupons/validate", validateCoupon);
 
-// Protect all other author routes
+// ─── Author Profile & Verification (Protected: Student / Author / Admin) ──────
+router.put(
+  "/profile",
+  protect,
+  uploadSingle("avatar", "bookify/avatars"),
+  updateAuthorProfile
+);
+
+router.post(
+  "/verify",
+  protect,
+  uploadMultiple(
+    [
+      { name: "idDoc", maxCount: 1 },
+      { name: "degreeDoc", maxCount: 1 },
+    ],
+    "bookify/verification"
+  ),
+  submitAuthorVerification
+);
+
+// ─── Protect all other author routes (Author & Admin only) ───────────────────
 router.use(protect, authorize("author", "admin"));
 
 // 1. Profile & Verification
 router.get("/profile", getAuthorProfile);
-router.put("/profile", updateAuthorProfile);
-router.post("/verify", submitAuthorVerification);
 
 // 2. Books & Publishing
 router.get("/my-books", getMyBooks);
-router.post("/books", submitBook);
+router.post("/books", uploadSingle("image", "bookify/books"), submitBook);
 router.put("/books/:id", updateBook);
 router.delete("/books/:id", deleteBook);
 
@@ -52,6 +79,7 @@ router.delete("/books/:id", deleteBook);
 router.get("/coupons", getCoupons);
 router.post("/coupons", createCoupon);
 router.patch("/coupons/:id/toggle", toggleCouponStatus);
+router.patch("/coupons/:id", toggleCouponStatus);
 router.delete("/coupons/:id", deleteCoupon);
 
 // 4. Marketing Campaigns

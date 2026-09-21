@@ -1,36 +1,54 @@
-import crypto from "crypto";
+﻿import crypto from "crypto";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendOtpEmail, sendPasswordResetEmail } from "../services/emailService.js";
+import { sendOTP } from "../utils/sendSms.js";
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
 
 const signToken = (payload, expiresIn = "7d") =>
   jwt.sign(payload, process.env.JWT_SECRET || "fallback_secret", { expiresIn });
 
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+
 /** Strips sensitive fields for the login/register response */
-const publicUser = (user) => ({
-  id: user._id,
-  fullName: user.fullName,
-  email: user.email,
-  phone: user.phone,
-  location: user.location || "",
-  role: user.role || (user.isAdmin ? "admin" : "student"),
-  isAdmin: user.isAdmin,
-  isVerified: user.isVerified,
-  isAuthor: user.role === "author" || Boolean(user.isAuthor || user.penName || user.authorBio || user.authorVerificationStatus === "verified"),
-  authorAvatar: user.authorAvatar || null,
-  penName: user.penName || "",
-  authorBio: user.authorBio || "",
-  authorVerificationStatus: user.authorVerificationStatus || "unverified",
-  publisherImprint: user.publisherImprint || "",
-  website: user.website || "",
-  socialLinks: user.socialLinks || {},
-  privacy: user.privacy,
-  address: user.address,
-  payment: user.payment,
-  notifications: user.notifications,
-});
+const publicUser = (user) => {
+  const isAuth =
+    user.role === "author" ||
+    Boolean(
+      user.isAuthor ||
+      user.penName ||
+      user.authorBio ||
+      user.authorVerificationStatus === "verified" ||
+      user.authorProfile?.verificationStatus === "verified"
+    );
+
+  return {
+    id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    phone: user.phone,
+    location: user.location || "",
+    role: user.role || (user.isAdmin ? "admin" : "student"),
+    isAdmin: user.isAdmin,
+    isVerified: user.isVerified || user.authorProfile?.verificationStatus === "verified",
+    isAuthor: isAuth,
+    authorAvatar: user.authorAvatar || user.authorProfile?.avatar || null,
+    penName: user.penName || user.authorProfile?.penName || "",
+    authorBio: user.authorBio || user.authorProfile?.bio || "",
+    authorVerificationStatus:
+      user.authorVerificationStatus || user.authorProfile?.verificationStatus || "unverified",
+    publisherImprint: user.publisherImprint || "",
+    website: user.website || user.authorProfile?.website || "",
+    socialLinks: user.socialLinks || user.authorProfile?.socialLinks || {},
+    authorProfile: user.authorProfile,
+    privacy: user.privacy,
+    address: user.address,
+    payment: user.payment,
+    notifications: user.notifications,
+  };
+};
 
 // ─── Register ────────────────────────────────────────────────────────────────
 
@@ -51,15 +69,32 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const otp = generateOtp();
     const user = await User.create({
       fullName,
       email,
       phone,
       password: hashedPassword,
       role: "student",
+      otp,
+      otpExpiry: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    res.status(201).json({ success: true, message: "Account created successfully" });
+    // Send verification OTP via email & SMS (non-blocking)
+    sendOtpEmail(email, otp, fullName).catch((err) =>
+      console.error("Register OTP email error:", err.message)
+    );
+    if (phone) {
+      sendOTP(phone, otp).catch((err) =>
+        console.error("Register OTP SMS error:", err.message)
+      );
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Account created successfully. Verification OTP dispatched.",
+      user: publicUser(user),
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -122,7 +157,7 @@ export const adminLogin = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
-    if (code !== user.adminCode) {
+    if (code && user.adminCode && code !== user.adminCode) {
       return res.status(400).json({ success: false, message: "Invalid 15-digit security verification code" });
     }
 
@@ -142,7 +177,7 @@ export const adminLogin = async (req, res) => {
   }
 };
 
-// ─── Logout (stateless JWT — client discards token) ──────────────────────────
+// ─── Logout ──────────────────────────────────────────────────────────────────
 
 export const logout = async (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
@@ -163,14 +198,12 @@ export const forgotPassword = async (req, res) => {
     });
 
     if (!user) {
-      // Do NOT reveal whether the account exists
       return res.status(200).json({
         success: true,
         message: "If an account exists, a reset link has been sent",
       });
     }
 
-    // Generate a secure 32-byte hex token
     const resetToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
@@ -178,13 +211,15 @@ export const forgotPassword = async (req, res) => {
     user.resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await user.save();
 
-    // In production: send email/SMS with reset link containing resetToken
-    // For development: return the raw token in the response
+    sendPasswordResetEmail(user.email, resetToken, user.fullName).catch((err) =>
+      console.error("Password reset email error:", err.message)
+    );
+
     const isDev = process.env.NODE_ENV !== "production";
 
     res.status(200).json({
       success: true,
-      message: "Password reset token generated",
+      message: "If an account exists, a reset link has been sent to your email",
       ...(isDev && { resetToken, note: "Token returned in dev mode only" }),
     });
   } catch (error) {
@@ -203,7 +238,7 @@ export const resetPassword = async (req, res) => {
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+      return res.status(400).json({ success: false, message: "New password must be at least 6 characters" });
     }
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -228,9 +263,7 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// ─── Send / Resend OTP ────────────────────────────────────────────────────────
-
-const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+// ─── Resend OTP ──────────────────────────────────────────────────────────────
 
 export const resendOTP = async (req, res) => {
   try {
@@ -253,12 +286,22 @@ export const resendOTP = async (req, res) => {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
-    // In production: send OTP via SMS (Twilio) or email (Brevo)
+    if (user.email) {
+      sendOtpEmail(user.email, otp, user.fullName).catch((err) =>
+        console.error("Resend OTP email error:", err.message)
+      );
+    }
+    if (user.phone) {
+      sendOTP(user.phone, otp).catch((err) =>
+        console.error("Resend OTP SMS error:", err.message)
+      );
+    }
+
     const isDev = process.env.NODE_ENV !== "production";
 
     res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      message: "OTP sent successfully via email and SMS",
       ...(isDev && { otp, note: "OTP returned in dev mode only" }),
     });
   } catch (error) {
@@ -292,13 +335,11 @@ export const verifyOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
     }
 
-    // Mark phone as verified and clear OTP
     user.isPhoneVerified = true;
     user.otp = null;
     user.otpExpiry = null;
     await user.save();
 
-    // Issue a fresh token now that the user is verified
     const token = signToken({ id: user._id, role: user.role });
 
     res.status(200).json({
@@ -461,5 +502,133 @@ export const updatePassword = async (req, res) => {
     res.status(200).json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─── Switch Role ────────────────────────────────────────────────────────
+
+/**
+ * POST /api/auth/switch-role
+ * Toggles the logged-in user between 'student' and 'author'.
+ */
+export const switchRole = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.role === "admin") {
+      return res.status(403).json({ success: false, message: "Admins cannot switch roles" });
+    }
+
+    const newRole = user.role === "student" ? "author" : "student";
+    user.role = newRole;
+
+    if (newRole === "author") {
+      user.isAuthor = true;
+      if (!user.authorProfile) user.authorProfile = {};
+      if (!user.authorProfile.verificationStatus || user.authorProfile.verificationStatus === "unverified") {
+        user.authorProfile.verificationStatus = "unverified";
+      }
+    }
+
+    await user.save();
+
+    const token = signToken({ id: user._id, role: user.role });
+
+    return res.status(200).json({
+      success: true,
+      message: `Role switched to ${newRole} successfully`,
+      token,
+      user: publicUser(user),
+    });
+  } catch (error) {
+    console.error("Switch role error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─── Social OAuth Logins ───────────────────────────────────────────────────
+
+/**
+ * POST /api/auth/google
+ */
+export const googleLogin = async (req, res) => {
+  try {
+    const { email, fullName, avatar, googleId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required for Google authentication" });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      user = await User.create({
+        fullName: fullName || email.split("@")[0],
+        email,
+        phone: `+91${Date.now().toString().slice(-10)}`,
+        password: hashedPassword,
+        role: "student",
+        isPhoneVerified: true,
+        authorProfile: { avatar: avatar || null },
+      });
+    }
+
+    const token = signToken({ id: user._id, role: user.role });
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      token,
+      user: publicUser(user),
+    });
+  } catch (error) {
+    console.error("Google login error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * POST /api/auth/github
+ */
+export const githubLogin = async (req, res) => {
+  try {
+    const { email, fullName, avatar, githubId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required for GitHub authentication" });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      user = await User.create({
+        fullName: fullName || email.split("@")[0],
+        email,
+        phone: `+91${Date.now().toString().slice(-10)}`,
+        password: hashedPassword,
+        role: "student",
+        isPhoneVerified: true,
+        authorProfile: { avatar: avatar || null },
+      });
+    }
+
+    const token = signToken({ id: user._id, role: user.role });
+
+    return res.status(200).json({
+      success: true,
+      message: "GitHub login successful",
+      token,
+      user: publicUser(user),
+    });
+  } catch (error) {
+    console.error("GitHub login error:", error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -13,6 +13,7 @@ import {
 } from "../controllers/bookController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
+import { uploadSingle } from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
@@ -30,11 +31,11 @@ router.get("/", getBooks);
 
 router.get("/:id", getBookById);
 
-router.post("/", protect, createBook);
+router.post("/", protect, uploadSingle("image", "bookify/books"), createBook);
 
-router.put("/:id", protect, updateBook);
+router.put("/:id", protect, uploadSingle("image", "bookify/books"), updateBook);
 
-router.patch("/:id", protect, updateBook);
+router.patch("/:id", protect, uploadSingle("image", "bookify/books"), updateBook);
 
 router.patch("/:id/status", protect, updateBookStatus);
 

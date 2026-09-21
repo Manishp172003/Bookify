@@ -1,4 +1,4 @@
-import Book from "../models/Book.js";
+﻿import Book from "../models/Book.js";
 import Coupon from "../models/Coupon.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
@@ -28,10 +28,12 @@ export const updateAuthorProfile = async (req, res) => {
       fullName,
       penName,
       authorBio,
+      bio,
       website,
       socialLinks,
       publisherImprint,
       authorAvatar,
+      avatar,
       location,
       payment,
     } = req.body;
@@ -42,21 +44,42 @@ export const updateAuthorProfile = async (req, res) => {
     }
 
     if (fullName) user.fullName = fullName;
-    if (penName !== undefined) user.penName = penName;
-    if (authorBio !== undefined) user.authorBio = authorBio;
-    if (website !== undefined) user.website = website;
-    if (socialLinks) user.socialLinks = { ...user.socialLinks, ...socialLinks };
+    if (penName !== undefined) {
+      user.penName = penName;
+      if (!user.authorProfile) user.authorProfile = {};
+      user.authorProfile.penName = penName;
+    }
+    if (authorBio !== undefined || bio !== undefined) {
+      const bioText = authorBio !== undefined ? authorBio : bio;
+      user.authorBio = bioText;
+      if (!user.authorProfile) user.authorProfile = {};
+      user.authorProfile.bio = bioText;
+    }
+    if (website !== undefined) {
+      user.website = website;
+      if (!user.authorProfile) user.authorProfile = {};
+      user.authorProfile.website = website;
+    }
+    if (socialLinks) {
+      user.socialLinks = { ...user.socialLinks, ...socialLinks };
+      if (!user.authorProfile) user.authorProfile = {};
+      user.authorProfile.socialLinks = { ...user.authorProfile.socialLinks, ...socialLinks };
+    }
     if (publisherImprint !== undefined) user.publisherImprint = publisherImprint;
-    if (authorAvatar !== undefined) {
-      user.authorAvatar = authorAvatar;
+
+    const chosenAvatar = authorAvatar || avatar;
+    if (chosenAvatar !== undefined) {
+      user.authorAvatar = chosenAvatar;
+      if (!user.authorProfile) user.authorProfile = {};
+      user.authorProfile.avatar = chosenAvatar;
       if (!user.avatar || user.avatar === "/images/profile-avatar.png") {
-        user.avatar = authorAvatar;
+        user.avatar = chosenAvatar;
       }
     }
     if (location !== undefined) user.location = location;
     if (payment) user.payment = { ...user.payment, ...payment };
 
-    // Ensure user is recognized as an author
+    // Ensure user is marked as an author
     if (!user.isAuthor && user.role !== "admin") {
       user.isAuthor = true;
     }
@@ -73,14 +96,17 @@ export const updateAuthorProfile = async (req, res) => {
 
 export const submitAuthorVerification = async (req, res) => {
   try {
-    const { documentTitle, documentUrl, documentFile, fileName, fileType } = req.body;
+    const { documentTitle, documentUrl, documentFile, fileName, fileType, idDocUrl, degreeDocUrl, fullName } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, message: "Author not found", data: null });
     }
 
     user.authorVerificationStatus = "pending";
-    const filePayload = documentUrl || documentFile;
+    if (!user.authorProfile) user.authorProfile = {};
+    user.authorProfile.verificationStatus = "pending";
+
+    const filePayload = documentUrl || documentFile || idDocUrl;
     if (documentTitle && filePayload) {
       user.authorVerificationDocuments.push({
         title: documentTitle,
@@ -90,6 +116,14 @@ export const submitAuthorVerification = async (req, res) => {
         uploadedAt: new Date(),
       });
     }
+
+    user.authorProfile.verificationDocs = {
+      fullName: fullName || user.fullName,
+      idDocUrl: idDocUrl || filePayload || user.authorProfile.verificationDocs?.idDocUrl || null,
+      degreeDocUrl: degreeDocUrl || user.authorProfile.verificationDocs?.degreeDocUrl || null,
+      submittedAt: new Date(),
+      reviewNote: "",
+    };
 
     if (!user.isAuthor && user.role !== "admin") {
       user.isAuthor = true;
@@ -102,6 +136,7 @@ export const submitAuthorVerification = async (req, res) => {
       data: {
         verificationStatus: user.authorVerificationStatus,
         documents: user.authorVerificationDocuments,
+        authorProfile: user.authorProfile,
       },
     });
   } catch (error) {
@@ -140,12 +175,19 @@ export const submitBook = async (req, res) => {
       manuscriptUrl,
       sampleChapterUrl,
       images,
+      image,
       price,
       originalPrice,
       rentalPrice,
       allowExchanges,
       status,
     } = req.body;
+
+    const bookImages = Array.isArray(images) && images.length > 0
+      ? images
+      : image
+      ? [image]
+      : ["https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg"];
 
     const book = await Book.create({
       sellerId: req.user._id,
@@ -165,7 +207,7 @@ export const submitBook = async (req, res) => {
       originalPrice: Number(originalPrice) || Number(price) || 0,
       rentalPrice: Number(rentalPrice) || 0,
       allowExchanges: allowExchanges !== undefined ? allowExchanges : true,
-      images: Array.isArray(images) && images.length > 0 ? images : ["https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg"],
+      images: bookImages,
       manuscriptUrl: manuscriptUrl || "",
       sampleChapterUrl: sampleChapterUrl || "",
       isAuthorOriginal: true,
@@ -229,7 +271,11 @@ export const getCoupons = async (req, res) => {
 
 export const createCoupon = async (req, res) => {
   try {
-    const { code, discountType, discountValue, applicableBooks, expiresAt, maxUses } = req.body;
+    const { code, discountType, discountValue, applicableBooks, expiresAt, maxUses, minPurchase } = req.body;
+
+    if (!code || discountValue === undefined) {
+      return res.status(400).json({ success: false, message: "Coupon code and discount value are required", data: null });
+    }
 
     const existing = await Coupon.findOne({ code: code.toUpperCase() });
     if (existing) {
@@ -244,6 +290,7 @@ export const createCoupon = async (req, res) => {
       applicableBooks: Array.isArray(applicableBooks) ? applicableBooks : [],
       expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       maxUses: Number(maxUses) || 100,
+      minPurchase: Number(minPurchase) || 0,
       usedCount: 0,
       isActive: true,
     });
@@ -266,7 +313,11 @@ export const toggleCouponStatus = async (req, res) => {
     coupon.isActive = !coupon.isActive;
     await coupon.save();
 
-    return res.status(200).json({ success: true, message: `Coupon ${coupon.isActive ? "activated" : "paused"}`, data: coupon });
+    return res.status(200).json({
+      success: true,
+      message: `Coupon ${coupon.isActive ? "activated" : "deactivated"} successfully`,
+      data: coupon,
+    });
   } catch (error) {
     console.error("Toggle coupon status error:", error);
     return res.status(500).json({ success: false, message: error.message, data: null });
@@ -280,7 +331,7 @@ export const deleteCoupon = async (req, res) => {
     if (!coupon) {
       return res.status(404).json({ success: false, message: "Coupon not found", data: null });
     }
-    return res.status(200).json({ success: true, message: "Coupon deleted successfully", data: { id } });
+    return res.status(200).json({ success: true, message: "Coupon deleted successfully", data: null });
   } catch (error) {
     console.error("Delete coupon error:", error);
     return res.status(500).json({ success: false, message: error.message, data: null });
@@ -315,6 +366,7 @@ export const validateCoupon = async (req, res) => {
         discountType: coupon.discountType,
         discountValue: coupon.discountValue,
         applicableBooks: coupon.applicableBooks,
+        minPurchase: coupon.minPurchase || 0,
       },
     });
   } catch (error) {
@@ -407,7 +459,15 @@ export const getEarnings = async (req, res) => {
     const myBooks = await Book.find({ sellerId: req.user._id });
     const bookIds = myBooks.map((b) => b._id);
 
-    const orders = await Order.find({ bookId: { $in: bookIds } }).populate("bookId").populate("buyerId", "fullName email");
+    const orders = await Order.find({
+      $or: [
+        { sellerId: req.user._id },
+        { bookId: { $in: bookIds } },
+        { "items.bookId": { $in: bookIds } },
+      ],
+      paymentStatus: "Completed",
+    }).populate("bookId").populate("buyerId", "fullName email");
+
     const payouts = await Payout.find({ userId: req.user._id }).sort({ createdAt: -1 });
 
     const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
@@ -483,12 +543,20 @@ export const getDashboardStats = async (req, res) => {
     const myBooks = await Book.find({ sellerId: req.user._id });
     const bookIds = myBooks.map((b) => b._id);
 
-    const orders = await Order.find({ bookId: { $in: bookIds } }).populate("bookId").sort({ createdAt: -1 });
+    const orders = await Order.find({
+      $or: [
+        { sellerId: req.user._id },
+        { bookId: { $in: bookIds } },
+        { "items.bookId": { $in: bookIds } },
+      ],
+      paymentStatus: "Completed",
+    }).populate("bookId").sort({ createdAt: -1 });
+
     const activeCampaigns = await Campaign.countDocuments({ authorId: req.user._id, status: "active" });
 
     const totalSales = orders.length;
     const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
-    const totalReaders = new Set(orders.map((o) => o.buyerId?.toString())).size;
+    const totalReaders = new Set(orders.map((o) => (o.buyerId ? o.buyerId.toString() : "anon"))).size;
 
     return res.status(200).json({
       success: true,
@@ -512,10 +580,70 @@ export const getAnalytics = async (req, res) => {
   try {
     const myBooks = await Book.find({ sellerId: req.user._id });
     const bookIds = myBooks.map((b) => b._id);
-    const orders = await Order.find({ bookId: { $in: bookIds } });
 
+    const orderMatch = {
+      $or: [
+        { sellerId: req.user._id },
+        { bookId: { $in: bookIds } },
+        { "items.bookId": { $in: bookIds } },
+      ],
+      paymentStatus: "Completed",
+    };
+
+    const orders = await Order.find(orderMatch).sort({ createdAt: -1 });
     const totalSales = orders.length;
     const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
+
+    // 30-day daily revenue time-series aggregation
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const dailyRevenue = await Order.aggregate([
+      {
+        $match: {
+          ...orderMatch,
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          revenue: { $sum: "$amount" },
+          salesCount: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          revenue: 1,
+          salesCount: 1,
+        },
+      },
+    ]);
+
+    // Calculate sales per book
+    const bookSalesMap = {};
+    orders.forEach((o) => {
+      const bId = o.bookId ? o.bookId.toString() : (o.items?.[0]?.bookId?.toString() || "unknown");
+      if (!bookSalesMap[bId]) {
+        bookSalesMap[bId] = { sales: 0, revenue: 0 };
+      }
+      bookSalesMap[bId].sales += 1;
+      bookSalesMap[bId].revenue += o.amount || 0;
+    });
+
+    const topBooks = myBooks
+      .map((book) => ({
+        id: book._id,
+        title: book.title,
+        coverImage: book.images?.[0] || "",
+        views: book.views || 0,
+        sales: bookSalesMap[book._id.toString()]?.sales || 0,
+        revenue: bookSalesMap[book._id.toString()]?.revenue || 0,
+      }))
+      .sort((a, b) => b.sales - a.sales);
 
     return res.status(200).json({
       success: true,
@@ -524,6 +652,8 @@ export const getAnalytics = async (req, res) => {
         totalBooks: myBooks.length,
         totalSales,
         totalRevenue,
+        dailyRevenue,
+        topBooks,
         demographics: [
           { college: "IIT Bombay", readers: 48 },
           { college: "BITS Pilani", readers: 36 },
@@ -537,3 +667,8 @@ export const getAnalytics = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message, data: null });
   }
 };
+
+// Aliases for compatibility
+export const updateProfile = updateAuthorProfile;
+export const submitVerification = submitAuthorVerification;
+export const toggleCoupon = toggleCouponStatus;

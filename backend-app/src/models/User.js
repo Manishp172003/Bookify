@@ -4,31 +4,53 @@ const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true, unique: true },
-  location: { type: String, default: '' },
   password: { type: String, required: true },
 
-  // ---- Role-Based Access Control ----
-  // 'role' is the primary authorization field used by middleware.
-  // 'isAdmin' is kept for backward compatibility.
+  // ─── Role-Based Access Control ────────────────────────────────────────────
   role: {
     type: String,
     enum: ['student', 'author', 'admin'],
     default: 'student',
   },
-  isAdmin: { type: Boolean, default: false },
   isAuthor: { type: Boolean, default: false },
   adminCode: { type: String }, // 15-digit code for admin verification
 
-  // ---- OTP Verification Fields ----
+  // ─── Author Profile & Verification ────────────────────────────────────────
+  authorProfile: {
+    bio: { type: String, default: '' },
+    avatar: { type: String, default: null },
+    penName: { type: String, default: '' },
+    website: { type: String, default: '' },
+    socialLinks: {
+      twitter: { type: String, default: '' },
+      instagram: { type: String, default: '' },
+      github: { type: String, default: '' },
+    },
+    // Verification lifecycle: unverified → pending → verified | rejected
+    verificationStatus: {
+      type: String,
+      enum: ['unverified', 'pending', 'verified', 'rejected'],
+      default: 'unverified',
+    },
+    verificationDocs: {
+      fullName: { type: String, default: '' },
+      idDocUrl: { type: String, default: null },     // Cloudinary URL for govt ID
+      degreeDocUrl: { type: String, default: null }, // Cloudinary URL for degree
+      submittedAt: { type: Date, default: null },
+      reviewNote: { type: String, default: '' },     // Admin rejection reason
+    },
+  },
+
+  // ─── OTP Verification ────────────────────────────────────────────────────
   otp: { type: String, default: null },
   otpExpiry: { type: Date, default: null },
   isPhoneVerified: { type: Boolean, default: false },
 
-  // ---- Password Reset Fields ----
+  // ─── Password Reset ───────────────────────────────────────────────────────
   resetToken: { type: String, default: null },
   resetTokenExpiry: { type: Date, default: null },
 
-  // ---- Author Profile & Verification ----
+  // ─── Author Profile & Verification Fields ──────────────────────────────
   isVerified: { type: Boolean, default: false },
   authorVerificationStatus: {
     type: String,
@@ -56,21 +78,21 @@ const userSchema = new mongoose.Schema({
     },
   ],
 
-  // ---- Settings: Privacy ----
+  // ─── Settings: Privacy ───────────────────────────────────────────────────
   privacy: {
     showPhone: { type: Boolean, default: false },
     showHostel: { type: Boolean, default: true },
     requirePin: { type: Boolean, default: false },
   },
 
-  // ---- Settings: Address ----
+  // ─── Settings: Address ───────────────────────────────────────────────────
   address: {
     campus: { type: String, default: '' },
     hostelBlock: { type: String, default: '' },
     meetupSpot: { type: String, default: '' },
   },
 
-  // ---- Settings: Payment ----
+  // ─── Settings: Payment ───────────────────────────────────────────────────
   payment: {
     mode: { type: String, enum: ['UPI', 'Bank Account'], default: 'UPI' },
     upiId: { type: String, default: '' },
@@ -79,7 +101,7 @@ const userSchema = new mongoose.Schema({
     ifscCode: { type: String, default: '' },
   },
 
-  // ---- Settings: Notification Preferences ----
+  // ─── Settings: Notifications ─────────────────────────────────────────────
   notifications: {
     priceDrops: { type: Boolean, default: true },
     orderPurchases: { type: Boolean, default: true },

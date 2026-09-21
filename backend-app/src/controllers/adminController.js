@@ -2,6 +2,7 @@ import Book from "../models/Book.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
 import Coupon from "../models/Coupon.js";
+import { sendVerificationStatusEmail } from "../services/emailService.js";
 
 // ─── Platform Metrics ─────────────────────────────────────────────────────────
 
@@ -181,30 +182,55 @@ export const getAuthorsForVerification = async (req, res) => {
 
 export const verifyAuthor = async (req, res) => {
   try {
-    const { status, isVerified } = req.body;
-    const verifiedFlag = isVerified !== undefined ? isVerified : status === "verified";
-    const verificationStatus = status || (verifiedFlag ? "verified" : "rejected");
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        isVerified: verifiedFlag,
-        authorVerificationStatus: verificationStatus,
-        isAuthor: true,
-      },
-      { new: true }
-    ).select("-password -otp -resetToken");
-
+    const { isVerified, status, reviewNote } = req.body;
+    const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, message: "Author not found", data: null });
     }
 
+    const verifiedFlag = isVerified !== undefined ? isVerified : status === "verified";
+    const verificationStatus = status || (verifiedFlag ? "verified" : "rejected");
+
+    user.isVerified = verificationStatus === "verified";
+    user.authorVerificationStatus = verificationStatus;
+    user.isAuthor = true;
+
+    if (!user.authorProfile) user.authorProfile = {};
+    user.authorProfile.verificationStatus = verificationStatus;
+
+    if (reviewNote !== undefined) {
+      if (!user.authorProfile.verificationDocs) user.authorProfile.verificationDocs = {};
+      user.authorProfile.verificationDocs.reviewNote = reviewNote;
+    }
+
+    await user.save();
+
+    // Send transactional status email to author
+    if (user.email) {
+      sendVerificationStatusEmail(user.email, verificationStatus, user.fullName, reviewNote).catch((err) =>
+        console.error("Verification email dispatch error:", err.message)
+      );
+    }
+
+    const cleanUser = user.toObject();
+    delete cleanUser.password;
+    delete cleanUser.otp;
+    delete cleanUser.resetToken;
+
     return res.status(200).json({
       success: true,
-      message: `Author verification status updated to ${verificationStatus}`,
-      data: user,
+      message: `Author verification status set to ${verificationStatus}`,
+      data: cleanUser,
     });
   } catch (error) {
+    console.error("Verify author error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to verify author",
+      data: null,
+    });
+  }
+};
     console.error("Verify author error:", error);
     return res.status(500).json({
       success: false,
