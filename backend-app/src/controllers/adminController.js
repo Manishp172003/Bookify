@@ -231,14 +231,6 @@ export const verifyAuthor = async (req, res) => {
     });
   }
 };
-    console.error("Verify author error:", error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Failed to verify author",
-      data: null,
-    });
-  }
-};
 
 // ─── Dispute Handling ─────────────────────────────────────────────────────────
 
