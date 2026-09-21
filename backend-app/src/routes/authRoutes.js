@@ -15,15 +15,23 @@ import {
   updatePayment,
   updateNotifications,
   updatePassword,
+  switchRole,
+  googleLogin,
+  githubLogin,
 } from "../controllers/authController.js";
 
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// ─── Role Switch Route (Protected) ────────────────────────────────────────────
+router.post("/switch-role", verifyToken, switchRole);
+
 // ─── Public Auth Routes ───────────────────────────────────────────────────────
 router.post("/register", register);
 router.post("/login", login);
+router.post("/google", googleLogin);
+router.post("/github", githubLogin);
 router.post("/admin-login", adminLogin);
 router.post("/logout", logout);
 

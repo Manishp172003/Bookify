@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import app from "./app.js";
 import connectDB from "./config/db.js";
 import { initSocket } from "./config/socket.js";
+import { startEscrowCron } from "./jobs/escrowRelease.js";
 
 dotenv.config();
 
@@ -26,6 +27,9 @@ const startServer = async () => {
       );
       console.log("=========================================");
     });
+
+    // Start background scheduled jobs
+    startEscrowCron();
   } catch (error) {
     console.error("❌ Failed to start server:", error.message);
     process.exit(1);

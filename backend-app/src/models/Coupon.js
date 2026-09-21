@@ -15,13 +15,18 @@ const couponSchema = new mongoose.Schema({
 
   discountType: {
     type: String,
-    enum: ["Flat", "Percentage"],
+    enum: ["Flat", "Percentage", "fixed", "percentage", "flat"],
     required: true,
   },
 
   discountValue: {
     type: Number,
     required: true,
+  },
+
+  minPurchase: {
+    type: Number,
+    default: 0,
   },
 
   applicableBooks: [
