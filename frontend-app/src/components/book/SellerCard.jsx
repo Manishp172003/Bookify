@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { MapPin, Star, Shield, Package, UserCheck, ShieldCheck } from "lucide-react";
 import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
