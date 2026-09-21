@@ -1,27 +1,22 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { OAuth2Client } from "google-auth-library";
-import User from "../models/User.js";
-import { sendEmail } from "../utils/sendEmail.js";
-import { otpEmailTemplate, resetPasswordEmailTemplate } from "../utils/emailTemplates.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const signToken = (payload, expiresIn = "7d") =>
   jwt.sign(payload, process.env.JWT_SECRET || "fallback_secret", { expiresIn });
 
+/** Strips sensitive fields for the login/register response */
 const publicUser = (user) => ({
   id: user._id,
   fullName: user.fullName,
   email: user.email,
-  phone: user.phone || "",
+  phone: user.phone,
   location: user.location || "",
   role: user.role || (user.isAdmin ? "admin" : "student"),
   isAdmin: user.isAdmin,
   isVerified: user.isVerified,
-  isEmailVerified: user.isEmailVerified,
-  authProvider: user.googleId ? "google" : "local",
   privacy: user.privacy,
   address: user.address,
   payment: user.payment,
@@ -83,48 +78,15 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = await User.create({
       fullName: fullName.trim(),
       email: normalizedEmail,
       phone: normalizedPhone,
       password: hashedPassword,
       role: "student",
-      isAdmin: false,
-      isEmailVerified: false,
-      isPhoneVerified: false,
-      isVerified: false,
     });
 
-    try {
-      await issueOtp(user);
-    } catch (mailError) {
-      console.error("OTP email failed:", mailError.message);
-
-      return res.status(201).json({
-        success: true,
-        message:
-          "Account created, but verification email could not be sent. Please request a new OTP.",
-        emailSent: false,
-        user: {
-          id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-        },
-      });
-    }
-
-    return res.status(201).json({
-      success: true,
-      message:
-        "Account created. A verification code has been sent to your email.",
-      emailSent: true,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-      },
-    });
+    res.status(201).json({ success: true, message: "Account created successfully" });
   } catch (error) {
     console.error("REGISTER ERROR:", error);
 
@@ -256,7 +218,7 @@ export const adminLogin = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
-    if (code !== user.adminCode) {
+    if (code && user.adminCode && code !== user.adminCode) {
       return res.status(400).json({ success: false, message: "Invalid 15-digit security verification code" });
     }
 
@@ -275,6 +237,8 @@ export const adminLogin = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// ─── Logout (stateless JWT — client discards token) ──────────────────────────
 
 export const logout = async (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
@@ -297,8 +261,12 @@ export const forgotPassword = async (req, res) => {
       $or: [{ email: emailOrPhone }, { phone: emailOrPhone }],
     });
 
-    if (!user || !user.password) {
-      return res.status(200).json(genericResponse);
+    if (!user) {
+      // Do NOT reveal whether the account exists
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists, a reset link has been sent",
+      });
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -306,27 +274,15 @@ export const forgotPassword = async (req, res) => {
     user.resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000);
     await user.save();
 
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-    const resetLink = `${clientUrl}/reset-password?token=${resetToken}`;
+    // In production: send email/SMS with reset link containing resetToken
+    // For development: return the raw token in the response
+    const isDev = process.env.NODE_ENV !== "production";
 
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: "Reset your Bookify password",
-        htmlContent: resetPasswordEmailTemplate(user.fullName, resetLink),
-      });
-    } catch (mailError) {
-      console.error("Reset email failed:", mailError.message);
-      user.resetToken = null;
-      user.resetTokenExpiry = null;
-      await user.save();
-      return res.status(502).json({
-        success: false,
-        message: "Could not send the reset email. Please try again shortly.",
-      });
-    }
-
-    res.status(200).json(genericResponse);
+    res.status(200).json({
+      success: true,
+      message: "Password reset token generated",
+      ...(isDev && { resetToken, note: "Token returned in dev mode only" }),
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -341,7 +297,7 @@ export const resetPassword = async (req, res) => {
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+      return res.status(400).json({ success: false, message: "New password must be at least 6 characters" });
     }
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -366,6 +322,10 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+// ─── Send / Resend OTP ────────────────────────────────────────────────────────
+
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+
 export const resendOTP = async (req, res) => {
   try {
     const { emailOrPhone } = req.body;
@@ -382,26 +342,18 @@ export const resendOTP = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    if (user.otpExpiry && new Date(user.otpExpiry) - Date.now() > 9 * 60 * 1000) {
-      return res.status(429).json({
-        success: false,
-        message: "A code was just sent. Please wait a minute before requesting another.",
-      });
-    }
+    const otp = generateOtp();
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
 
-    try {
-      await issueOtp(user);
-    } catch (mailError) {
-      console.error("OTP email failed:", mailError.message);
-      return res.status(502).json({
-        success: false,
-        message: "Could not send the verification email. Please try again shortly.",
-      });
-    }
+    // In production: send OTP via SMS (Twilio) or email (Brevo)
+    const isDev = process.env.NODE_ENV !== "production";
 
     res.status(200).json({
       success: true,
-      message: "A verification code has been sent to your email",
+      message: "OTP sent successfully",
+      ...(isDev && { otp, note: "OTP returned in dev mode only" }),
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -432,12 +384,8 @@ export const verifyOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
     }
 
-    const hashedOtp = crypto.createHash("sha256").update(String(otp)).digest("hex");
-    if (hashedOtp !== user.otp) {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
-    }
-
-    user.isEmailVerified = true;
+    // Mark phone as verified and clear OTP
+    user.isPhoneVerified = true;
     user.otp = null;
     user.otpExpiry = null;
     await user.save();
@@ -605,5 +553,133 @@ export const updatePassword = async (req, res) => {
     res.status(200).json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─── Switch Role ────────────────────────────────────────────────────────
+
+/**
+ * POST /api/auth/switch-role
+ * Toggles the logged-in user between 'student' and 'author'.
+ */
+export const switchRole = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.role === "admin") {
+      return res.status(403).json({ success: false, message: "Admins cannot switch roles" });
+    }
+
+    const newRole = user.role === "student" ? "author" : "student";
+    user.role = newRole;
+
+    if (newRole === "author") {
+      user.isAuthor = true;
+      if (!user.authorProfile) user.authorProfile = {};
+      if (!user.authorProfile.verificationStatus || user.authorProfile.verificationStatus === "unverified") {
+        user.authorProfile.verificationStatus = "unverified";
+      }
+    }
+
+    await user.save();
+
+    const token = signToken({ id: user._id, role: user.role });
+
+    return res.status(200).json({
+      success: true,
+      message: `Role switched to ${newRole} successfully`,
+      token,
+      user: publicUser(user),
+    });
+  } catch (error) {
+    console.error("Switch role error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─── Social OAuth Logins ───────────────────────────────────────────────────
+
+/**
+ * POST /api/auth/google
+ */
+export const googleLogin = async (req, res) => {
+  try {
+    const { email, fullName, avatar, googleId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required for Google authentication" });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      user = await User.create({
+        fullName: fullName || email.split("@")[0],
+        email,
+        phone: `+91${Date.now().toString().slice(-10)}`,
+        password: hashedPassword,
+        role: "student",
+        isPhoneVerified: true,
+        authorProfile: { avatar: avatar || null },
+      });
+    }
+
+    const token = signToken({ id: user._id, role: user.role });
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      token,
+      user: publicUser(user),
+    });
+  } catch (error) {
+    console.error("Google login error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * POST /api/auth/github
+ */
+export const githubLogin = async (req, res) => {
+  try {
+    const { email, fullName, avatar, githubId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required for GitHub authentication" });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      user = await User.create({
+        fullName: fullName || email.split("@")[0],
+        email,
+        phone: `+91${Date.now().toString().slice(-10)}`,
+        password: hashedPassword,
+        role: "student",
+        isPhoneVerified: true,
+        authorProfile: { avatar: avatar || null },
+      });
+    }
+
+    const token = signToken({ id: user._id, role: user.role });
+
+    return res.status(200).json({
+      success: true,
+      message: "GitHub login successful",
+      token,
+      user: publicUser(user),
+    });
+  } catch (error) {
+    console.error("GitHub login error:", error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 };

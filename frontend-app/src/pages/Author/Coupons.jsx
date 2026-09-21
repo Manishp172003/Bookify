@@ -20,7 +20,7 @@ import {
   toggleCouponStatus,
   deleteCoupon
 } from "../../services/couponService";
-import { getAuthorPublishedBooks } from "../../services/bookService";
+import { authorService } from "../../services/authorService";
 
 function AuthorCoupons() {
   const [coupons, setCoupons] = useState([]);
@@ -28,9 +28,7 @@ function AuthorCoupons() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState(null);
-
-  // Strictly ONLY published books by the current author
-  const authorPublishedBooks = getAuthorPublishedBooks();
+  const [authorPublishedBooks, setAuthorPublishedBooks] = useState([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -50,6 +48,10 @@ function AuthorCoupons() {
 
   useEffect(() => {
     loadCoupons();
+    authorService.getMyBooks().then((myBooks) => {
+      const published = (myBooks || []).filter((b) => b.status === "Published" || !b.status);
+      setAuthorPublishedBooks(published);
+    });
   }, []);
 
   const handleOpenCreateModal = () => {
@@ -206,7 +208,7 @@ function AuthorCoupons() {
           <span className="font-extrabold text-[#6C4BF4] block mb-0.5">
             Author Coupon Scope Notice:
           </span>
-          Coupons created in your Author Portal apply <strong className="text-[#6C4BF4]">ONLY to books published by you</strong> (such as <em>"The Silent Mind"</em> and <em>"Inner Peace"</em>). Un-published drafts, manuscripts under review, and third-party books are automatically excluded.
+          Coupons created in your Author Portal apply <strong className="text-[#6C4BF4]">ONLY to books published by you</strong>. Drafts, manuscripts under review, and third-party books are automatically excluded.
         </div>
       </div>
 
@@ -525,15 +527,26 @@ function AuthorCoupons() {
         </div>
       ) : (
         <div className="text-center py-16 bg-white rounded-2xl border border-[#E7E4F2] space-y-3">
-          <div className="h-12 w-12 bg-[#F8F7FF] rounded-full flex items-center justify-center mx-auto text-gray-400">
-            <Ticket size={24} />
+          <div className="h-14 w-14 bg-[#F8F7FF] rounded-full flex items-center justify-center mx-auto text-[#6C4BF4]">
+            <Ticket size={28} />
           </div>
           <h3 className="text-lg font-bold text-[#17152A] font-poppins">
-            No author coupons found
+            {coupons.length === 0 ? "No coupons created yet" : "No matching coupons found"}
           </h3>
-          <p className="text-xs text-[#6B6880] max-w-xs mx-auto">
-            Create a coupon for your published books to offer special discounts to your readers.
+          <p className="text-xs text-[#6B6880] max-w-sm mx-auto">
+            {coupons.length === 0
+              ? "You haven't created any promotional discount coupons yet. Click 'Create Book Coupon' above to create custom offers for your readers."
+              : "No coupons matched your search or status filter. Try clearing your filters."}
           </p>
+          {coupons.length === 0 && (
+            <button
+              onClick={handleOpenCreateModal}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 mt-2"
+            >
+              <Plus size={16} />
+              <span>Create Your First Coupon</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -670,32 +683,40 @@ function AuthorCoupons() {
                   <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-1">
                     Select From Your Published Books:
                   </label>
-                  <div className="space-y-2">
-                    {authorPublishedBooks.map((book) => {
-                      const isChecked = formData.applicableBooks.includes(
-                        book.title
-                      );
-                      return (
-                        <label
-                          key={book.id}
-                          className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer text-xs font-semibold text-[#17152A]"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() =>
-                              handleBookSelectionChange(book.title)
-                            }
-                            className="h-4 w-4 accent-[#6C4BF4]"
-                          />
-                          <span>{book.title}</span>
-                          <span className="text-[10px] text-[#22C55E] bg-[#E8F8EE] px-2 py-0.5 rounded-full font-bold ml-auto">
-                            Published
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  {authorPublishedBooks.length > 0 ? (
+                    <div className="space-y-2">
+                      {authorPublishedBooks.map((book) => {
+                        const isChecked = formData.applicableBooks.includes(
+                          book.title
+                        );
+                        return (
+                          <label
+                            key={book.id}
+                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer text-xs font-semibold text-[#17152A]"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() =>
+                                handleBookSelectionChange(book.title)
+                              }
+                              className="h-4 w-4 accent-[#6C4BF4]"
+                            />
+                            <span>{book.title}</span>
+                            <span className="text-[10px] text-[#22C55E] bg-[#E8F8EE] px-2 py-0.5 rounded-full font-bold ml-auto">
+                              Published
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-white rounded-lg border border-dashed border-gray-300 text-center">
+                      <p className="text-xs text-gray-500 font-medium">
+                        You don't have any published books yet. This coupon will apply to all your published books once you publish your first title.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

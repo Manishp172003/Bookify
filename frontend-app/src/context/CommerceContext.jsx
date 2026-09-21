@@ -32,6 +32,8 @@ const INITIAL_CONVERSATIONS = [
   {
     id: "chat_1",
     active: true,
+    requestStatus: "accepted",
+    requesterId: "usr_me",
     seller: {
       id: "usr_aarav",
       name: "Aarav Sharma",
@@ -92,6 +94,8 @@ const INITIAL_CONVERSATIONS = [
   {
     id: "chat_2",
     active: true,
+    requestStatus: "accepted",
+    requesterId: "usr_me",
     seller: {
       id: "usr_sneha",
       name: "Sneha Reddy",
@@ -131,6 +135,47 @@ const INITIAL_CONVERSATIONS = [
         sender: "them",
         text: "Yes, I can ship it by this evening through campus speed post.",
         time: "Yesterday 4:20 PM",
+        status: "delivered"
+      }
+    ]
+  },
+  {
+    id: "chat_3",
+    active: true,
+    requestStatus: "pending",
+    requesterId: "usr_vikram",
+    seller: {
+      id: "usr_vikram",
+      name: "Vikram Malhotra",
+      avatar: null,
+      online: true,
+      verified: true,
+      college: "VNIT Nagpur",
+      responseTime: "< 15 min",
+      rating: "4.7",
+      reviewsCount: 9,
+      memberSince: "May 2024",
+      totalSales: 8,
+      location: "Nagpur, Maharashtra"
+    },
+    book: {
+      id: 103,
+      title: "Cracking the Coding Interview (6th Edition)",
+      author: "Gayle Laakmann McDowell",
+      price: 499,
+      originalPrice: 999,
+      condition: "Like New",
+      image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300"
+    },
+    lastMessage: "Hi! I want to purchase this book for campus meetup. Can we finalize the deal?",
+    lastMessageTimestamp: "11:15 AM",
+    unreadCount: 1,
+    messages: [
+      {
+        id: "m7",
+        sender: "them",
+        text: "Hi! I want to purchase this book for campus meetup. Can we finalize the deal?",
+        time: "11:15 AM",
         status: "delivered"
       }
     ]
@@ -322,6 +367,8 @@ export function CommerceProvider({ children }) {
 
           const updatedChat = {
             ...target,
+            requestStatus: data.requestStatus || target.requestStatus || "accepted",
+            requesterId: data.requesterId || target.requesterId,
             lastMessage: incomingMsg.text,
             lastMessageTimestamp: incomingMsg.time,
             unreadCount: isMe || isCurrentlyViewing ? 0 : (target.unreadCount || 0) + 1,
@@ -336,6 +383,8 @@ export function CommerceProvider({ children }) {
         const newThread = {
           id: data.conversationId,
           active: true,
+          requestStatus: data.requestStatus || "pending",
+          requesterId: data.requesterId || (isMe ? (currentUser?.id || "usr_me") : (data.senderId || "peer_user")),
           seller: {
             id: isMe ? (data.recipientId || "peer_user") : (data.senderId || "peer_user"),
             name: isMe ? "Aarav Sharma" : (data.senderName || "Student Peer"),
@@ -362,6 +411,28 @@ export function CommerceProvider({ children }) {
       if (!isMe) {
         showToast(`New message from ${data.senderName || "Student"}: "${data.text.slice(0, 30)}..."`, "info");
       }
+    });
+
+    newSocket.on("chatRequestAccepted", (data) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === data.conversationId
+            ? { ...c, requestStatus: "accepted" }
+            : c
+        )
+      );
+      showToast("Chat request accepted! You can now chat in real-time.", "success");
+    });
+
+    newSocket.on("chatRequestDeclined", (data) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === data.conversationId
+            ? { ...c, requestStatus: "rejected" }
+            : c
+        )
+      );
+      showToast("Chat request was declined.", "info");
     });
 
     return () => {
@@ -696,6 +767,8 @@ export function CommerceProvider({ children }) {
       savedUser = JSON.parse(localStorage.getItem("bookify_user"));
     } catch {}
 
+    const myUserId = savedUser?.id || "usr_me";
+
     if (existing) {
       if (customInitialMessage) {
         const newMsg = {
@@ -713,10 +786,12 @@ export function CommerceProvider({ children }) {
             text: customInitialMessage,
             senderName: savedUser?.fullName || "Student Buyer",
             senderEmail: savedUser?.email || "buyer@bookify.com",
-            senderId: savedUser?.id || "usr_buyer",
+            senderId: myUserId,
             recipientId: seller.id,
             book: book,
-            time: newMsg.time
+            time: newMsg.time,
+            requestStatus: existing.requestStatus || "accepted",
+            requesterId: existing.requesterId || myUserId
           });
         }
       }
@@ -724,10 +799,12 @@ export function CommerceProvider({ children }) {
       return existing.id;
     }
 
-    const initialMsgText = customInitialMessage || `Hi! Thanks for showing interest in my book "${book.title}". Let me know if you have any questions!`;
+    const initialMsgText = customInitialMessage || `Hi! I am interested in your book "${book.title}". Is it still available?`;
     const newChat = {
       id: newChatId,
       active: true,
+      requestStatus: "pending",
+      requesterId: myUserId,
       seller: {
         id: seller.id,
         name: seller.name,
@@ -747,10 +824,10 @@ export function CommerceProvider({ children }) {
       messages: [
         {
           id: `msg_init_${Date.now()}`,
-          sender: customInitialMessage ? "me" : "them",
+          sender: "me",
           text: initialMsgText,
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          status: "read"
+          status: "sent"
         }
       ]
     };
@@ -758,23 +835,75 @@ export function CommerceProvider({ children }) {
     setConversations((prev) => [newChat, ...prev]);
     setActiveConversationId(newChatId);
 
+    const initPayload = {
+      id: newChat.messages[0].id,
+      conversationId: newChatId,
+      text: initialMsgText,
+      senderName: savedUser?.fullName || "Student Buyer",
+      senderEmail: savedUser?.email || "buyer@bookify.com",
+      senderId: myUserId,
+      recipientId: seller.id,
+      recipientName: seller.name,
+      book: newChat.book,
+      time: newChat.messages[0].time,
+      requestStatus: "pending",
+      requesterId: myUserId
+    };
+
+    chatService.sendMessage(initPayload);
+
     if (socket && socket.connected) {
       socket.emit("joinChat", newChatId);
-      if (customInitialMessage) {
-        socket.emit("sendChatMessage", {
-          conversationId: newChatId,
-          text: customInitialMessage,
-          senderName: savedUser?.fullName || "Student Buyer",
-          senderEmail: savedUser?.email || "buyer@bookify.com",
-          senderId: savedUser?.id || "usr_buyer",
-          recipientId: seller.id,
-          book: book,
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-        });
-      }
+      socket.emit("sendChatMessage", initPayload);
     }
 
     return newChatId;
+  };
+
+  const acceptChatRequest = async (conversationId) => {
+    try {
+      await chatService.acceptRequest(conversationId);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, requestStatus: "accepted" } : c
+        )
+      );
+      if (socket && socket.connected) {
+        socket.emit("chatRequestAccepted", { conversationId });
+      }
+      showToast("Chat request accepted! You can now chat in real-time.", "success");
+    } catch (err) {
+      console.error("Failed to accept chat request:", err);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, requestStatus: "accepted" } : c
+        )
+      );
+      showToast("Chat request accepted!", "success");
+    }
+  };
+
+  const declineChatRequest = async (conversationId) => {
+    try {
+      await chatService.declineRequest(conversationId);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, requestStatus: "rejected" } : c
+        )
+      );
+      if (socket && socket.connected) {
+        socket.emit("chatRequestDeclined", { conversationId });
+      }
+      showToast("Chat request declined.", "info");
+    } catch (err) {
+      console.error("Failed to decline chat request:", err);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, requestStatus: "rejected" } : c
+        )
+      );
+      showToast("Chat request declined.", "info");
+    }
   };
 
   const selectConversation = (id) => {
@@ -849,7 +978,9 @@ export function CommerceProvider({ children }) {
       recipientId: conv?.seller?.id || null,
       recipientName: conv?.seller?.name || "Peer User",
       book: conv?.book || null,
-      time: newMessage.time
+      time: newMessage.time,
+      requestStatus: conv?.requestStatus || "accepted",
+      requesterId: conv?.requesterId || null
     };
 
     // 1. Persist directly to MongoDB via REST API
@@ -925,12 +1056,15 @@ export function CommerceProvider({ children }) {
         selectConversation,
         startOrGetConversation,
         sendMessage,
+        acceptChatRequest,
+        declineChatRequest,
         unreadMessagesCount,
         showToast,
         wishlistItems,
         toggleWishlist,
         toggleWishlistAlert,
-        isBookWishlisted
+        isBookWishlisted,
+        socket
       }}
     >
       {children}

@@ -17,6 +17,7 @@ import {
   Globe,
   User,
   X,
+  Feather,
 } from "lucide-react";
 
 const menuItems = [
@@ -32,11 +33,12 @@ const menuItems = [
   { label: "Want Board", icon: Lightbulb, path: "/dashboard/want-board" },
   { label: "Profile", icon: User, path: "/profile" },
   { label: "Settings", icon: Settings, path: "/settings" },
+  { label: "Author Studio", icon: Feather, path: "/author", isAuthorStudio: true },
 ];
 
 function DashboardSidebar() {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, hasAuthorProfile, activateAuthorProfile } = useAuth();
   const { unreadMessagesCount } = useCommerce();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -52,6 +54,8 @@ function DashboardSidebar() {
       window.removeEventListener("close-sidebar", handleClose);
     };
   }, []);
+
+  const visibleMenuItems = menuItems.filter((item) => !item.isAuthorStudio || hasAuthorProfile);
 
   const renderSidebarContent = (onItemClick) => (
     <>
@@ -71,7 +75,7 @@ function DashboardSidebar() {
 
       {/* Navigation */}
       <nav className="flex-grow space-y-1 overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           const badgeValue =
@@ -87,21 +91,50 @@ function DashboardSidebar() {
               to={item.path}
               onClick={onItemClick}
               className={`flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-200 cursor-pointer ${
-                isActive
+                item.isAuthorStudio
+                  ? "bg-white/10 text-[#FFD166] border border-white/20 hover:bg-white/20 mt-2"
+                  : isActive
                   ? "bg-white/15 text-white"
                   : "text-white/80 hover:text-white hover:bg-white/5"
               }`}
             >
-              <Icon size={18} className={isActive ? "text-white" : "text-white/80"} />
+              <Icon size={18} className={item.isAuthorStudio ? "text-[#FFD166]" : isActive ? "text-white" : "text-white/80"} />
               <span className="flex-1 text-left">{item.label}</span>
-              {badgeValue !== null && badgeValue !== undefined && (
+              {item.isAuthorStudio ? (
+                <span className="flex h-4.5 items-center justify-center rounded-full bg-[#FFD166] px-1.5 text-[9px] font-extrabold text-[#17152A]">
+                  STUDIO ✍️
+                </span>
+              ) : badgeValue !== null && badgeValue !== undefined ? (
                 <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-[#6C4BF4] transition-all">
                   {badgeValue}
                 </span>
-              )}
+              ) : null}
             </Link>
           );
         })}
+
+        {/* Optional Student-to-Author Activation Card for single-role students */}
+        {!hasAuthorProfile && (
+          <div className="mt-4 p-3 rounded-2xl bg-white/10 border border-white/15 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#FFD166] mb-1">
+              <Feather size={13} />
+              <span>Publish on Bookify?</span>
+            </div>
+            <p className="text-[11px] text-white/80 leading-relaxed mb-2">
+              Publish study notes or books to earn student royalties.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (onItemClick) onItemClick();
+                activateAuthorProfile();
+              }}
+              className="w-full py-1.5 px-2.5 bg-[#FFD166] text-[#17152A] rounded-xl text-xs font-bold hover:bg-[#ffe082] transition shadow-xs cursor-pointer"
+            >
+              Activate Author Studio
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* Logout Footer Section */}

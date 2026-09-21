@@ -1,36 +1,43 @@
 import express from "express";
 
 import {
-  getMyBooks,
-  submitBook,
-  updateBook,
-  deleteBook,
-  getAnalytics,
-  getEarnings,
-  requestPayout,
-  getPayouts,
-  createCoupon,
-  getCoupons,
-  toggleCoupon,
-  deleteCoupon,
-  validateCoupon,
-  updateAuthorProfile,
-} from "../controllers/authorController.js";
+  register,
+  login,
+  adminLogin,
+  logout,
+  forgotPassword,
+  resetPassword,
+  verifyOTP,
+  resendOTP,
+  getUserSettings,
+  updateProfile,
+  updatePrivacy,
+  updateAddress,
+  updatePayment,
+  updateNotifications,
+  updatePassword,
+} from "../controllers/authController.js";
 
 import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/coupons/validate", protect, validateCoupon);
+// ─── Role Switch Route (Protected) ────────────────────────────────────────────
+router.post("/switch-role", verifyToken, switchRole);
 
-router.use(protect, authorize("author", "admin"));
+// ─── Public Auth Routes ───────────────────────────────────────────────────────
+router.post("/register", register);
+router.post("/login", login);
+router.post("/admin-login", adminLogin);
+router.post("/logout", logout);
 
-router.put("/profile", updateAuthorProfile);
+// ─── Password Reset (public — no auth token required) ────────────────────────
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
-router.get("/my-books", getMyBooks);
-router.post("/books", submitBook);
-router.put("/books/:id", updateBook);
-router.delete("/books/:id", deleteBook);
+// ─── OTP Verification (public) ───────────────────────────────────────────────
+router.post("/verify-otp", verifyOTP);
+router.post("/resend-otp", resendOTP);
 
 router.get("/analytics", getAnalytics);
 

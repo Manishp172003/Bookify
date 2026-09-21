@@ -16,17 +16,16 @@ const couponSchema = new mongoose.Schema(
       trim: true,
     },
 
-    discountType: {
-      type: String,
-      enum: ["percentage", "flat"],
-      required: true,
-    },
+  discountType: {
+    type: String,
+    enum: ["Flat", "Percentage"],
+    required: true,
+  },
 
-    discountValue: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
+  discountValue: {
+    type: Number,
+    required: true,
+  },
 
     appliesTo: {
       type: String,

@@ -43,23 +43,11 @@ const bookSchema = new mongoose.Schema(
     location: { type: String, trim: true },
     isPublisherListing: { type: Boolean, default: false },
   },
-  { timestamps: true }
-);
 
-bookSchema.index({ sellerId: 1, status: 1 });
-bookSchema.index({ title: "text", author: "text", description: "text" });
-
-bookSchema.pre("validate", function (next) {
-  if (this.transactionMode === "Sell" && (!this.price || this.price <= 0)) {
-    return next(new Error("A book listed for sale needs a price above zero"));
-  }
-  if (this.transactionMode === "Rent" && !this.rentalDurationWeeks) {
-    return next(new Error("A rental listing needs a rental duration"));
-  }
-  if (this.transactionMode === "Donate") {
-    this.price = 0;
-  }
-  next();
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const Book = mongoose.model("Book", bookSchema);

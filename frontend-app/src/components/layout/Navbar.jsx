@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Menu, X, Heart, MessageSquare, ShoppingCart } from "lucide-react";
+import { Search, Menu, X, Heart, MessageSquare, ShoppingCart, Feather } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useCommerce } from "../../context/CommerceContext";
 
@@ -10,7 +10,7 @@ export default function Navbar() {
   
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, hasAuthorProfile } = useAuth();
   const { cartCount, wishlistItems, unreadMessagesCount } = useCommerce();
 
   const handleSearchSubmit = (e) => {
@@ -144,15 +144,28 @@ export default function Navbar() {
 
 
 
+                {/* Author Studio Switcher (Only visible to users who have an active Author Profile) */}
+                {hasAuthorProfile && (
+                  <Link 
+                    to="/author" 
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold hover:opacity-95 shadow-xs shadow-[#6C4BF4]/25 transition duration-200 cursor-pointer shrink-0 ml-1"
+                    title="Switch to Author Studio"
+                  >
+                    <Feather size={13} className="shrink-0" />
+                    <span className="hidden xl:inline">Author Studio</span>
+                    <span className="xl:hidden">Author</span>
+                  </Link>
+                )}
+
                 {/* User Avatar */}
                 <Link 
                   to="/profile" 
                   className="flex h-9.5 w-9.5 items-center justify-center rounded-full overflow-hidden border border-gray-150 bg-[#EDE7FF] cursor-pointer hover:ring-2 hover:ring-[#6C4BF4]/30 hover:opacity-90 transition shrink-0 ml-1"
                   title={user?.fullName || "Profile"}
                 >
-                  {user?.avatar && user.avatar !== "/images/profile-avatar.png" ? (
+                  {user?.authorAvatar || (user?.avatar && user.avatar !== "/images/profile-avatar.png") ? (
                     <img
-                      src={user.avatar}
+                      src={user.authorAvatar || user.avatar}
                       alt={user?.fullName || "Profile"}
                       className="h-full w-full object-cover"
                     />
@@ -235,7 +248,20 @@ export default function Navbar() {
 
           {/* Mobile User Controls */}
           {isAuthenticated ? (
-            <div className="flex items-center justify-between">
+            <div className="space-y-3">
+              {/* Mobile Author Studio Switcher (Only visible to users who have an active Author Profile) */}
+              {hasAuthorProfile && (
+                <Link
+                  to="/author"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#6C4BF4] to-[#8B6FF5] text-white text-xs font-bold shadow-xs transition"
+                >
+                  <Feather size={14} />
+                  <span>Switch to Author Studio</span>
+                </Link>
+              )}
+
+              <div className="flex items-center justify-between">
               <div className="flex gap-2">
                 <Link 
                   to="/dashboard/wishlist" 
@@ -282,10 +308,11 @@ export default function Navbar() {
               >
                 <span className="text-xs font-bold text-[#17152A]">{user?.name || "My Profile"}</span>
                 <div className="h-8 w-8 rounded-full overflow-hidden border border-gray-100 bg-[#EDE7FF]">
-                  <img src={user?.avatar || "/images/profile-avatar.png"} alt="Avatar" className="h-full w-full object-cover" />
+                  <img src={user?.authorAvatar || user?.avatar || "/images/profile-avatar.png"} alt="Avatar" className="h-full w-full object-cover" />
                 </div>
               </Link>
             </div>
+          </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 pt-1">
               <Link 

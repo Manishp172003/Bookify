@@ -2,6 +2,7 @@ import Book from "../models/Book.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
 import Coupon from "../models/Coupon.js";
+import { sendVerificationStatusEmail } from "../services/emailService.js";
 
 // ─── Platform Metrics ─────────────────────────────────────────────────────────
 
@@ -133,18 +134,94 @@ export const getUsers = async (req, res) => {
   }
 };
 
+export const getAuthorsForVerification = async (req, res) => {
+  try {
+    const authors = await User.find({
+      $or: [
+        { role: "author" },
+        { isAuthor: true },
+        { authorVerificationStatus: { $in: ["pending", "verified", "rejected"] } },
+        { "authorVerificationDocuments.0": { $exists: true } },
+      ],
+    })
+      .select("-password -otp -resetToken")
+      .sort({ updatedAt: -1 });
+
+    const authorIds = authors.map((a) => a._id);
+    const booksCount = await Book.aggregate([
+      { $match: { sellerId: { $in: authorIds } } },
+      { $group: { _id: "$sellerId", count: { $sum: 1 } } },
+    ]);
+    const bookCountMap = {};
+    booksCount.forEach((b) => {
+      bookCountMap[b._id.toString()] = b.count;
+    });
+
+    const enriched = authors.map((a) => {
+      const plain = a.toObject();
+      return {
+        ...plain,
+        booksCount: bookCountMap[a._id.toString()] || 0,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Authors for verification fetched successfully",
+      data: enriched,
+    });
+  } catch (error) {
+    console.error("Get authors for verification error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch authors for verification",
+      data: null,
+    });
+  }
+};
+
 export const verifyAuthor = async (req, res) => {
   try {
-    const { isVerified } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { isVerified, role: "author", isAdmin: false },
-      { new: true }
-    ).select("-password");
+    const { isVerified, status, reviewNote } = req.body;
+    const user = await User.findById(req.params.id);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found", data: null });
+      return res.status(404).json({ success: false, message: "Author not found", data: null });
     }
-    return res.status(200).json({ success: true, message: "Author verification updated", data: user });
+
+    const verifiedFlag = isVerified !== undefined ? isVerified : status === "verified";
+    const verificationStatus = status || (verifiedFlag ? "verified" : "rejected");
+
+    user.isVerified = verificationStatus === "verified";
+    user.authorVerificationStatus = verificationStatus;
+    user.isAuthor = true;
+
+    if (!user.authorProfile) user.authorProfile = {};
+    user.authorProfile.verificationStatus = verificationStatus;
+
+    if (reviewNote !== undefined) {
+      if (!user.authorProfile.verificationDocs) user.authorProfile.verificationDocs = {};
+      user.authorProfile.verificationDocs.reviewNote = reviewNote;
+    }
+
+    await user.save();
+
+    // Send transactional status email to author
+    if (user.email) {
+      sendVerificationStatusEmail(user.email, verificationStatus, user.fullName, reviewNote).catch((err) =>
+        console.error("Verification email dispatch error:", err.message)
+      );
+    }
+
+    const cleanUser = user.toObject();
+    delete cleanUser.password;
+    delete cleanUser.otp;
+    delete cleanUser.resetToken;
+
+    return res.status(200).json({
+      success: true,
+      message: `Author verification status set to ${verificationStatus}`,
+      data: cleanUser,
+    });
   } catch (error) {
     console.error("Verify author error:", error);
     return res.status(500).json({

@@ -1,6 +1,5 @@
-// React imports omitted as hooks are not used directly
 import { Link } from "react-router-dom";
-import { Star, Heart } from "lucide-react";
+import { Star, Heart, ShieldCheck } from "lucide-react";
 import { useCommerce } from "../../context/CommerceContext";
 
 const modeLabels = {
@@ -53,9 +52,14 @@ export default function BookCard({ book, layout = "grid" }) {
             <h3 className="font-[family-name:var(--font-heading)] font-semibold text-bookify-text group-hover:text-bookify-purple transition-colors line-clamp-1">
               {book.title}
             </h3>
-            <p className="text-bookify-text-secondary text-sm mt-0.5">
-              {book.author}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-bookify-text-secondary text-sm">
+                {book.author}
+              </p>
+              {(book.isVerifiedAuthor || book.isAuthorOriginal || book.seller?.isVerified || book.seller?.authorVerificationStatus === "verified") && (
+                <ShieldCheck size={13} className="text-emerald-500 shrink-0" title="Verified Author" />
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-xs font-semibold text-bookify-purple bg-bookify-light-purple px-2 py-0.5 rounded">
                 {book.condition?.replace(/_/g, " ")}
@@ -142,9 +146,14 @@ export default function BookCard({ book, layout = "grid" }) {
           </h3>
 
           {/* Author */}
-          <p className="text-[11px] text-bookify-text-secondary line-clamp-1 mb-2">
-            {book.author}
-          </p>
+          <div className="flex items-center gap-1 mb-2">
+            <p className="text-[11px] text-bookify-text-secondary truncate">
+              {book.author}
+            </p>
+            {(book.isVerifiedAuthor || book.isAuthorOriginal || book.seller?.isVerified || book.seller?.authorVerificationStatus === "verified") && (
+              <ShieldCheck size={12} className="text-emerald-500 shrink-0" title="Verified Author" />
+            )}
+          </div>
         </div>
 
         {/* Price & Discount Row */}

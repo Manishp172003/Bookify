@@ -2,33 +2,59 @@ import mongoose from "mongoose";
 
 const payoutSchema = new mongoose.Schema(
   {
-    authorId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
       index: true,
     },
 
-    amount: { type: Number, required: true, min: 1 },
+    userRole: {
+      type: String,
+      enum: ["author", "student"],
+      default: "author",
+    },
 
-    method: {
+    amount: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    payoutMethod: {
       type: String,
       enum: ["UPI", "Bank Account"],
       required: true,
     },
 
-    destination: { type: String, required: true },
+    payoutDetails: {
+      upiId: { type: String, default: "" },
+      accountName: { type: String, default: "" },
+      accountNumber: { type: String, default: "" },
+      ifscCode: { type: String, default: "" },
+    },
 
     status: {
       type: String,
-      enum: ["Requested", "Processing", "Paid", "Rejected"],
-      default: "Requested",
+      enum: ["pending", "processing", "completed", "rejected"],
+      default: "pending",
       index: true,
     },
 
-    reference: { type: String },
-    note: { type: String },
-    processedAt: { type: Date },
+    transactionRef: {
+      type: String,
+      default: "",
+    },
+
+    adminNotes: {
+      type: String,
+      default: "",
+    },
+
+    processedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
