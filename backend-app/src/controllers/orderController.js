@@ -1,11 +1,7 @@
-import crypto from "crypto";
-import Razorpay from "razorpay";
-
 import Order from "../models/Order.js";
 import Book from "../models/Book.js";
 import User from "../models/User.js";
 import { getIO } from "../config/socket.js";
-import { sendOrderReceiptEmail } from "../services/emailService.js";
 
 const getRazorpay = () => {
   if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
@@ -18,29 +14,22 @@ const getRazorpay = () => {
 };
 
 export const createOrder = async (req, res) => {
+  let order = null;
+
   try {
     const {
       bookId,
-      items,
-      orderType = "Buy",
+      orderType,
       amount,
-      subtotal,
-      deliveryFee = 0,
-      platformFee = 0,
-      discount = 0,
       paymentMethod,
       shippingAddress,
-      courier,
       couponCode,
-      expectedDeliveryDate,
     } = req.body;
 
-    const targetBookId = bookId || items?.[0]?.bookId;
-
-    if (!targetBookId || !amount || !paymentMethod) {
+    if (!bookId || !orderType || !amount || !paymentMethod) {
       return res.status(400).json({
         success: false,
-        message: "Book ID (or items), amount and paymentMethod are required",
+        message: "bookId, orderType, amount and paymentMethod are required",
         data: null,
       });
     }
@@ -137,17 +126,31 @@ export const createOrder = async (req, res) => {
       },
     ];
 
-    const order = await Order.create({
+    const finalAmount = getOrderAmount(book, orderType);
+
+    if (!Number.isFinite(finalAmount) || finalAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Book price is invalid",
+        data: null,
+      });
+    }
+
+    if (paymentMethod === "Razorpay" && finalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Online payment is not possible for a free book",
+        data: null,
+      });
+    }
+
+    order = await Order.create({
       buyerId: req.user._id,
       sellerId: book.sellerId,
       bookId: book._id,
       items: orderItems,
       orderType,
-      subtotal: subtotal !== undefined ? Number(subtotal) : Number(amount),
-      deliveryFee: Number(deliveryFee),
-      platformFee: Number(platformFee),
-      discount: Number(discount),
-      amount: Number(amount),
+      amount,
       paymentMethod,
       shippingAddress,
       courier: courier || { name: "", trackingNumber: "" },
@@ -159,26 +162,24 @@ export const createOrder = async (req, res) => {
     let razorpayOrder = null;
 
     if (paymentMethod === "Razorpay") {
-      const razorpayInstance = getRazorpay();
-      if (razorpayInstance) {
-        razorpayOrder = await razorpayInstance.orders.create({
-          amount: Math.round(Number(amount) * 100),
-          currency: "INR",
-          receipt: order._id.toString(),
-        });
-        order.razorpayOrderId = razorpayOrder.id;
-      } else {
-        order.razorpayOrderId = `order_mock_${Date.now()}`;
-        razorpayOrder = { id: order.razorpayOrderId, amount: Math.round(Number(amount) * 100), currency: "INR" };
-      }
+      razorpayOrder = await createRazorpayOrder({
+        amount: finalAmount,
+        receipt: order._id.toString(),
+      });
+
+      order.razorpayOrderId = razorpayOrder.id;
       await order.save();
     }
 
     book.status = orderType === "Rent" ? "Rented" : "Pending";
+
     await book.save();
 
     const io = getIO();
-    io.to(`user:${book.sellerId.toString()}`).emit("newOrder", { order });
+
+    io.to(`user:${book.sellerId.toString()}`).emit("newOrder", {
+      order,
+    });
 
     return res.status(201).json({
       success: true,
@@ -186,10 +187,15 @@ export const createOrder = async (req, res) => {
       data: {
         order,
         razorpayOrder,
+        razorpayKeyId:
+          paymentMethod === "Razorpay"
+            ? process.env.RAZORPAY_KEY_ID
+            : null,
       },
     });
   } catch (error) {
     console.error("Create order error:", error);
+
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to create order",
@@ -200,9 +206,17 @@ export const createOrder = async (req, res) => {
 
 export const verifyPayment = async (req, res) => {
   try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
 
-    if (!orderId) {
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature
+    ) {
       return res.status(400).json({
         success: false,
         message: "orderId is required",
@@ -210,70 +224,60 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(orderId);
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(
+        `${razorpay_order_id}|${razorpay_payment_id}`
+      )
+      .digest("hex");
 
-    if (!order) {
-      return res.status(404).json({
+    if (
+      !crypto.timingSafeEqual(
+        Buffer.from(expectedSignature),
+        Buffer.from(razorpay_signature)
+      )
+    ) {
+      return res.status(400).json({
         success: false,
-        message: "Order not found",
+        message: "Payment verification failed",
         data: null,
       });
     }
 
-    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+    const order = await Order.findOne({
+      razorpayOrderId: razorpay_order_id,
+      buyerId: req.user._id,
+    });
 
-    if (razorpaySecret && razorpaySignature && razorpayOrderId && razorpayPaymentId) {
-      const generatedSignature = crypto
-        .createHmac("sha256", razorpaySecret)
-        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-        .digest("hex");
-
-      if (generatedSignature !== razorpaySignature) {
-        order.paymentStatus = "Failed";
-        await order.save();
-        return res.status(400).json({
+      if (!existingOrder) {
+        return res.status(404).json({
           success: false,
-          message: "Payment verification failed. Invalid signature.",
+          message: "Order not found",
           data: null,
         });
       }
-    }
 
+    order.razorpayPaymentId = razorpay_payment_id;
     order.paymentStatus = "Completed";
-    order.razorpayPaymentId = razorpayPaymentId || `pay_mock_${Date.now()}`;
-    order.escrowStatus = "Held";
     order.status = "Processing";
-
-    // Update timeline stages
-    if (order.timeline && order.timeline.length > 0) {
-      order.timeline.forEach((t) => {
-        if (t.stage === "Placed") {
-          t.completed = true;
-          t.active = false;
-        } else if (t.stage === "Processing") {
-          t.completed = true;
-          t.active = true;
-          t.date = new Date();
-        }
-      });
-    }
 
     await order.save();
 
     const io = getIO();
-    io.to(`user:${order.buyerId.toString()}`).emit("paymentSuccess", { order });
-    io.to(`user:${order.sellerId.toString()}`).emit("paymentSuccess", { order });
 
-    // Send transactional order receipt email to buyer
-    User.findById(order.buyerId)
-      .then((buyer) => {
-        if (buyer && buyer.email) {
-          sendOrderReceiptEmail(buyer.email, order, buyer.fullName).catch((err) =>
-            console.error("Order receipt email dispatch error:", err.message)
-          );
-        }
-      })
-      .catch((err) => console.error("Error looking up buyer for email:", err.message));
+    io.to(`user:${order.buyerId.toString()}`).emit(
+      "paymentSuccess",
+      {
+        order,
+      }
+    );
+
+    io.to(`user:${order.sellerId.toString()}`).emit(
+      "paymentSuccess",
+      {
+        order,
+      }
+    );
 
     return res.status(200).json({
       success: true,
@@ -294,8 +298,7 @@ export const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ buyerId: req.user._id })
       .populate("bookId")
-      .populate("sellerId", "fullName email phone")
-      .populate("items.bookId")
+      .populate("sellerId", "fullName email")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -317,8 +320,7 @@ export const getMySales = async (req, res) => {
   try {
     const orders = await Order.find({ sellerId: req.user._id })
       .populate("bookId")
-      .populate("buyerId", "fullName email phone")
-      .populate("items.bookId")
+      .populate("buyerId", "fullName email")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -425,35 +427,7 @@ export const updateOrderStatus = async (req, res) => {
 
     order.status = status;
 
-    if (courier) {
-      order.courier = {
-        name: courier.name || order.courier?.name || "",
-        trackingNumber: courier.trackingNumber || order.courier?.trackingNumber || "",
-      };
-    }
-
-    // Update timeline stages
-    const stageOrder = ["Placed", "Processing", "Shipped", "Delivered"];
-    const currentIdx = stageOrder.indexOf(status);
-
-    if (order.timeline && order.timeline.length > 0 && currentIdx !== -1) {
-      order.timeline.forEach((t) => {
-        const stageIdx = stageOrder.indexOf(t.stage);
-        if (stageIdx !== -1) {
-          if (stageIdx < currentIdx) {
-            t.completed = true;
-            t.active = false;
-          } else if (stageIdx === currentIdx) {
-            t.completed = true;
-            t.active = true;
-            t.date = new Date();
-          } else {
-            t.completed = false;
-            t.active = false;
-          }
-        }
-      });
-    }
+    await order.save();
 
     if (status === "Delivered") {
       order.deliveredAt = new Date();
@@ -471,9 +445,21 @@ export const updateOrderStatus = async (req, res) => {
     await order.save();
 
     const io = getIO();
-    io.to(`order:${order._id.toString()}`).emit("orderStatusUpdated", order);
-    io.to(`user:${order.buyerId.toString()}`).emit("orderStatusUpdated", order);
-    io.to(`user:${order.sellerId.toString()}`).emit("orderStatusUpdated", order);
+
+    io.to(`order:${order._id.toString()}`).emit(
+      "orderStatusUpdated",
+      order
+    );
+
+    io.to(`user:${order.buyerId.toString()}`).emit(
+      "orderStatusUpdated",
+      order
+    );
+
+    io.to(`user:${order.sellerId.toString()}`).emit(
+      "orderStatusUpdated",
+      order
+    );
 
     return res.status(200).json({
       success: true,

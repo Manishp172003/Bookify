@@ -1,135 +1,47 @@
 import mongoose from "mongoose";
 
-const bookSchema = new mongoose.Schema({
-  sellerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-
-  title: {
-    type: String,
-    required: true,
-  },
-
-  author: {
-    type: String,
-    required: true,
-  },
-
-  isbn: {
-    type: String,
-  },
-
-  category: {
-    type: String,
-    required: true,
-  },
-
-  condition: {
-    type: String,
-    enum: ["New", "Like New", "Good", "Fair"],
-    required: true,
-  },
-
-  transactionMode: {
-    type: String,
-    enum: ["Sell", "Rent", "Exchange", "Donate"],
-    required: true,
-  },
-
-  price: {
-    type: Number,
-    default: 0,
-  },
-
-  originalPrice: {
-    type: Number,
-  },
-
-  rentalDurationWeeks: {
-    type: Number,
-  },
-
-  description: {
-    type: String,
-  },
-
-  images: [
-    {
-      type: String,
+const bookSchema = new mongoose.Schema(
+  {
+    sellerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
-  ],
 
-  status: {
-    type: String,
-    enum: ["Active", "Pending", "Sold", "Rented", "Inactive"],
-    default: "Active",
-  },
+    title: { type: String, required: true, trim: true },
+    author: { type: String, required: true, trim: true },
+    isbn: { type: String, trim: true },
+    category: { type: String, required: true, trim: true },
 
-  location: {
-    type: String,
-  },
-
-  isPublisherListing: {
-    type: Boolean,
-    default: false,
-  },
-
-  // ---- Author Specific Publishing Fields ----
-  isAuthorOriginal: {
-    type: Boolean,
-    default: false,
-  },
-  subtitle: {
-    type: String,
-    default: "",
-  },
-  subCategory: {
-    type: String,
-    default: "",
-  },
-  language: {
-    type: String,
-    default: "English",
-  },
-  tags: [
-    {
+    condition: {
       type: String,
+      enum: ["New", "Like New", "Good", "Fair"],
+      required: true,
     },
-  ],
-  bookType: {
-    type: String,
-    enum: ["eBook", "Paperback", "Hardcover"],
-    default: "eBook",
-  },
-  manuscriptUrl: {
-    type: String,
-    default: "",
-  },
-  sampleChapterUrl: {
-    type: String,
-    default: "",
-  },
-  rentalPrice: {
-    type: Number,
-    default: 0,
-  },
-  allowExchanges: {
-    type: Boolean,
-    default: true,
-  },
-  salesCount: {
-    type: Number,
-    default: 0,
-  },
-  totalEarnings: {
-    type: Number,
-    default: 0,
-  },
-  adminReviewNotes: {
-    type: String,
-    default: "",
+
+    transactionMode: {
+      type: String,
+      enum: ["Sell", "Rent", "Exchange", "Donate"],
+      required: true,
+    },
+
+    price: { type: Number, default: 0, min: 0 },
+    originalPrice: { type: Number, min: 0 },
+    rentalDurationWeeks: { type: Number, min: 1 },
+
+    description: { type: String, trim: true },
+    images: [{ type: String }],
+
+    status: {
+      type: String,
+      enum: ["Active", "Pending", "Sold", "Rented", "Inactive"],
+      default: "Active",
+      index: true,
+    },
+
+    location: { type: String, trim: true },
+    isPublisherListing: { type: Boolean, default: false },
   },
 
   createdAt: {

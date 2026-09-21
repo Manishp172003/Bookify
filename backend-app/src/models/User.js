@@ -1,98 +1,50 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true, unique: true },
+  location: { type: String, default: '' },
   password: { type: String, required: true },
 
-  // ─── Role-Based Access Control ────────────────────────────────────────────
+  // ---- Role-Based Access Control ----
+  // 'role' is the primary authorization field used by middleware.
+  // 'isAdmin' is kept for backward compatibility.
   role: {
     type: String,
     enum: ['student', 'author', 'admin'],
     default: 'student',
   },
-  isAuthor: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false },
   adminCode: { type: String }, // 15-digit code for admin verification
 
-  // ─── Author Profile & Verification ────────────────────────────────────────
-  authorProfile: {
-    bio: { type: String, default: '' },
-    avatar: { type: String, default: null },
-    penName: { type: String, default: '' },
-    website: { type: String, default: '' },
-    socialLinks: {
-      twitter: { type: String, default: '' },
-      instagram: { type: String, default: '' },
-      github: { type: String, default: '' },
-    },
-    // Verification lifecycle: unverified → pending → verified | rejected
-    verificationStatus: {
-      type: String,
-      enum: ['unverified', 'pending', 'verified', 'rejected'],
-      default: 'unverified',
-    },
-    verificationDocs: {
-      fullName: { type: String, default: '' },
-      idDocUrl: { type: String, default: null },     // Cloudinary URL for govt ID
-      degreeDocUrl: { type: String, default: null }, // Cloudinary URL for degree
-      submittedAt: { type: Date, default: null },
-      reviewNote: { type: String, default: '' },     // Admin rejection reason
-    },
-  },
-
-  // ─── OTP Verification ────────────────────────────────────────────────────
+  // ---- OTP Verification Fields ----
   otp: { type: String, default: null },
   otpExpiry: { type: Date, default: null },
   isPhoneVerified: { type: Boolean, default: false },
 
-  // ─── Password Reset ───────────────────────────────────────────────────────
+  // ---- Password Reset Fields ----
   resetToken: { type: String, default: null },
   resetTokenExpiry: { type: Date, default: null },
 
-  // ─── Author Profile & Verification Fields ──────────────────────────────
+  // ---- Author Verification ----
   isVerified: { type: Boolean, default: false },
-  authorVerificationStatus: {
-    type: String,
-    enum: ['unverified', 'pending', 'verified', 'rejected'],
-    default: 'unverified',
-  },
-  authorBio: { type: String, default: '' },
-  penName: { type: String, default: '' },
-  website: { type: String, default: '' },
-  socialLinks: {
-    linkedin: { type: String, default: '' },
-    twitter: { type: String, default: '' },
-    goodreads: { type: String, default: '' },
-    instagram: { type: String, default: '' },
-  },
-  publisherImprint: { type: String, default: '' },
-  authorAvatar: { type: String, default: null },
-  authorVerificationDocuments: [
-    {
-      title: { type: String },
-      url: { type: String },
-      fileName: { type: String, default: '' },
-      fileType: { type: String, default: '' },
-      uploadedAt: { type: Date, default: Date.now },
-    },
-  ],
 
-  // ─── Settings: Privacy ───────────────────────────────────────────────────
+  // ---- Settings: Privacy ----
   privacy: {
     showPhone: { type: Boolean, default: false },
     showHostel: { type: Boolean, default: true },
     requirePin: { type: Boolean, default: false },
   },
 
-  // ─── Settings: Address ───────────────────────────────────────────────────
+  // ---- Settings: Address ----
   address: {
     campus: { type: String, default: '' },
     hostelBlock: { type: String, default: '' },
     meetupSpot: { type: String, default: '' },
   },
 
-  // ─── Settings: Payment ───────────────────────────────────────────────────
+  // ---- Settings: Payment ----
   payment: {
     mode: { type: String, enum: ['UPI', 'Bank Account'], default: 'UPI' },
     upiId: { type: String, default: '' },
@@ -101,7 +53,7 @@ const userSchema = new mongoose.Schema({
     ifscCode: { type: String, default: '' },
   },
 
-  // ─── Settings: Notifications ─────────────────────────────────────────────
+  // ---- Settings: Notification Preferences ----
   notifications: {
     priceDrops: { type: Boolean, default: true },
     orderPurchases: { type: Boolean, default: true },
@@ -111,16 +63,16 @@ const userSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-// Pre-save hook: keep isAdmin and role in sync
-userSchema.pre('save', async function () {
-  if (this.isModified('role')) {
-    this.isAdmin = this.role === 'admin';
-  } else if (this.isModified('isAdmin')) {
-    if (this.isAdmin && this.role !== 'admin') {
-      this.role = 'admin';
+userSchema.pre("save", function () {
+  if (this.isModified("role")) {
+    this.isAdmin = this.role === "admin";
+  } else if (this.isModified("isAdmin")) {
+    if (this.isAdmin && this.role !== "admin") {
+      this.role = "admin";
     }
   }
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
+
 export default User;

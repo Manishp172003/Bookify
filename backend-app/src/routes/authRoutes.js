@@ -1,4 +1,5 @@
 import express from "express";
+
 import {
   register,
   login,
@@ -15,12 +16,9 @@ import {
   updatePayment,
   updateNotifications,
   updatePassword,
-  switchRole,
-  googleLogin,
-  githubLogin,
 } from "../controllers/authController.js";
 
-import { verifyToken } from "../middleware/authMiddleware.js";
+import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -30,8 +28,6 @@ router.post("/switch-role", verifyToken, switchRole);
 // ─── Public Auth Routes ───────────────────────────────────────────────────────
 router.post("/register", register);
 router.post("/login", login);
-router.post("/google", googleLogin);
-router.post("/github", githubLogin);
 router.post("/admin-login", adminLogin);
 router.post("/logout", logout);
 
@@ -43,13 +39,15 @@ router.post("/reset-password", resetPassword);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
 
-// ─── Settings Routes (Protected) ─────────────────────────────────────────────
-router.get("/settings", verifyToken, getUserSettings);
-router.put("/settings/profile", verifyToken, updateProfile);
-router.put("/settings/privacy", verifyToken, updatePrivacy);
-router.put("/settings/address", verifyToken, updateAddress);
-router.put("/settings/payment", verifyToken, updatePayment);
-router.put("/settings/notifications", verifyToken, updateNotifications);
-router.put("/settings/password", verifyToken, updatePassword);
+router.get("/analytics", getAnalytics);
+
+router.get("/earnings", getEarnings);
+router.get("/payouts", getPayouts);
+router.post("/payouts", requestPayout);
+
+router.get("/coupons", getCoupons);
+router.post("/coupons", createCoupon);
+router.patch("/coupons/:id/toggle", toggleCoupon);
+router.delete("/coupons/:id", deleteCoupon);
 
 export default router;
