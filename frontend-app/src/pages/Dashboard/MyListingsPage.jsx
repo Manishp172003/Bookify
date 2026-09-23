@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
+import { useCommerce } from '../../context/CommerceContext';
 import { listingService } from '../../services/listingService';
-import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu, Plus } from 'lucide-react';
+import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu, Plus, Package, AlertCircle } from 'lucide-react';
 
 export default function MyListingsPage() {
   const navigate = useNavigate();
+  const { orders } = useCommerce();
   const [listings, setListings] = useState(() => listingService.getAllListings());
   const [activeFilter, setActiveFilter] = useState('All');
+
+  const pendingOrdersCount = (orders || []).filter(
+    (o) => o.isSellerOrder && (o.status === 'placed' || o.status === 'Placed')
+  ).length;
 
   const reloadListings = () => {
     setListings(listingService.getAllListings());
@@ -89,6 +95,32 @@ export default function MyListingsPage() {
               + Create New Listing
             </button>
           </div>
+
+          {/* Pending Seller Confirmation Banner */}
+          {pendingOrdersCount > 0 && (
+            <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <Package size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-amber-900">
+                    {pendingOrdersCount} Order{pendingOrdersCount > 1 ? "s" : ""} Awaiting Your Confirmation!
+                  </h4>
+                  <p className="text-[11px] text-amber-700 mt-0.5">
+                    A peer has purchased a textbook from your listings. Confirm availability to prepare the package and dispatch via courier.
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                to="/dashboard/orders"
+                className="shrink-0 rounded-xl bg-[#6C4BF4] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#5B3DE0] transition cursor-pointer text-center"
+              >
+                Fulfill & Confirm Orders ➡️
+              </Link>
+            </div>
+          )}
 
           {/* Filter Tabs */}
           <div className="flex border-b border-gray-150 mb-6 gap-6 overflow-x-auto scrollbar-none">

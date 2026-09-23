@@ -827,6 +827,14 @@ export function CommerceProvider({ children }) {
       discount,
       total,
       address: selectedAddress,
+      isSellerOrder: true,
+      seller: cartItems[0]?.seller || { name: "Aarav Sharma", id: "usr_aarav" },
+      buyer: {
+        name: selectedAddress?.name || "Student Buyer",
+        phone: selectedAddress?.phone || "+91 98765 43210",
+        meetupSpot: selectedAddress?.meetupSpot || selectedAddress?.campus || "Campus Central Library Entrance",
+        hostelBlock: selectedAddress?.hostelBlock || selectedAddress?.street || "Hostel Block A, Room 204"
+      },
       courier: {
         name: isExpress ? "Campus Express Air / Courier" : "Campus Delivery Network",
         trackingNumber: `CN-${Math.floor(100000 + Math.random() * 900000)}-IN`,
