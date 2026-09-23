@@ -3,7 +3,10 @@ const API_BASE_URL = "http://localhost:5000/api/admin";
 const getAdminHeaders = () => {
   let token = null;
   try {
-    token = localStorage.getItem("token") || localStorage.getItem("bookify_token");
+    token =
+      localStorage.getItem("bookify_admin_token") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("bookify_token");
     if (!token) {
       const user = JSON.parse(localStorage.getItem("bookify_user") || "{}");
       token = user.token;
@@ -47,8 +50,12 @@ export const adminService = {
         const json = await res.json();
         return json.data || [];
       }
+      if (res.status === 403 || res.status === 401) {
+        throw new Error("Access Denied: You must be signed in with an Administrator account to view registered users.");
+      }
     } catch (err) {
       console.warn("Could not fetch users from server:", err);
+      throw err;
     }
     return [];
   },

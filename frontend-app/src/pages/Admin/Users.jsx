@@ -8,9 +8,12 @@ function Users() {
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [actionId, setActionId] = useState(null);
 
   const loadUsers = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await adminService.getUsers();
       if (Array.isArray(data)) {
@@ -38,6 +41,7 @@ function Users() {
       }
     } catch (err) {
       console.error("Failed to load users:", err);
+      setError(err.message || "Failed to load registered users from database.");
     } finally {
       setLoading(false);
     }
@@ -102,6 +106,21 @@ function Users() {
             />
           </div>
         </div>
+
+        {error && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-semibold">
+            <div className="flex items-center gap-2">
+              <ShieldAlert size={18} className="text-amber-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <a
+              href="/admin-login"
+              className="px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition whitespace-nowrap"
+            >
+              Sign In to Admin
+            </a>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-12">

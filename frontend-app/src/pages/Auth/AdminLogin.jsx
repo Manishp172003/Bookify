@@ -69,6 +69,7 @@ function AdminLogin() {
 
         // Save token & redirect to admin panel
         localStorage.setItem("token", data.token);
+        localStorage.setItem("bookify_admin_token", data.token);
         navigate("/admin");
       } catch (err) {
         setApiError(err.message);
