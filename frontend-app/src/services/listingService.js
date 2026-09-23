@@ -150,6 +150,40 @@ export const listingService = {
     return newListing;
   },
 
+  updateListing(id, updates) {
+    const listings = getStoredListings();
+    let updatedItem = null;
+    const updated = listings.map((item) => {
+      if (item.id === id) {
+        const cond = updates.condition || item.condition;
+        const conditionLabel =
+          cond === "like-new" ? "Like New" :
+          cond === "very-good" ? "Very Good" :
+          cond === "fair" ? "Fair" : "Good";
+
+        updatedItem = {
+          ...item,
+          ...updates,
+          condition: cond,
+          conditionLabel,
+          price: updates.price !== undefined ? Number(updates.price) : item.price,
+          mrp: updates.mrp !== undefined ? Number(updates.mrp) : item.mrp,
+        };
+        if (updates.cover) {
+          updatedItem.cover = updates.cover;
+          updatedItem.image = updates.cover;
+          if (!updatedItem.photos || updatedItem.photos.length === 0) {
+            updatedItem.photos = [updates.cover];
+          }
+        }
+        return updatedItem;
+      }
+      return item;
+    });
+    saveAndNotify(updated);
+    return updatedItem;
+  },
+
   updateStatus(id, newStatus) {
     const listings = getStoredListings();
     const updated = listings.map((item) =>
