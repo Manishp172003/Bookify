@@ -1332,6 +1332,7 @@ export function CommerceProvider({ children }) {
       : subtotal >= 999
       ? 0
       : 60;
+  const platformFee = cartItems.length > 0 ? 15 : 0;
   const discount = appliedCoupon
     ? appliedCoupon.discountType === "percentage"
       ? Math.round((subtotal * appliedCoupon.discountValue) / 100)
