@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { isTokenRevoked } from "../utils/tokenBlacklist.js";
 
 /**
  * protect — verifies JWT and attaches req.user.
@@ -20,6 +21,14 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: "Not authorized, no token",
+        data: null,
+      });
+    }
+
+    if (isTokenRevoked(token)) {
+      return res.status(401).json({
+        success: false,
+        message: "Session expired or token revoked. Please log in again.",
         data: null,
       });
     }

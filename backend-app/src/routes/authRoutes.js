@@ -21,27 +21,34 @@ import {
 } from "../controllers/authController.js";
 
 import { verifyToken } from "../middleware/authMiddleware.js";
+import { rateLimit } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: "Too many authentication attempts. Please wait 1 minute before retrying.",
+});
 
 // ─── Role Switch Route (Protected) ────────────────────────────────────────────
 router.post("/switch-role", verifyToken, switchRole);
 
 // ─── Public Auth Routes ───────────────────────────────────────────────────────
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", authLimiter, register);
+router.post("/login", authLimiter, login);
 router.post("/google", googleLogin);
 router.post("/github", githubLogin);
-router.post("/admin-login", adminLogin);
+router.post("/admin-login", authLimiter, adminLogin);
 router.post("/logout", logout);
 
 // ─── Password Reset (public — no auth token required) ────────────────────────
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", authLimiter, forgotPassword);
 router.post("/reset-password", resetPassword);
 
 // ─── OTP Verification (public) ───────────────────────────────────────────────
-router.post("/verify-otp", verifyOTP);
-router.post("/resend-otp", resendOTP);
+router.post("/verify-otp", authLimiter, verifyOTP);
+router.post("/resend-otp", authLimiter, resendOTP);
 
 // ─── Settings Routes (Protected) ─────────────────────────────────────────────
 router.get("/settings", verifyToken, getUserSettings);

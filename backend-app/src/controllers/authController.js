@@ -1,9 +1,10 @@
-﻿import crypto from "crypto";
+import crypto from "crypto";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { sendOtpEmail, sendPasswordResetEmail } from "../services/emailService.js";
 import { sendOTP } from "../utils/sendSms.js";
+import { revokeToken } from "../utils/tokenBlacklist.js";
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
 
@@ -180,7 +181,12 @@ export const adminLogin = async (req, res) => {
 // ─── Logout ──────────────────────────────────────────────────────────────────
 
 export const logout = async (req, res) => {
-  res.status(200).json({ success: true, message: "Logged out successfully" });
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    revokeToken(token);
+  }
+  res.status(200).json({ success: true, message: "Logged out successfully. Token revoked." });
 };
 
 // ─── Forgot Password ─────────────────────────────────────────────────────────
