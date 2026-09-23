@@ -18,6 +18,22 @@ const platformSettingSchema = new mongoose.Schema(
       type: Number,
       default: 48,
     },
+    deliveryFee: {
+      type: Number,
+      default: 40,
+    },
+    freeDeliveryThreshold: {
+      type: Number,
+      default: 499,
+    },
+    minWithdrawalAmount: {
+      type: Number,
+      default: 200,
+    },
+    disputeWindowDays: {
+      type: Number,
+      default: 3,
+    },
     allowRentals: {
       type: Boolean,
       default: true,
@@ -29,6 +45,18 @@ const platformSettingSchema = new mongoose.Schema(
     allowDonations: {
       type: Boolean,
       default: false,
+    },
+    allowCampusPickup: {
+      type: Boolean,
+      default: true,
+    },
+    announcementEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    announcementText: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }

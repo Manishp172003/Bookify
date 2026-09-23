@@ -603,9 +603,16 @@ export const getSettings = async (req, res) => {
         rentalCommission: 10,
         exchangeFee: 20,
         escrowDuration: 48,
+        deliveryFee: 40,
+        freeDeliveryThreshold: 499,
+        minWithdrawalAmount: 200,
+        disputeWindowDays: 3,
         allowRentals: true,
         allowExchanges: true,
         allowDonations: false,
+        allowCampusPickup: true,
+        announcementEnabled: false,
+        announcementText: "",
       });
     }
     return res.status(200).json({
@@ -630,9 +637,16 @@ export const updateSettings = async (req, res) => {
       rentalCommission,
       exchangeFee,
       escrowDuration,
+      deliveryFee,
+      freeDeliveryThreshold,
+      minWithdrawalAmount,
+      disputeWindowDays,
       allowRentals,
       allowExchanges,
       allowDonations,
+      allowCampusPickup,
+      announcementEnabled,
+      announcementText,
     } = req.body;
 
     let settings = await PlatformSetting.findOne();
@@ -643,9 +657,16 @@ export const updateSettings = async (req, res) => {
       if (rentalCommission !== undefined) settings.rentalCommission = Number(rentalCommission);
       if (exchangeFee !== undefined) settings.exchangeFee = Number(exchangeFee);
       if (escrowDuration !== undefined) settings.escrowDuration = Number(escrowDuration);
+      if (deliveryFee !== undefined) settings.deliveryFee = Number(deliveryFee);
+      if (freeDeliveryThreshold !== undefined) settings.freeDeliveryThreshold = Number(freeDeliveryThreshold);
+      if (minWithdrawalAmount !== undefined) settings.minWithdrawalAmount = Number(minWithdrawalAmount);
+      if (disputeWindowDays !== undefined) settings.disputeWindowDays = Number(disputeWindowDays);
       if (allowRentals !== undefined) settings.allowRentals = Boolean(allowRentals);
       if (allowExchanges !== undefined) settings.allowExchanges = Boolean(allowExchanges);
       if (allowDonations !== undefined) settings.allowDonations = Boolean(allowDonations);
+      if (allowCampusPickup !== undefined) settings.allowCampusPickup = Boolean(allowCampusPickup);
+      if (announcementEnabled !== undefined) settings.announcementEnabled = Boolean(announcementEnabled);
+      if (announcementText !== undefined) settings.announcementText = String(announcementText);
       await settings.save();
     }
 
@@ -659,6 +680,36 @@ export const updateSettings = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to update platform settings",
+      data: null,
+    });
+  }
+};
+
+export const getPublicSettings = async (req, res) => {
+  try {
+    let settings = await PlatformSetting.findOne();
+    if (!settings) {
+      settings = await PlatformSetting.create({});
+    }
+    return res.status(200).json({
+      success: true,
+      data: {
+        deliveryFee: settings.deliveryFee ?? 40,
+        freeDeliveryThreshold: settings.freeDeliveryThreshold ?? 499,
+        minWithdrawalAmount: settings.minWithdrawalAmount ?? 200,
+        disputeWindowDays: settings.disputeWindowDays ?? 3,
+        allowRentals: settings.allowRentals ?? true,
+        allowExchanges: settings.allowExchanges ?? true,
+        allowDonations: settings.allowDonations ?? false,
+        allowCampusPickup: settings.allowCampusPickup ?? true,
+        announcementEnabled: settings.announcementEnabled ?? false,
+        announcementText: settings.announcementText ?? "",
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch public settings",
       data: null,
     });
   }
