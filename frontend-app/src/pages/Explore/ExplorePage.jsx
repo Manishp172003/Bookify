@@ -688,9 +688,6 @@ export default function ExplorePage() {
             <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative z-10 max-w-2xl mx-auto">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold uppercase tracking-wider backdrop-blur-sm mb-4">
-                <Sparkles size={13} /> Weekly Book Drops & Deals
-              </span>
               <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-extrabold mb-3">
                 Subscribe for Newest Books & Campus Updates
               </h2>
