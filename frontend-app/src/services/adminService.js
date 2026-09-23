@@ -386,4 +386,59 @@ export const adminService = {
       return false;
     }
   },
+
+  // ==========================================
+  // Newsletter Subscribers
+  // ==========================================
+  async subscribeNewsletter(email, source = "explore_page") {
+    const res = await fetch("http://localhost:5000/api/newsletter/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, source }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to subscribe");
+    return json;
+  },
+
+  async getNewsletterSubscribers(params = {}) {
+    try {
+      const query = new URLSearchParams(params).toString();
+      const url = `http://localhost:5000/api/newsletter/admin/subscribers${query ? `?${query}` : ""}`;
+      const res = await fetch(url, { headers: getAdminHeaders() });
+      if (!res.ok) throw new Error("Failed to fetch subscribers");
+      const json = await res.json();
+      return json.data || { subscribers: [], total: 0, counts: { total: 0, active: 0, unsubscribed: 0 } };
+    } catch (err) {
+      console.warn("Could not fetch subscribers:", err);
+      return { subscribers: [], total: 0, counts: { total: 0, active: 0, unsubscribed: 0 } };
+    }
+  },
+
+  async deleteNewsletterSubscriber(id) {
+    try {
+      const res = await fetch(`http://localhost:5000/api/newsletter/admin/subscribers/${id}`, {
+        method: "DELETE",
+        headers: getAdminHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn("Could not delete subscriber:", err);
+      return false;
+    }
+  },
+
+  async exportNewsletterSubscribers() {
+    try {
+      const res = await fetch("http://localhost:5000/api/newsletter/admin/export", {
+        headers: getAdminHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to export subscribers");
+      const json = await res.json();
+      return json.data || [];
+    } catch (err) {
+      console.warn("Could not export subscribers:", err);
+      return [];
+    }
+  },
 };

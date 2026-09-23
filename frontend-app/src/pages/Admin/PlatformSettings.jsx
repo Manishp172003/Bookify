@@ -11,6 +11,10 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
+  Mail,
+  Download,
+  Search,
+  RefreshCw,
 } from "lucide-react";
 import { adminService } from "../../services/adminService";
 import { useCommerce } from "../../context/CommerceContext";
@@ -167,6 +171,84 @@ function PlatformSettings() {
     }
   };
 
+  // Newsletter Subscribers State
+  const [subscribers, setSubscribers] = useState([]);
+  const [subscribersLoading, setSubscribersLoading] = useState(false);
+  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState("all");
+  const [subscriberSearch, setSubscriberSearch] = useState("");
+  const [subscriberCounts, setSubscriberCounts] = useState({
+    total: 0,
+    active: 0,
+    unsubscribed: 0,
+  });
+
+  const loadSubscribers = (status = subscriberStatusFilter, search = subscriberSearch) => {
+    setSubscribersLoading(true);
+    adminService
+      .getNewsletterSubscribers({ status, search })
+      .then((res) => {
+        if (res && res.subscribers) {
+          setSubscribers(res.subscribers);
+          if (res.counts) setSubscriberCounts(res.counts);
+        }
+      })
+      .finally(() => setSubscribersLoading(false));
+  };
+
+  useEffect(() => {
+    if (activeTab === "subscribers") {
+      loadSubscribers(subscriberStatusFilter, subscriberSearch);
+    }
+  }, [activeTab, subscriberStatusFilter]);
+
+  const handleExportCSV = async () => {
+    try {
+      const data = await adminService.exportNewsletterSubscribers();
+      if (!data || data.length === 0) {
+        showToast("No active subscribers to export.", "info");
+        return;
+      }
+      const headers = ["Email", "Source", "Subscribed At"];
+      const rows = data.map((s) => [
+        `"${s.email}"`,
+        `"${s.source || "explore_page"}"`,
+        `"${new Date(s.subscribedAt).toISOString()}"`,
+      ]);
+      const csvContent =
+        "data:text/csv;charset=utf-8," +
+        [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute(
+        "download",
+        `bookify_subscribers_${new Date().toISOString().split("T")[0]}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast(`Exported ${data.length} subscribers!`, "success");
+    } catch (err) {
+      showToast("Failed to export subscribers", "error");
+    }
+  };
+
+  const handleDeleteSubscriber = async (id, email) => {
+    if (!window.confirm(`Are you sure you want to remove ${email} from newsletter subscribers?`))
+      return;
+    try {
+      const ok = await adminService.deleteNewsletterSubscriber(id);
+      if (ok) {
+        showToast(`Subscriber ${email} deleted successfully.`, "success");
+        loadSubscribers();
+      } else {
+        showToast("Failed to delete subscriber", "error");
+      }
+    } catch (err) {
+      showToast("Error deleting subscriber", "error");
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
@@ -212,6 +294,29 @@ function PlatformSettings() {
               }`}
             >
               {testimonialCounts.pending} pending
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab("subscribers")}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeTab === "subscribers"
+              ? "bg-[#6C4BF4] text-white shadow-md shadow-[#6C4BF4]/20"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <Mail size={16} />
+          <span>Newsletter Subscribers</span>
+          {subscriberCounts.active > 0 && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                activeTab === "subscribers"
+                  ? "bg-white/20 text-white"
+                  : "bg-purple-100 text-[#6C4BF4]"
+              }`}
+            >
+              {subscriberCounts.active}
             </span>
           )}
         </button>
@@ -753,6 +858,178 @@ function PlatformSettings() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: NEWSLETTER SUBSCRIBERS */}
+      {activeTab === "subscribers" && (
+        <div className="space-y-6">
+          {/* Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-[#E7E4F2] shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Subscribers</p>
+                <p className="text-2xl font-black text-gray-900 mt-1">{subscriberCounts.total}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#6C4BF4] flex items-center justify-center">
+                <Mail size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#E7E4F2] shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Active List</p>
+                <p className="text-2xl font-black text-emerald-600 mt-1">{subscriberCounts.active}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <CheckCircle2 size={20} />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#E7E4F2] shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Unsubscribed</p>
+                <p className="text-2xl font-black text-gray-400 mt-1">{subscriberCounts.unsubscribed}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center">
+                <XCircle size={20} />
+              </div>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              {/* Search + Filter */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative min-w-[240px]">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search subscriber email..."
+                    value={subscriberSearch}
+                    onChange={(e) => setSubscriberSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") loadSubscribers(subscriberStatusFilter, subscriberSearch);
+                    }}
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 focus:border-[#6C4BF4] rounded-xl focus:outline-none transition"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
+                  {["all", "active", "unsubscribed"].map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => setSubscriberStatusFilter(st)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition cursor-pointer ${
+                        subscriberStatusFilter === st
+                          ? "bg-white text-[#6C4BF4] shadow-xs"
+                          : "text-gray-500 hover:text-gray-900"
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => loadSubscribers(subscriberStatusFilter, subscriberSearch)}
+                  className="p-2 border border-gray-200 text-gray-500 hover:text-gray-900 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+                  title="Refresh list"
+                >
+                  <RefreshCw size={15} />
+                </button>
+
+                <button
+                  onClick={handleExportCSV}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
+                >
+                  <Download size={14} />
+                  <span>Export CSV</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Subscribers Table */}
+            {subscribersLoading ? (
+              <div className="text-center py-12">
+                <Loader2 size={24} className="animate-spin text-[#6C4BF4] mx-auto mb-2" />
+                <p className="text-xs text-gray-400 font-bold">Loading subscribers...</p>
+              </div>
+            ) : subscribers.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-xl">
+                <Mail size={32} className="text-gray-300 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-700">No subscribers found</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {subscriberSearch ? "No matches for your search query." : "Subscribers from the Explore page will appear here."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-[11px] font-extrabold uppercase tracking-wider text-gray-400">
+                      <th className="pb-3 px-3">Subscriber Email</th>
+                      <th className="pb-3 px-3">Source Page</th>
+                      <th className="pb-3 px-3">Date Joined</th>
+                      <th className="pb-3 px-3">Status</th>
+                      <th className="pb-3 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 text-xs">
+                    {subscribers.map((sub) => (
+                      <tr key={sub._id} className="hover:bg-gray-50/60 transition">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-purple-50 text-[#6C4BF4] flex items-center justify-center shrink-0">
+                              <Mail size={13} />
+                            </div>
+                            <span className="font-semibold text-gray-900">{sub.email}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-gray-500 font-medium">
+                          <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[11px] font-semibold text-gray-600">
+                            {sub.source ? sub.source.replace("_", " ") : "explore page"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-gray-500">
+                          {new Date(sub.subscribedAt || sub.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td className="py-3 px-3">
+                          {sub.status === "active" ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                              Unsubscribed
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <button
+                            onClick={() => handleDeleteSubscriber(sub._id, sub.email)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition cursor-pointer"
+                            title="Delete Subscriber"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
