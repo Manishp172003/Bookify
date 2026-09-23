@@ -12,6 +12,7 @@ import SearchBar from "../../components/search/SearchBar";
 import FilterSidebar from "../../components/search/FilterSidebar";
 import BookCard from "../../components/book/BookCard";
 import books from "../../data/books";
+import categories from "../../data/categories";
 import ScrollReveal from "../../components/ui/ScrollReveal";
 
 const ITEMS_PER_PAGE = 12;
@@ -108,7 +109,11 @@ export default function ExplorePage() {
     }
 
     if (filters.conditions.length > 0) {
-      result = result.filter((b) => filters.conditions.includes(b.condition));
+      result = result.filter((b) => {
+        if (!b.condition) return false;
+        const normB = b.condition.toUpperCase().replace(/\s+/g, "_");
+        return filters.conditions.some((c) => c.toUpperCase().replace(/\s+/g, "_") === normB);
+      });
     }
 
     if (filters.priceRange) {
@@ -127,14 +132,19 @@ export default function ExplorePage() {
       const catMap = {
         fiction: "Fiction",
         nonfiction: "Non-Fiction",
-        academic: "Academic & Textbooks",
-        comics: "Comics & Manga",
+        academic: "Academic",
+        comics: "Comics",
         selfhelp: "Self-Help",
-        competitive: "Competitive Exams",
-        children: "Children's Books",
-        regional: "Regional Languages",
+        competitive: "Competitive",
+        children: "Children",
+        regional: "Regional",
       };
-      result = result.filter((b) => b.category === catMap[filters.category]);
+      const catTarget = (catMap[filters.category] || filters.category).toLowerCase();
+      result = result.filter((b) => {
+        if (!b.category) return false;
+        const bCat = b.category.toLowerCase();
+        return bCat.includes(catTarget) || catTarget.includes(bCat);
+      });
     }
 
     if (filters.subCategories && filters.subCategories.length > 0) {
@@ -372,6 +382,36 @@ export default function ExplorePage() {
                       onClick={() =>
                         setFilters({ ...filters, priceRange: null })
                       }
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filters.category && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-bookify-light-purple text-bookify-purple text-xs font-medium rounded-full">
+                    {categories.find((cat) => cat.id === filters.category)?.name || filters.category}
+                    <button
+                      onClick={() => setFilters({ ...filters, category: null })}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filters.deliveryAvailable && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium rounded-full">
+                    Courier Delivery
+                    <button
+                      onClick={() => setFilters({ ...filters, deliveryAvailable: false })}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filters.negotiable && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium rounded-full">
+                    Negotiable
+                    <button
+                      onClick={() => setFilters({ ...filters, negotiable: false })}
                     >
                       <X size={12} />
                     </button>
