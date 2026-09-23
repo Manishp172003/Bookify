@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, X, Check, Sparkles, Truck, MessageCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, X, Check } from "lucide-react";
 import categories from "../../data/categories";
 
 const conditionsList = [
-  { value: "LIKE_NEW", label: "Like New", desc: "Unread or crisp copy", color: "bg-emerald-500", textCol: "text-emerald-700 bg-emerald-50" },
-  { value: "GOOD", label: "Good", desc: "Clean pages, minor wear", color: "bg-sky-500", textCol: "text-sky-700 bg-sky-50" },
-  { value: "FAIR", label: "Fair", desc: "Readable with visible wear", color: "bg-amber-500", textCol: "text-amber-700 bg-amber-50" },
-  { value: "NEW", label: "Brand New", desc: "Unopened / perfect", color: "bg-purple-500", textCol: "text-purple-700 bg-purple-50" },
+  { value: "LIKE_NEW", label: "Like New", desc: "Unread or crisp copy", color: "bg-emerald-500" },
+  { value: "GOOD", label: "Good", desc: "Clean pages, minor wear", color: "bg-sky-500" },
+  { value: "FAIR", label: "Fair", desc: "Readable with visible wear", color: "bg-amber-500" },
+  { value: "NEW", label: "Brand New", desc: "Unopened / perfect", color: "bg-purple-500" },
 ];
 
 const transactionModes = [
-  { value: "sell", label: "Buy (Purchase)", icon: "🛒" },
-  { value: "rent", label: "Rent", icon: "⏱️" },
-  { value: "exchange", label: "Exchange", icon: "🔄" },
-  { value: "donate", label: "Free (Donation)", icon: "🎁" },
+  { value: "sell", label: "Buy (Purchase)" },
+  { value: "rent", label: "Rent" },
+  { value: "exchange", label: "Exchange" },
+  { value: "donate", label: "Free (Donation)" },
 ];
 
 function FilterSection({ title, defaultOpen = true, badge = null, children }) {
@@ -151,7 +151,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
         <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
           <button
             onClick={() => handleCategorySelect(null)}
-            className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+            className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
               !filters.category
                 ? "bg-[#EEEAFE] text-[#6C4BF4]"
                 : "text-gray-600 hover:bg-gray-50"
@@ -167,16 +167,13 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
               <button
                 key={cat.id}
                 onClick={() => handleCategorySelect(cat.id)}
-                className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
                   isSelected
                     ? "bg-[#EEEAFE] text-[#6C4BF4]"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
-                <span className="flex items-center gap-2 truncate">
-                  <span className="text-sm">{cat.icon}</span>
-                  <span className="truncate">{cat.name}</span>
-                </span>
+                <span className="truncate">{cat.name}</span>
                 {isSelected && <Check size={14} className="text-[#6C4BF4] shrink-0" />}
               </button>
             );
@@ -196,22 +193,19 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
             return (
               <label
                 key={mode.value}
-                className={`flex items-center justify-between cursor-pointer px-2.5 py-2 rounded-xl transition select-none ${
+                className={`flex items-center gap-2.5 cursor-pointer px-3 py-2 rounded-xl transition select-none ${
                   isChecked
                     ? "bg-[#EEEAFE]/60 text-[#6C4BF4] font-bold"
                     : "text-gray-600 hover:bg-gray-50 font-medium"
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleMode(mode.value)}
-                    className="w-4 h-4 rounded border-gray-300 text-[#6C4BF4] focus:ring-[#6C4BF4]/30 accent-[#6C4BF4] cursor-pointer"
-                  />
-                  <span className="text-xs">{mode.label}</span>
-                </div>
-                <span className="text-sm">{mode.icon}</span>
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleMode(mode.value)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#6C4BF4] focus:ring-[#6C4BF4]/30 accent-[#6C4BF4] cursor-pointer"
+                />
+                <span className="text-xs">{mode.label}</span>
               </label>
             );
           })}
@@ -230,7 +224,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
             return (
               <label
                 key={cond.value}
-                className={`flex items-center justify-between cursor-pointer px-2.5 py-2 rounded-xl transition select-none ${
+                className={`flex items-center justify-between cursor-pointer px-3 py-2 rounded-xl transition select-none ${
                   isChecked
                     ? "bg-[#EEEAFE]/60 text-[#6C4BF4] font-bold"
                     : "text-gray-600 hover:bg-gray-50 font-medium"
@@ -323,7 +317,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
       {/* 5. Availability & Perks */}
       <FilterSection title="Perks & Delivery" defaultOpen={false}>
         <div className="space-y-1.5">
-          <label className="flex items-center gap-2.5 cursor-pointer px-2.5 py-1.5 rounded-xl hover:bg-gray-50 transition">
+          <label className="flex items-center gap-2.5 cursor-pointer px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
             <input
               type="checkbox"
               checked={Boolean(filters.deliveryAvailable)}
@@ -332,13 +326,10 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
               }
               className="w-4 h-4 rounded border-gray-300 text-[#6C4BF4] focus:ring-[#6C4BF4]/30 accent-[#6C4BF4] cursor-pointer"
             />
-            <div className="flex items-center gap-1.5 text-xs text-gray-700 font-medium">
-              <Truck size={14} className="text-emerald-600" />
-              <span>Courier Delivery</span>
-            </div>
+            <span className="text-xs text-gray-700 font-medium">Courier Delivery Available</span>
           </label>
 
-          <label className="flex items-center gap-2.5 cursor-pointer px-2.5 py-1.5 rounded-xl hover:bg-gray-50 transition">
+          <label className="flex items-center gap-2.5 cursor-pointer px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
             <input
               type="checkbox"
               checked={Boolean(filters.negotiable)}
@@ -347,10 +338,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
               }
               className="w-4 h-4 rounded border-gray-300 text-[#6C4BF4] focus:ring-[#6C4BF4]/30 accent-[#6C4BF4] cursor-pointer"
             />
-            <div className="flex items-center gap-1.5 text-xs text-gray-700 font-medium">
-              <MessageCircle size={14} className="text-amber-600" />
-              <span>Price Negotiable</span>
-            </div>
+            <span className="text-xs text-gray-700 font-medium">Price Negotiable</span>
           </label>
         </div>
       </FilterSection>
