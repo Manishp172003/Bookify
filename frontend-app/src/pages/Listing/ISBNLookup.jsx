@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ListingWizardLayout from '../../components/listing/ListingWizardLayout';
+import BarcodeScannerModal from '../../components/listing/BarcodeScannerModal';
 import { useListing } from '../../context/ListingContext';
-import { Search, Barcode, BookOpen, Sparkles, ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { Search, Barcode, BookOpen, Sparkles, ArrowRight, Check, AlertCircle, Camera } from 'lucide-react';
+import { getBookCover, DEFAULT_BOOK_COVER } from '../../utils/bookCoverUtils';
 
 const DUMMY_PRESETS = [
   {
@@ -15,7 +17,7 @@ const DUMMY_PRESETS = [
     category: 'Computer Science & Engineering',
     mrp: 1450,
     price: 699,
-    cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300'
+    cover: 'https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg'
   },
   {
     isbn: '9780984782857',
@@ -27,7 +29,7 @@ const DUMMY_PRESETS = [
     category: 'Placement & Competitive',
     mrp: 999,
     price: 499,
-    cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300'
+    cover: 'https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg'
   },
   {
     isbn: '9780070671607',
@@ -39,7 +41,7 @@ const DUMMY_PRESETS = [
     category: 'JEE & Physics',
     mrp: 460,
     price: 230,
-    cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3edd3?auto=format&fit=crop&q=80&w=300'
+    cover: 'https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg'
   }
 ];
 
@@ -52,11 +54,12 @@ export default function ISBNLookup() {
   const [activeTab, setActiveTab] = useState('isbn'); // 'isbn' | 'title' | 'manual'
   const [isSearching, setIsSearching] = useState(false);
   const [lookupSuccess, setLookupSuccess] = useState(true);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  const handleIsbnSubmit = async (e) => {
-    e.preventDefault();
-    const clean = isbnInput.trim().replace(/-/g, "");
+  const fetchIsbnDetails = async (rawIsbn) => {
+    const clean = (rawIsbn || '').trim().replace(/-/g, '');
     if (!clean) return;
+    setIsbnInput(clean);
     setIsSearching(true);
 
     try {
@@ -65,8 +68,9 @@ export default function ISBNLookup() {
       const data = await res.json();
       if (res.ok && data.success && data.data) {
         const book = data.data;
-        const estMrp = 800;
+        const estMrp = book.mrp || 800;
         const estPrice = Math.round(estMrp * 0.5);
+        const resolvedCover = getBookCover(book) || book.coverImage || DEFAULT_BOOK_COVER;
         updateListingData({
           isbn: book.isbn || clean,
           title: book.title || "Found Textbook",
@@ -76,8 +80,8 @@ export default function ISBNLookup() {
           category: book.category || "General Studies",
           mrp: estMrp,
           price: estPrice,
-          cover: book.coverImage || DUMMY_PRESETS[0].cover,
-          photos: book.coverImage ? [book.coverImage] : listingData.photos
+          cover: resolvedCover,
+          photos: resolvedCover ? [resolvedCover] : listingData.photos
         });
         setIsSearching(false);
         setLookupSuccess(true);
@@ -89,8 +93,9 @@ export default function ISBNLookup() {
 
     const matched = DUMMY_PRESETS.find(b => b.isbn.includes(clean)) || DUMMY_PRESETS[0];
     const calcPrice = matched.price || Math.round((matched.mrp || 1000) * 0.5);
+    const coverToUse = getBookCover(matched.title) || matched.cover;
     updateListingData({
-      isbn: isbnInput.trim(),
+      isbn: clean,
       title: matched.title,
       author: matched.author,
       publisher: matched.publisher,
@@ -99,11 +104,22 @@ export default function ISBNLookup() {
       category: matched.category,
       mrp: matched.mrp,
       price: calcPrice,
-      cover: matched.cover,
-      photos: [matched.cover]
+      cover: coverToUse,
+      photos: [coverToUse]
     });
     setIsSearching(false);
     setLookupSuccess(true);
+  };
+
+  const handleIsbnSubmit = (e) => {
+    e.preventDefault();
+    fetchIsbnDetails(isbnInput);
+  };
+
+  const handleScanSuccess = (scannedIsbn) => {
+    setIsScannerOpen(false);
+    setActiveTab('isbn');
+    fetchIsbnDetails(scannedIsbn);
   };
 
   const handleTitleSubmit = (e) => {
@@ -192,18 +208,36 @@ export default function ISBNLookup() {
         {activeTab === 'isbn' && (
           <form onSubmit={handleIsbnSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                10 or 13-Digit ISBN (Found on back cover barcode)
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  10 or 13-Digit ISBN (Back Cover Barcode)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6C4BF4] bg-[#6C4BF4]/10 hover:bg-[#6C4BF4]/20 px-3 py-1 rounded-lg transition cursor-pointer"
+                >
+                  <Camera size={14} /> Scan with Camera
+                </button>
+              </div>
               <div className="relative">
                 <input
                   type="text"
                   placeholder="e.g. 9780262033848"
                   value={isbnInput}
                   onChange={(e) => setIsbnInput(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 bg-[#F8F7FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6C4BF4]/20 focus:border-[#6C4BF4] transition text-sm text-[#17152A] font-medium font-mono"
+                  className="w-full pl-11 pr-24 py-3.5 rounded-xl border border-gray-200 bg-[#F8F7FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6C4BF4]/20 focus:border-[#6C4BF4] transition text-sm text-[#17152A] font-medium font-mono"
                 />
                 <Barcode className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-bold text-gray-600 hover:text-[#6C4BF4] bg-white border border-gray-200 hover:border-[#6C4BF4]/40 px-2.5 py-1.5 rounded-lg transition shadow-2xs cursor-pointer"
+                  title="Scan barcode with camera"
+                >
+                  <Camera size={13} className="text-[#6C4BF4]" />
+                  <span>Scan</span>
+                </button>
               </div>
             </div>
 
@@ -360,6 +394,13 @@ export default function ISBNLookup() {
         </div>
 
       </div>
+
+      {/* Real-Time HTML5 Webcam Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </ListingWizardLayout>
   );
 }
