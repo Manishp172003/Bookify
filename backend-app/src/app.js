@@ -12,6 +12,7 @@ import chatRoutes from "./routes/chatRoutes.js";
 import rentalRoutes from "./routes/rentalRoutes.js";
 import exchangeRoutes from "./routes/exchangeRoutes.js";
 import disputeRoutes from "./routes/disputeRoutes.js";
+import payoutRoutes from "./routes/payoutRoutes.js";
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/rentals", rentalRoutes);
 app.use("/api/exchanges", exchangeRoutes);
 app.use("/api/disputes", disputeRoutes);
+app.use("/api/payouts", payoutRoutes);
 
 // ==========================================
 // 404 Handler

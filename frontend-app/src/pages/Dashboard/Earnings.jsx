@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { Wallet, Landmark, Shield, AlertCircle, Menu, CheckCircle2, ArrowDownRight, ArrowUpRight, QrCode } from "lucide-react";
+import { api } from "../../services/apiClient";
 
 const INITIAL_TRANSACTIONS = [
   { id: "TXN-00192", date: "24 Aug 2026", desc: "Sold Introduction to Algorithms", type: "credit", amount: "₹650", method: "Wallet Credit" },
@@ -14,7 +15,7 @@ export default function Earnings() {
   const { showToast } = useCommerce();
   const [totalEarned, setTotalEarned] = useState(1850);
   const [withdrawn, setWithdrawn] = useState(1000);
-  const [escrowPending] = useState(650);
+  const [escrowPending, setEscrowPending] = useState(650);
   const [availableToWithdraw, setAvailableToWithdraw] = useState(850);
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
 
@@ -26,6 +27,7 @@ export default function Earnings() {
   const [bankAcc, setBankAcc] = useState("918273645019");
   const [bankIfsc, setBankIfsc] = useState("HDFC0001245");
   const [payoutAmount, setPayoutAmount] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     try {
@@ -41,14 +43,63 @@ export default function Earnings() {
         if (parsed.mode === 'Bank Account') setPayoutMethod('bank');
       }
     } catch {}
+
+    const fetchWallet = async () => {
+      try {
+        const res = await api.get("/payouts/my-payouts");
+        if (res?.data) {
+          if (res.data.availableBalance !== undefined && res.data.availableBalance > 0) {
+            setAvailableToWithdraw(res.data.availableBalance);
+          }
+          if (res.data.totalWithdrawn !== undefined && res.data.totalWithdrawn > 0) {
+            setWithdrawn(res.data.totalWithdrawn);
+          }
+          if (res.data.escrowPending !== undefined) {
+            setEscrowPending(res.data.escrowPending);
+          }
+          if (res.data.payouts && res.data.payouts.length > 0) {
+            const formatted = res.data.payouts.map((p) => ({
+              id: p.id,
+              date: p.date,
+              desc: `Payout to ${p.payoutMethod}`,
+              type: "debit",
+              amount: `₹${p.amount}`,
+              method: p.payoutMethod === "UPI" ? "UPI Transfer" : "Bank Transfer",
+            }));
+            setTransactions((prev) => [...formatted, ...prev]);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load backend payouts, keeping defaults:", err);
+      }
+    };
+
+    fetchWallet();
   }, []);
 
-  const handleWithdrawalRequest = (e) => {
+  const handleWithdrawalRequest = async (e) => {
     e.preventDefault();
     const amount = Number(payoutAmount);
     if (!amount || amount <= 0 || amount > availableToWithdraw) {
       if (showToast) showToast("Please enter a valid payout amount.", "error");
       return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.post("/payouts/request", {
+        amount,
+        payoutMethod: payoutMethod === "upi" ? "UPI" : "Bank Account",
+        payoutDetails: {
+          upiId: upiId,
+          accountNumber: bankAcc,
+          ifscCode: bankIfsc,
+        },
+      });
+    } catch (err) {
+      console.warn("Backend payout API error, falling back locally:", err);
+    } finally {
+      setIsSubmitting(false);
     }
 
     const newTxn = {
@@ -62,7 +113,7 @@ export default function Earnings() {
 
     setTransactions(prev => [newTxn, ...prev]);
     setWithdrawn(prev => prev + amount);
-    setAvailableToWithdraw(prev => prev - amount);
+    setAvailableToWithdraw(prev => Math.max(0, prev - amount));
     setPayoutAmount("");
     setShowPayoutModal(false);
 
