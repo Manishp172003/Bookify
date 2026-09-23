@@ -4,7 +4,7 @@ const couponSchema = new mongoose.Schema({
   authorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+    default: null,
   },
 
   code: {
@@ -31,8 +31,7 @@ const couponSchema = new mongoose.Schema({
 
   applicableBooks: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Book",
+      type: mongoose.Schema.Types.Mixed,
     },
   ],
 

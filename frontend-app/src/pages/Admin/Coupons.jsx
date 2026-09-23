@@ -13,41 +13,80 @@ import {
   IndianRupee,
   BookOpen,
   Filter,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
-import {
-  getAdminCoupons,
-  addCoupon,
-  updateCoupon,
-  toggleCouponStatus,
-  deleteCoupon
-} from "../../services/couponService";
-import { getAllPlatformPublishedBooks } from "../../services/bookService";
+import { adminService } from "../../services/adminService";
 
 function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
+  const [platformBooks, setPlatformBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [error, setError] = useState(null);
+
   const [filter, setFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState(null);
-
-  // Platform Books available for Admin assignment
-  const platformBooks = getAllPlatformPublishedBooks();
 
   // Form State
   const [formData, setFormData] = useState({
     code: "",
     discountType: "percentage",
     discountValue: "",
-    minPurchase: "",
+    minPurchase: "0",
     applicableScope: "ALL_BOOKS", // 'ALL_BOOKS' | 'SPECIFIC_BOOKS'
     applicableBooks: ["All Books"],
     validUntil: "",
     usageLimit: "100"
   });
 
-  const loadCoupons = () => {
-    setCoupons(getAdminCoupons());
+  const loadCoupons = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [fetchedCoupons, fetchedBooks] = await Promise.all([
+        adminService.getAdminCoupons(),
+        adminService.getListings().catch(() => [])
+      ]);
+
+      const normalized = (Array.isArray(fetchedCoupons) ? fetchedCoupons : []).map((c) => {
+        const isFlat = (c.discountType || "").toLowerCase() === "flat" || (c.discountType || "").toLowerCase() === "fixed";
+        const hasSpecificBooks = Array.isArray(c.applicableBooks) && c.applicableBooks.length > 0;
+        return {
+          id: c._id || c.id,
+          _id: c._id || c.id,
+          code: c.code || "",
+          discountType: isFlat ? "fixed" : "percentage",
+          discountValue: c.discountValue || 0,
+          minPurchase: c.minPurchase || 0,
+          applicableScope: hasSpecificBooks ? "SPECIFIC_BOOKS" : "ALL_BOOKS",
+          applicableBooks: hasSpecificBooks
+            ? c.applicableBooks.map((b) => (typeof b === "object" && b ? b.title || b.name || b._id : String(b)))
+            : ["All Books"],
+          validUntil: c.expiresAt ? new Date(c.expiresAt).toISOString().split("T")[0] : "",
+          status: c.isActive ? "Active" : "Inactive",
+          isActive: Boolean(c.isActive),
+          usageCount: c.usedCount || 0,
+          usageLimit: c.maxUses || 0,
+          createdAt: c.createdAt
+        };
+      });
+
+      setCoupons(normalized);
+
+      if (Array.isArray(fetchedBooks) && fetchedBooks.length > 0) {
+        setPlatformBooks(fetchedBooks);
+      }
+    } catch (err) {
+      console.error("Failed to load coupons from MongoDB:", err);
+      setError("Unable to connect to live coupons database. Please try refreshing.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -80,56 +119,74 @@ function AdminCoupons() {
       minPurchase: coupon.minPurchase || "0",
       applicableScope: coupon.applicableScope || "ALL_BOOKS",
       applicableBooks: coupon.applicableBooks || ["All Books"],
-      validUntil: coupon.validUntil,
+      validUntil: coupon.validUntil || "",
       usageLimit: coupon.usageLimit || "100"
     });
     setShowModal(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
 
-    let assignedBooks = ["All Books"];
+    let assignedBooks = [];
     if (formData.applicableScope === "SPECIFIC_BOOKS") {
-      assignedBooks =
-        formData.applicableBooks.length > 0
-          ? formData.applicableBooks
-          : ["All Books"];
+      assignedBooks = formData.applicableBooks.filter((b) => b !== "All Books");
     }
 
     const payload = {
-      code: formData.code,
-      discountType: formData.discountType,
+      code: formData.code.toUpperCase().trim(),
+      discountType: formData.discountType === "fixed" ? "flat" : "percentage",
       discountValue: Number(formData.discountValue),
       minPurchase: Number(formData.minPurchase) || 0,
-      creatorRole: "admin",
-      creatorName: "Platform Admin",
-      applicableScope: formData.applicableScope,
+      maxUses: Number(formData.usageLimit) || 0,
+      expiresAt: formData.validUntil ? new Date(formData.validUntil).toISOString() : null,
       applicableBooks: assignedBooks,
-      validUntil: formData.validUntil,
-      usageLimit: Number(formData.usageLimit) || 100,
-      status: "Active"
+      isActive: true
     };
 
-    if (editingCoupon) {
-      updateCoupon(editingCoupon.id, payload);
-    } else {
-      addCoupon(payload);
+    try {
+      if (editingCoupon) {
+        await adminService.updateCouponStatus(editingCoupon._id, payload);
+      } else {
+        await adminService.createAdminCoupon(payload);
+      }
+      setShowModal(false);
+      await loadCoupons();
+    } catch (err) {
+      alert(err.message || "Failed to save coupon in MongoDB");
+    } finally {
+      setSubmitting(false);
     }
-
-    setShowModal(false);
-    loadCoupons();
   };
 
-  const handleToggleStatus = (id) => {
-    toggleCouponStatus(id);
-    loadCoupons();
+  const handleToggleStatus = async (coupon) => {
+    setActionLoadingId(coupon._id);
+    try {
+      const nextActive = !coupon.isActive;
+      await adminService.updateCouponStatus(coupon._id, { isActive: nextActive });
+      await loadCoupons();
+    } catch (err) {
+      console.error("Failed to toggle coupon status:", err);
+      alert("Failed to update coupon status.");
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this admin coupon?")) {
-      deleteCoupon(id);
-      loadCoupons();
+  const handleDelete = async (coupon) => {
+    if (!window.confirm(`Are you sure you want to permanently delete coupon "${coupon.code}" from MongoDB?`)) {
+      return;
+    }
+    setActionLoadingId(coupon._id);
+    try {
+      await adminService.deleteAdminCoupon(coupon._id);
+      await loadCoupons();
+    } catch (err) {
+      console.error("Failed to delete coupon:", err);
+      alert("Failed to delete coupon from MongoDB.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -164,9 +221,10 @@ function AdminCoupons() {
 
     const matchesSearch =
       item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.applicableBooks.some((b) =>
-        b.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      (Array.isArray(item.applicableBooks) &&
+        item.applicableBooks.some((b) =>
+          b.toLowerCase().includes(searchQuery.toLowerCase())
+        ));
 
     return matchesFilter && matchesSearch;
   });
@@ -185,21 +243,48 @@ function AdminCoupons() {
               Platform Coupons
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EEEAFE] text-[#6C4BF4]">
-              Admin Panel
+              Live MongoDB
             </span>
           </div>
           <p className="text-[#6B6880] mt-1 text-sm">
-            Create global promotional discounts applicable to all platform books or specific listings.
+            Manage real-time promotional discount codes stored directly in MongoDB and redeemable at student checkout.
           </p>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 self-start sm:self-auto"
-        >
-          <Plus size={18} />
-          <span>Add Admin Coupon</span>
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <button
+            onClick={loadCoupons}
+            disabled={loading}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-[#E7E4F2] text-[#6B6880] hover:text-[#17152A] rounded-xl text-sm font-semibold hover:bg-gray-50 transition shadow-sm"
+            title="Refresh coupons from MongoDB"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20"
+          >
+            <Plus size={18} />
+            <span>Add Admin Coupon</span>
+          </button>
+        </div>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={loadCoupons}
+            className="font-bold underline hover:no-underline text-xs"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -282,9 +367,14 @@ function AdminCoupons() {
       </div>
 
       {/* Coupons Table Desktop / Cards Mobile */}
-      {filteredCoupons.length > 0 ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-[#E7E4F2]">
+          <Loader2 className="w-8 h-8 text-[#6C4BF4] animate-spin mb-3" />
+          <p className="text-sm font-semibold text-[#6B6880]">Loading live coupons from MongoDB...</p>
+        </div>
+      ) : filteredCoupons.length > 0 ? (
         <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden">
-          {/* Desktop Table View (Hidden on mobile) */}
+          {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
@@ -330,6 +420,8 @@ function AdminCoupons() {
                     <td className="p-5">
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {item.applicableScope === "ALL_BOOKS" ||
+                        !item.applicableBooks ||
+                        item.applicableBooks.length === 0 ||
                         item.applicableBooks.includes("All Books") ? (
                           <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-[#6C4BF4] border border-purple-200">
                             All Platform Books
@@ -355,11 +447,11 @@ function AdminCoupons() {
                       </span>
                       <span className="text-xs text-[#6B6880]">
                         {" "}
-                        / {item.usageLimit}
+                        / {item.usageLimit > 0 ? item.usageLimit : "∞"}
                       </span>
                     </td>
                     <td className="p-5 font-medium text-xs text-[#6B6880]">
-                      {item.validUntil}
+                      {item.validUntil || "Never Expires"}
                     </td>
                     <td className="p-5">
                       <span
@@ -375,7 +467,8 @@ function AdminCoupons() {
                     <td className="p-5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => handleToggleStatus(item.id)}
+                          onClick={() => handleToggleStatus(item)}
+                          disabled={actionLoadingId === item._id}
                           className={`p-2 rounded-lg transition ${
                             item.status === "Active"
                               ? "text-gray-400 hover:text-amber-600 hover:bg-amber-50"
@@ -385,7 +478,11 @@ function AdminCoupons() {
                             item.status === "Active" ? "Deactivate" : "Activate"
                           }
                         >
-                          <Power size={16} />
+                          {actionLoadingId === item._id ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <Power size={16} />
+                          )}
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(item)}
@@ -395,7 +492,8 @@ function AdminCoupons() {
                           <Edit2 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDelete(item)}
+                          disabled={actionLoadingId === item._id}
                           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
                           title="Delete Coupon"
                         >
@@ -409,7 +507,7 @@ function AdminCoupons() {
             </table>
           </div>
 
-          {/* Mobile Cards View (Visible on small screens) */}
+          {/* Mobile Cards View */}
           <div className="block md:hidden divide-y divide-[#E7E4F2]">
             {filteredCoupons.map((item) => (
               <div key={item.id} className="p-5 space-y-4">
@@ -456,13 +554,13 @@ function AdminCoupons() {
                   <div>
                     <span className="text-[#6B6880] block">Used / Limit:</span>
                     <span className="font-bold text-[#17152A]">
-                      {item.usageCount} / {item.usageLimit}
+                      {item.usageCount} / {item.usageLimit > 0 ? item.usageLimit : "∞"}
                     </span>
                   </div>
                   <div>
                     <span className="text-[#6B6880] block">Expiry:</span>
                     <span className="font-medium text-[#17152A]">
-                      {item.validUntil}
+                      {item.validUntil || "Never"}
                     </span>
                   </div>
                 </div>
@@ -473,6 +571,8 @@ function AdminCoupons() {
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {item.applicableScope === "ALL_BOOKS" ||
+                    !item.applicableBooks ||
+                    item.applicableBooks.length === 0 ||
                     item.applicableBooks.includes("All Books") ? (
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-[#6C4BF4] border border-purple-200">
                         All Platform Books
@@ -492,7 +592,8 @@ function AdminCoupons() {
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-[#E7E4F2]/50">
                   <button
-                    onClick={() => handleToggleStatus(item.id)}
+                    onClick={() => handleToggleStatus(item)}
+                    disabled={actionLoadingId === item._id}
                     className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
                   >
                     {item.status === "Active" ? "Deactivate" : "Activate"}
@@ -504,7 +605,8 @@ function AdminCoupons() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => handleDelete(item)}
+                    disabled={actionLoadingId === item._id}
                     className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 transition"
                   >
                     Delete
@@ -522,9 +624,18 @@ function AdminCoupons() {
           <h3 className="text-lg font-bold text-[#17152A] font-poppins">
             No admin coupons found
           </h3>
-          <p className="text-xs text-[#6B6880] max-w-xs mx-auto">
-            Try adjusting your search criteria or create a new platform coupon.
+          <p className="text-xs text-[#6B6880] max-w-sm mx-auto">
+            {searchQuery || filter !== "All"
+              ? "No coupons match your filter or search criteria."
+              : "No coupons exist in MongoDB yet. Click 'Add Admin Coupon' to create your first real promotional code."}
           </p>
+          <button
+            onClick={handleOpenCreateModal}
+            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-[#6C4BF4] text-white rounded-xl text-xs font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20"
+          >
+            <Plus size={14} />
+            <span>Create Coupon Now</span>
+          </button>
         </div>
       )}
 
@@ -538,7 +649,7 @@ function AdminCoupons() {
                   {editingCoupon ? "Edit Admin Coupon" : "Create Admin Coupon"}
                 </h3>
                 <p className="text-xs text-[#6B6880] mt-0.5">
-                  Applies platform-wide to all books or selected titles.
+                  Directly saved to MongoDB Atlas; applies at checkout.
                 </p>
               </div>
               <button
@@ -557,10 +668,10 @@ function AdminCoupons() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. FESTIVE30"
+                  placeholder="e.g. WELCOME50, FESTIVE200"
                   value={formData.code}
                   onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
+                    setFormData({ ...formData, code: e.target.value.toUpperCase() })
                   }
                   className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm font-mono font-bold uppercase tracking-wider outline-none focus:border-[#6C4BF4]"
                   required
@@ -660,32 +771,33 @@ function AdminCoupons() {
                     Select Platform Books:
                   </label>
                   <div className="max-h-36 overflow-y-auto space-y-2 pr-2">
-                    {platformBooks.map((book) => {
-                      const isChecked = formData.applicableBooks.includes(
-                        book.title
-                      );
-                      return (
-                        <label
-                          key={book.id}
-                          className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 cursor-pointer text-xs"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() =>
-                              handleBookSelectionChange(book.title)
-                            }
-                            className="h-4 w-4 accent-[#6C4BF4]"
-                          />
-                          <span className="font-semibold text-[#17152A]">
-                            {book.title}
-                          </span>
-                          <span className="text-[10px] text-[#6B6880] ml-auto">
-                            by {book.author}
-                          </span>
-                        </label>
-                      );
-                    })}
+                    {platformBooks.length > 0 ? (
+                      platformBooks.map((book) => {
+                        const bookTitle = book.title || book.name;
+                        const isChecked = formData.applicableBooks.includes(bookTitle);
+                        return (
+                          <label
+                            key={book._id || book.id}
+                            className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-200 cursor-pointer text-xs"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleBookSelectionChange(bookTitle)}
+                              className="h-4 w-4 accent-[#6C4BF4]"
+                            />
+                            <span className="font-semibold text-[#17152A]">
+                              {bookTitle}
+                            </span>
+                            <span className="text-[10px] text-[#6B6880] ml-auto">
+                              {book.author ? `by ${book.author}` : ""}
+                            </span>
+                          </label>
+                        );
+                      })
+                    ) : (
+                      <p className="text-xs text-gray-500 py-2">No live book listings found.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -708,11 +820,11 @@ function AdminCoupons() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                    Usage Limit
+                    Usage Limit (Max Uses)
                   </label>
                   <input
                     type="number"
-                    placeholder="100"
+                    placeholder="100 (0 for unlimited)"
                     value={formData.usageLimit}
                     onChange={(e) =>
                       setFormData({ ...formData, usageLimit: e.target.value })
@@ -750,9 +862,11 @@ function AdminCoupons() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20"
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 disabled:opacity-70"
                 >
-                  {editingCoupon ? "Save Changes" : "Create Coupon"}
+                  {submitting && <Loader2 size={16} className="animate-spin" />}
+                  <span>{editingCoupon ? "Save Changes" : "Create Coupon"}</span>
                 </button>
               </div>
             </form>

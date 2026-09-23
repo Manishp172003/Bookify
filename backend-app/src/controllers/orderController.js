@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Order from "../models/Order.js";
 import Book from "../models/Book.js";
 import User from "../models/User.js";
+import Coupon from "../models/Coupon.js";
 import { getIO } from "../config/socket.js";
 import { sendOrderReceiptEmail } from "../services/emailService.js";
 import { createRazorpayOrder, verifyRazorpaySignature, isRazorpayConfigured } from "../services/razorpayService.js";
@@ -179,6 +180,14 @@ export const createOrder = async (req, res) => {
 
     book.status = orderType === "Rent" ? "Rented" : "Pending";
     await book.save();
+
+    // If coupon was applied, increment its usage count in MongoDB
+    if (couponCode) {
+      Coupon.findOneAndUpdate(
+        { code: String(couponCode).toUpperCase().trim() },
+        { $inc: { usedCount: 1 } }
+      ).catch((cErr) => console.warn("Failed to increment coupon usedCount:", cErr.message));
+    }
 
     const io = getIO();
     io.to(`user:${book.sellerId.toString()}`).emit("newOrder", { order });

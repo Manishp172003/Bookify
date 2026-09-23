@@ -268,14 +268,13 @@ export const adminService = {
         headers: getAdminHeaders(),
         body: JSON.stringify(updateData),
       });
-      if (res.ok) {
-        const json = await res.json();
-        return json.data;
-      }
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to update coupon");
+      return json.data;
     } catch (err) {
       console.warn("Could not update coupon on server:", err);
+      throw err;
     }
-    return null;
   },
 
   async deleteAdminCoupon(id) {

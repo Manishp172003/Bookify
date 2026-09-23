@@ -381,7 +381,7 @@ export const getAdminCoupons = async (req, res) => {
  */
 export const createAdminCoupon = async (req, res) => {
   try {
-    const { code, discountType, discountValue, expiresAt, maxUses, applicableBooks } = req.body;
+    const { code, discountType, discountValue, expiresAt, maxUses, applicableBooks, minPurchase } = req.body;
 
     if (!code || !discountType || discountValue === undefined) {
       return res.status(400).json({
@@ -391,7 +391,7 @@ export const createAdminCoupon = async (req, res) => {
       });
     }
 
-    const existing = await Coupon.findOne({ code: code.toUpperCase() });
+    const existing = await Coupon.findOne({ code: code.toUpperCase().trim() });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -400,11 +400,14 @@ export const createAdminCoupon = async (req, res) => {
       });
     }
 
+    const normType = discountType.toLowerCase() === "percentage" ? "percentage" : "flat";
+
     const coupon = await Coupon.create({
-      authorId: req.user._id, // admin acts as creator
-      code: code.toUpperCase(),
-      discountType,
+      authorId: req.user?._id || null, // admin acts as creator
+      code: code.toUpperCase().trim(),
+      discountType: normType,
       discountValue: Number(discountValue),
+      minPurchase: Number(minPurchase) || 0,
       expiresAt: expiresAt || null,
       maxUses: Number(maxUses) || 0,
       applicableBooks: Array.isArray(applicableBooks) ? applicableBooks : [],
@@ -428,7 +431,7 @@ export const createAdminCoupon = async (req, res) => {
 
 /**
  * PATCH /api/admin/coupons/:id
- * Admin toggles or updates a coupon's fields (isActive, discountValue, expiresAt, maxUses).
+ * Admin toggles or updates a coupon's fields (isActive, discountValue, expiresAt, maxUses, minPurchase, code, etc.).
  */
 export const updateCouponStatus = async (req, res) => {
   try {
@@ -437,18 +440,35 @@ export const updateCouponStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "Coupon not found", data: null });
     }
 
-    const { isActive, discountValue, expiresAt, maxUses } = req.body;
+    const { isActive, discountValue, expiresAt, maxUses, minPurchase, discountType, code, applicableBooks } = req.body;
 
     if (isActive !== undefined) coupon.isActive = Boolean(isActive);
     if (discountValue !== undefined) coupon.discountValue = Number(discountValue);
     if (expiresAt !== undefined) coupon.expiresAt = expiresAt;
     if (maxUses !== undefined) coupon.maxUses = Number(maxUses);
+    if (minPurchase !== undefined) coupon.minPurchase = Number(minPurchase);
+    if (discountType !== undefined) {
+      coupon.discountType = discountType.toLowerCase() === "percentage" ? "percentage" : "flat";
+    }
+    if (code !== undefined && code.trim()) {
+      const upper = code.toUpperCase().trim();
+      if (upper !== coupon.code) {
+        const dup = await Coupon.findOne({ code: upper, _id: { $ne: coupon._id } });
+        if (dup) {
+          return res.status(400).json({ success: false, message: "Coupon code already exists", data: null });
+        }
+        coupon.code = upper;
+      }
+    }
+    if (applicableBooks !== undefined) {
+      coupon.applicableBooks = Array.isArray(applicableBooks) ? applicableBooks : [];
+    }
 
     await coupon.save();
 
     return res.status(200).json({
       success: true,
-      message: `Coupon ${coupon.isActive ? "activated" : "deactivated"} successfully`,
+      message: `Coupon updated successfully`,
       data: coupon,
     });
   } catch (error) {

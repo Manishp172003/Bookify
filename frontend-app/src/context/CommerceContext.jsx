@@ -789,16 +789,61 @@ export function CommerceProvider({ children }) {
   };
 
   // Coupons
-  const applyCoupon = (code) => {
-    const coupon = availableCoupons.find(
-      (c) => c.code.toUpperCase() === code.toUpperCase()
-    );
-    if (!coupon) {
-      showToast("Invalid coupon code.", "error");
-      return;
+  const applyCoupon = async (code) => {
+    if (!code || !code.trim()) return;
+    const cleanCode = code.trim().toUpperCase();
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiUrl}/author/coupons/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: cleanCode }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        const c = data.data;
+        if (c.minPurchase > 0 && subtotal < c.minPurchase) {
+          showToast(`Minimum order of ₹${c.minPurchase} required for this coupon.`, "error");
+          return;
+        }
+
+        const isPercentage = (c.discountType || "").toLowerCase() === "percentage";
+        const calculatedDiscount = isPercentage
+          ? Math.round((subtotal * c.discountValue) / 100)
+          : Math.min(subtotal, c.discountValue);
+
+        setAppliedCoupon({
+          code: c.code,
+          discount: calculatedDiscount,
+          discountType: isPercentage ? "percentage" : "flat",
+          discountValue: c.discountValue,
+          minPurchase: c.minPurchase || 0,
+        });
+        showToast(`Coupon "${c.code}" applied! Saved ₹${calculatedDiscount}`);
+        return;
+      } else {
+        const fallback = availableCoupons.find(
+          (c) => c.code.toUpperCase() === cleanCode
+        );
+        if (fallback) {
+          setAppliedCoupon(fallback);
+          showToast(`Coupon "${fallback.code}" applied!`);
+          return;
+        }
+        showToast(data.message || "Invalid coupon code.", "error");
+      }
+    } catch (err) {
+      const fallback = availableCoupons.find(
+        (c) => c.code.toUpperCase() === cleanCode
+      );
+      if (fallback) {
+        setAppliedCoupon(fallback);
+        showToast(`Coupon "${fallback.code}" applied!`);
+        return;
+      }
+      showToast("Could not validate coupon.", "error");
     }
-    setAppliedCoupon(coupon);
-    showToast(`Coupon "${coupon.code}" applied!`);
   };
 
   const removeCoupon = () => {
@@ -1287,8 +1332,11 @@ export function CommerceProvider({ children }) {
       : subtotal >= 999
       ? 0
       : 60;
-  const platformFee = cartItems.length > 0 ? 15 : 0;
-  const discount = appliedCoupon ? appliedCoupon.discount : 0;
+  const discount = appliedCoupon
+    ? appliedCoupon.discountType === "percentage"
+      ? Math.round((subtotal * appliedCoupon.discountValue) / 100)
+      : (appliedCoupon.discount !== undefined ? appliedCoupon.discount : appliedCoupon.discountValue || 0)
+    : 0;
   const total = Math.max(0, subtotal + deliveryFee + platformFee - discount);
 
   return (
