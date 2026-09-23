@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { useAuth } from "../../context/AuthContext";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 import {
   ShoppingBag,
   Eye,
@@ -353,29 +354,50 @@ export default function MyOrders() {
           {viewMode === "seller_hub" && (
             <div className="space-y-6">
               {/* Seller Overview Banner */}
-              <div className="rounded-3xl bg-gradient-to-r from-[#17152A] via-[#241B4B] to-[#3B2879] p-6 text-white shadow-lg relative overflow-hidden">
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-[#FFD166] border border-white/10 mb-2">
-                      <Sparkles size={12} />
-                      <span>Peer-to-Peer Student Escrow Fulfillment</span>
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-[#FAF9FF] to-[#F5F2FF] p-6 md:p-7 border border-[#E9E4F5] shadow-xs">
+                {/* Decorative subtle ambient lights */}
+                <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-gradient-to-br from-[#6C4BF4]/10 to-[#C83CCB]/10 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-[#6C4BF4]/5 blur-xl" />
+
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="max-w-xl">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-[#6C4BF4]/10 border border-[#6C4BF4]/15 px-3 py-1 text-[11px] font-bold text-[#6C4BF4] mb-3">
+                      <ShieldCheck size={13} className="text-[#6C4BF4]" />
+                      <span>Escrow-Protected Student Orders</span>
                     </div>
-                    <h2 className="text-xl font-extrabold tracking-tight">
-                      Seller Confirmation & Dispatch Dashboard
+                    <h2 className="text-xl md:text-2xl font-extrabold tracking-tight text-[#17152A]">
+                      Seller Orders & Dispatch Hub
                     </h2>
-                    <p className="mt-1 text-xs text-white/70 max-w-xl">
-                      When students buy your listed textbooks, funds are held safely in Escrow. Confirm order availability within 24h to unlock courier dispatch and earn payouts!
+                    <p className="mt-1.5 text-xs md:text-sm text-gray-500 leading-relaxed">
+                      Confirm book availability within 24 hours to initiate dispatch. Buyer payments remain secured in escrow until delivery is verified.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-white/10 p-3 text-center border border-white/10 backdrop-blur-xs min-w-[110px]">
-                      <span className="text-[10px] font-bold text-white/60 uppercase block">Pending Confirm</span>
-                      <span className="text-2xl font-black text-amber-400">{pendingConfirmationCount}</span>
+                  <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-3 rounded-2xl bg-white border border-amber-200/80 p-3.5 px-4 shadow-2xs min-w-[140px]">
+                      <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                        <Clock size={19} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Action Req.</span>
+                        <div className="flex items-baseline gap-1 mt-0.5">
+                          <span className="text-xl font-extrabold text-[#17152A]">{pendingConfirmationCount}</span>
+                          <span className="text-xs font-semibold text-gray-500">pending</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="rounded-2xl bg-white/10 p-3 text-center border border-white/10 backdrop-blur-xs min-w-[110px]">
-                      <span className="text-[10px] font-bold text-white/60 uppercase block">Escrow Protected</span>
-                      <span className="text-2xl font-black text-emerald-400">100%</span>
+
+                    <div className="flex items-center gap-3 rounded-2xl bg-white border border-emerald-200/80 p-3.5 px-4 shadow-2xs min-w-[140px]">
+                      <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <ShieldCheck size={19} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Escrow</span>
+                        <div className="flex items-baseline gap-1 mt-0.5">
+                          <span className="text-xl font-extrabold text-emerald-600">100%</span>
+                          <span className="text-xs font-semibold text-emerald-700/80">Secured</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -467,19 +489,17 @@ export default function MyOrders() {
                         <div className="grid gap-6 md:grid-cols-12 py-5 items-center">
                           {/* Book Details (6 cols) */}
                           <div className="md:col-span-6 flex gap-4 items-center">
-                            {primary.image ? (
-                              <div className="h-20 w-15 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-black/5 shadow-2xs">
-                                <img
-                                  src={primary.image}
-                                  alt={primary.title}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="h-20 w-15 shrink-0 rounded-xl bg-gradient-to-br from-[#6C4BF4] to-[#8B3FD9] flex items-center justify-center text-xs font-black text-white uppercase shadow-sm">
-                                BOOK
-                              </div>
-                            )}
+                            <div className="h-20 w-15 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-black/5 shadow-2xs">
+                              <img
+                                src={getBookCover(primary)}
+                                alt={primary.title || "Book cover"}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = DEFAULT_BOOK_COVER;
+                                }}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
 
                             <div className="min-w-0">
                               <h3 className="font-extrabold text-sm text-[#17152A] truncate">
@@ -683,17 +703,17 @@ export default function MyOrders() {
                     >
                       {/* Left Column: Details */}
                       <div className="flex gap-4">
-                        {order.image ? (
-                          <div className="h-20 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-black/5 shadow-2xs">
-                            <img src={order.image} alt={order.title} className="h-full w-full object-cover" />
-                          </div>
-                        ) : (
-                          <div
-                            className={`h-20 w-14 shrink-0 rounded-xl bg-gradient-to-br ${order.coverClass} flex items-center justify-center text-[8px] font-extrabold text-white uppercase tracking-wider border border-black/5`}
-                          >
-                            {order.title.split(" ").map((w) => w[0]).join("")}
-                          </div>
-                        )}
+                        <div className="h-20 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-black/5 shadow-2xs">
+                          <img
+                            src={getBookCover(order)}
+                            alt={order.title || "Book cover"}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = DEFAULT_BOOK_COVER;
+                            }}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
 
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
