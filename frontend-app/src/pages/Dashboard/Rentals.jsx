@@ -4,6 +4,7 @@ import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { Calendar, ShieldCheck, Clock, MessageSquare, CornerUpLeft, Menu, PlusCircle, CheckCircle2 } from "lucide-react";
 import { api } from "../../services/apiClient";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
 const INITIAL_RENTED = [
   {
@@ -16,6 +17,7 @@ const INITIAL_RENTED = [
     daysLeft: 12,
     percentLeft: 40,
     dueDate: "06 Sep 2026",
+    image: "https://covers.openlibrary.org/b/isbn/9781118063330-L.jpg",
     coverClass: "from-[#0F172A] to-[#1E293B]",
     status: "active"
   },
@@ -29,6 +31,7 @@ const INITIAL_RENTED = [
     daysLeft: 25,
     percentLeft: 83,
     dueDate: "19 Sep 2026",
+    image: "https://covers.openlibrary.org/b/isbn/9789351199342-L.jpg",
     coverClass: "from-[#4F46E5] to-[#7C3AED]",
     status: "active"
   }
@@ -45,6 +48,7 @@ const INITIAL_LENT = [
     daysLeft: 5,
     percentLeft: 16,
     dueDate: "30 Aug 2026",
+    image: "https://covers.openlibrary.org/b/isbn/9780073523323-L.jpg",
     coverClass: "from-[#047857] to-[#065F46]",
     status: "active"
   }
@@ -238,8 +242,16 @@ export default function Rentals() {
                   
                   {/* Top block */}
                   <div className="flex gap-4">
-                    <div className={`h-24 w-16 shrink-0 rounded-lg bg-gradient-to-br ${item.coverClass} flex items-center justify-center text-[9px] font-extrabold text-white uppercase tracking-wider border border-black/5`}>
-                      {item.title.split(' ').map(w => w[0]).join('')}
+                    <div className="h-24 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-gray-200 shadow-2xs relative">
+                      <img
+                        src={getBookCover(item)}
+                        alt={item?.title || "Rented Book"}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = DEFAULT_BOOK_COVER;
+                        }}
+                      />
                     </div>
 
                     <div className="min-w-0 flex-1">

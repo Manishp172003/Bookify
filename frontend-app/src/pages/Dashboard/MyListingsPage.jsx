@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
 import { useCommerce } from '../../context/CommerceContext';
 import { listingService } from '../../services/listingService';
+import { getBookCover, DEFAULT_BOOK_COVER } from '../../utils/bookCoverUtils';
 import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu, Plus, Package, AlertCircle } from 'lucide-react';
 
 export default function MyListingsPage() {
@@ -161,8 +162,16 @@ export default function MyListingsPage() {
                   
                   {/* Left block: info */}
                   <div className="flex gap-4 min-w-0">
-                    <div className={`h-20 w-14 shrink-0 rounded-lg bg-gradient-to-br ${item.coverClass} flex items-center justify-center text-[8px] font-extrabold text-white uppercase tracking-wider border border-black/5`}>
-                      {item.title.split(' ').map(w => w[0]).join('')}
+                    <div className="h-20 w-15 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-gray-200 shadow-2xs relative">
+                      <img
+                        src={getBookCover(item)}
+                        alt={item.title}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = DEFAULT_BOOK_COVER;
+                        }}
+                      />
                     </div>
 
                     <div className="min-w-0">
@@ -174,7 +183,9 @@ export default function MyListingsPage() {
                         <span className="text-[10px] font-semibold text-gray-500">{item.condition}</span>
                       </div>
                       <h3 className="font-bold text-[#17152A] text-sm mt-1.5 truncate">{item.title}</h3>
-                      <p className="text-xs font-bold text-[#6C4BF4] mt-1">{item.price}</p>
+                      <p className="text-xs font-bold text-[#6C4BF4] mt-1">
+                        {typeof item.price === "number" ? `₹${item.price}` : String(item.price).startsWith("₹") ? item.price : `₹${item.price}`}
+                      </p>
                     </div>
                   </div>
 

@@ -1,3 +1,5 @@
+import { getBookCover } from "../utils/bookCoverUtils";
+
 // Unified listing management service for student user listings and seller flow
 // Broadcasts 'bookify_user_listings_updated' on changes
 
@@ -16,7 +18,9 @@ const INITIAL_USER_LISTINGS = [
     mode: "sell",
     views: 42,
     wishlists: 12,
-    photos: ["https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&auto=format&fit=crop&q=60"],
+    cover: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
+    image: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
+    photos: ["https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg"],
     coverClass: "from-[#111827] to-[#374151]",
     date: "2026-08-25"
   },
@@ -32,7 +36,9 @@ const INITIAL_USER_LISTINGS = [
     mode: "sell",
     views: 29,
     wishlists: 5,
-    photos: ["https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=60"],
+    cover: "https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg",
+    image: "https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg",
+    photos: ["https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg"],
     coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
     date: "2026-08-22"
   },
@@ -48,7 +54,9 @@ const INITIAL_USER_LISTINGS = [
     mode: "sell",
     views: 95,
     wishlists: 18,
-    photos: ["https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=500&auto=format&fit=crop&q=60"],
+    cover: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
+    image: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
+    photos: ["https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg"],
     coverClass: "from-[#059669] to-[#10B981]",
     date: "2026-08-15"
   },
@@ -64,7 +72,9 @@ const INITIAL_USER_LISTINGS = [
     mode: "sell",
     views: 14,
     wishlists: 2,
-    photos: ["https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=60"],
+    cover: "https://covers.openlibrary.org/b/isbn/9781285741550-L.jpg",
+    image: "https://covers.openlibrary.org/b/isbn/9781285741550-L.jpg",
+    photos: ["https://covers.openlibrary.org/b/isbn/9781285741550-L.jpg"],
     coverClass: "from-[#E11D48] to-[#F43F5E]",
     date: "2026-08-10"
   }
@@ -73,11 +83,20 @@ const INITIAL_USER_LISTINGS = [
 function getStoredListings() {
   try {
     const raw = localStorage.getItem(LISTINGS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(INITIAL_USER_LISTINGS));
-      return INITIAL_USER_LISTINGS;
+    let listings = raw ? JSON.parse(raw) : INITIAL_USER_LISTINGS;
+    if (Array.isArray(listings) && listings.length > 0) {
+      return listings.map((item) => {
+        const coverUrl = getBookCover(item);
+        return {
+          ...item,
+          cover: item.cover || coverUrl,
+          image: item.image || coverUrl,
+          photos: Array.isArray(item.photos) && item.photos.length > 0 ? item.photos : [coverUrl],
+        };
+      });
     }
-    return JSON.parse(raw);
+    localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(INITIAL_USER_LISTINGS));
+    return INITIAL_USER_LISTINGS;
   } catch {
     return INITIAL_USER_LISTINGS;
   }
@@ -104,6 +123,7 @@ export const listingService = {
   createListing(listingData) {
     const listings = getStoredListings();
     const idNum = Math.floor(100000 + Math.random() * 900000);
+    const coverUrl = getBookCover(listingData);
     const newListing = {
       id: `BKFY-${idNum}`,
       title: listingData.title || "Untitled Textbook",
@@ -116,9 +136,11 @@ export const listingService = {
       mode: listingData.mode || "sell",
       views: 1,
       wishlists: 0,
+      cover: coverUrl,
+      image: coverUrl,
       photos: listingData.photos && listingData.photos.length > 0 
         ? listingData.photos 
-        : [listingData.cover || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&auto=format&fit=crop&q=60"],
+        : [coverUrl],
       coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
       date: new Date().toISOString().split("T")[0]
     };

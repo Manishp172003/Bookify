@@ -4,6 +4,7 @@ import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { api } from "../../services/apiClient";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
 const INITIAL_RECEIVED = [
   {
@@ -15,11 +16,13 @@ const INITIAL_RECEIVED = [
     yourBook: {
       title: "Introduction to Algorithms",
       condition: "Very Good",
+      image: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
       coverClass: "from-[#111827] to-[#374151]"
     },
     theirBook: {
       title: "Compiler Design: Principles",
       condition: "Like New",
+      image: "https://covers.openlibrary.org/b/isbn/9780321486813-L.jpg",
       coverClass: "from-[#065F46] to-[#047857]"
     }
   }
@@ -35,11 +38,13 @@ const INITIAL_SENT = [
     yourBook: {
       title: "Organic Chemistry, 8th Edition",
       condition: "Good",
+      image: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
       coverClass: "from-[#0F172A] to-[#1E293B]"
     },
     theirBook: {
       title: "Concepts of Physics Vol 1",
       condition: "Very Good",
+      image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
       coverClass: "from-[#E11D48] to-[#F43F5E]"
     }
   }
@@ -216,8 +221,16 @@ export default function Exchanges() {
                     
                     {/* Your book */}
                     <div className="md:col-span-2 rounded-xl bg-gray-50 p-4 border border-gray-100 flex items-center gap-3">
-                      <div className={`h-16 w-11 shrink-0 rounded bg-gradient-to-br ${item.yourBook.coverClass} flex items-center justify-center text-[7px] font-extrabold text-white uppercase border border-black/5`}>
-                        {item.yourBook.title.split(' ').map(w => w[0]).join('')}
+                      <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200 shadow-2xs relative">
+                        <img
+                          src={getBookCover(item.yourBook)}
+                          alt={item.yourBook?.title || "Book"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_BOOK_COVER;
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[9px] text-gray-400 font-bold uppercase">Your Book</p>
@@ -235,8 +248,16 @@ export default function Exchanges() {
 
                     {/* Their Book */}
                     <div className="md:col-span-2 rounded-xl bg-[#F8F7FF] p-4 border border-[#E9E4FF] flex items-center gap-3">
-                      <div className={`h-16 w-11 shrink-0 rounded bg-gradient-to-br ${item.theirBook.coverClass} flex items-center justify-center text-[7px] font-extrabold text-white uppercase border border-black/5`}>
-                        {item.theirBook.title.split(' ').map(w => w[0]).join('')}
+                      <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200 shadow-2xs relative">
+                        <img
+                          src={getBookCover(item.theirBook)}
+                          alt={item.theirBook?.title || "Offered Book"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_BOOK_COVER;
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[9px] text-[#6C4BF4] font-bold uppercase">Their Offered Book</p>

@@ -2,6 +2,7 @@ import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { Heart, Bell, BellOff, MessageCircle, ShoppingCart, Trash2, ArrowLeft, Menu } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCommerce } from "../../context/CommerceContext";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
 export default function Wishlist() {
   const navigate = useNavigate();
@@ -84,21 +85,15 @@ export default function Wishlist() {
                 >
                   {/* Left: Book Cover */}
                   <div className="relative w-22 h-[120px] rounded-xl overflow-hidden shrink-0 border border-gray-100 shadow-xs">
-                    {item.coverImage ? (
-                      <img
-                        src={item.coverImage}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className={`w-full h-full bg-gradient-to-br ${
-                          item.coverClass || "from-[#6C4BF4] to-[#8B3FD9]"
-                        } flex items-center justify-center text-[10px] font-extrabold text-white uppercase tracking-wider`}
-                      >
-                        {item.title.split(" ").map((w) => w[0]).join("")}
-                      </div>
-                    )}
+                    <img
+                      src={getBookCover(item)}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = DEFAULT_BOOK_COVER;
+                      }}
+                    />
                   </div>
 
                   {/* Right: Info & Actions Panel */}
