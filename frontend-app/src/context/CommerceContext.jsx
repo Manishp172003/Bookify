@@ -284,7 +284,20 @@ const INITIAL_ORDERS = [
     platformFee: 15,
     discount: 0,
     total: 505,
-    address: INITIAL_ADDRESSES[0],
+    address: {
+      id: "addr_1",
+      name: "Student Buyer",
+      phone: "+91 98765 43210",
+      type: "Campus / Hostel",
+      campus: "Nagpur University Campus",
+      hostelBlock: "Hostel Block A",
+      meetupSpot: "Central Library Entrance",
+      street: "Hostel Block A, Nagpur University Campus",
+      city: "Nagpur",
+      state: "Maharashtra",
+      pincode: "440033",
+      isDefault: true,
+    },
     courier: {
       name: "BlueDart Campus Express",
       trackingNumber: "BD-90218390-IN",
@@ -375,6 +388,18 @@ export function CommerceProvider({ children }) {
                   phone: "+91 98765 88990",
                   meetupSpot: "Central Library Ground Floor"
                 }
+              };
+            }
+            if (o.address?.name === "Manish Pawar") {
+              const userStr = localStorage.getItem("bookify_user");
+              const currentUser = userStr ? JSON.parse(userStr) : null;
+              return {
+                ...o,
+                address: {
+                  ...o.address,
+                  name: currentUser?.fullName || currentUser?.name || "Student Buyer",
+                  phone: currentUser?.phone || o.address?.phone || "",
+                },
               };
             }
             return o;
@@ -933,7 +958,7 @@ export function CommerceProvider({ children }) {
         name: selectedAddress?.name || "Student Buyer",
         phone: selectedAddress?.phone || "+91 98765 43210",
         meetupSpot: selectedAddress?.meetupSpot || selectedAddress?.campus || "Campus Central Library Entrance",
-        hostelBlock: selectedAddress?.hostelBlock || selectedAddress?.street || "Hostel Block A, Room 204"
+        hostelBlock: selectedAddress?.hostelBlock || selectedAddress?.street || "Campus Hostel"
       },
       courier: {
         name: isExpress ? "Campus Express Air / Courier" : "Campus Delivery Network",
