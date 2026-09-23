@@ -2,13 +2,27 @@ import Book from "../models/Book.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
 import Coupon from "../models/Coupon.js";
+import Dispute from "../models/Dispute.js";
+import PlatformSetting from "../models/PlatformSetting.js";
 import { sendVerificationStatusEmail } from "../services/emailService.js";
 
 // ─── Platform Metrics ─────────────────────────────────────────────────────────
 
 export const getMetrics = async (req, res) => {
   try {
-    const [totalUsers, totalBooks, totalOrders, totalEarnings] = await Promise.all([
+    const [
+      totalUsers,
+      totalBooks,
+      totalOrders,
+      totalEarnings,
+      pendingListings,
+      pendingAuthors,
+      openDisputes,
+      recentUsers,
+      recentBooks,
+      recentOrders,
+      recentDisputes,
+    ] = await Promise.all([
       User.countDocuments(),
       Book.countDocuments(),
       Order.countDocuments(),
@@ -16,7 +30,57 @@ export const getMetrics = async (req, res) => {
         { $match: { paymentStatus: "Completed" } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
+      Book.countDocuments({ status: { $in: ["Pending", "pending"] } }),
+      User.countDocuments({
+        $or: [
+          { authorVerificationStatus: "pending" },
+          { "authorProfile.verificationStatus": "pending" },
+        ],
+      }),
+      Dispute.countDocuments({ status: { $ne: "Resolved" } }),
+      User.find().sort({ createdAt: -1 }).limit(3).select("fullName role createdAt"),
+      Book.find().sort({ createdAt: -1 }).limit(3).select("title createdAt"),
+      Order.find().sort({ createdAt: -1 }).limit(3).select("amount createdAt"),
+      Dispute.find().sort({ createdAt: -1 }).limit(3).select("orderCode issue createdAt"),
     ]);
+
+    // Build real-time activity log from actual DB events
+    const rawLogs = [
+      ...recentUsers.map((u) => ({
+        id: `u_${u._id}`,
+        text: `New open registration: ${u.fullName}`,
+        role: u.role === "author" ? "Author" : "Student",
+        time: u.createdAt,
+      })),
+      ...recentBooks.map((b) => ({
+        id: `b_${b._id}`,
+        text: `New book listed: ${b.title}`,
+        role: `Listing ID: #${b._id.toString().slice(-5)}`,
+        time: b.createdAt,
+      })),
+      ...recentOrders.map((o) => ({
+        id: `o_${o._id}`,
+        text: `Order placed: #${o._id.toString().slice(-6)}`,
+        role: `Amount: ₹${o.amount}`,
+        time: o.createdAt,
+      })),
+      ...recentDisputes.map((d) => ({
+        id: `d_${d._id}`,
+        text: `Dispute raised: ${d.orderCode || d._id.toString().slice(-6)}`,
+        role: d.issue || "Item Issue",
+        time: d.createdAt,
+      })),
+    ];
+
+    rawLogs.sort((a, b) => new Date(b.time) - new Date(a.time));
+    const recentLogs = rawLogs.slice(0, 5).map((log) => {
+      const diffSec = Math.floor((Date.now() - new Date(log.time).getTime()) / 1000);
+      let timeStr = "Just now";
+      if (diffSec >= 86400) timeStr = `${Math.floor(diffSec / 86400)}d ago`;
+      else if (diffSec >= 3600) timeStr = `${Math.floor(diffSec / 3600)}h ago`;
+      else if (diffSec >= 60) timeStr = `${Math.floor(diffSec / 60)}m ago`;
+      return { ...log, time: timeStr };
+    });
 
     return res.status(200).json({
       success: true,
@@ -26,6 +90,10 @@ export const getMetrics = async (req, res) => {
         totalBooks,
         totalOrders,
         platformRevenue: totalEarnings[0]?.total || 0,
+        pendingListings,
+        pendingAuthors,
+        openDisputes,
+        recentLogs,
       },
     });
   } catch (error) {
@@ -99,11 +167,25 @@ export const getOrdersEscrow = async (req, res) => {
 export const updateEscrow = async (req, res) => {
   try {
     const { escrowStatus } = req.body;
-    const order = await Order.findByIdAndUpdate(req.params.id, { escrowStatus }, { new: true });
+    const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found", data: null });
     }
-    return res.status(200).json({ success: true, message: "Escrow updated", data: order });
+
+    const previousStatus = order.escrowStatus;
+    order.escrowStatus = escrowStatus;
+    await order.save();
+
+    // If escrow is released to seller, credit seller wallet balance
+    if (escrowStatus === "Released" && previousStatus !== "Released" && order.sellerId) {
+      const seller = await User.findById(order.sellerId);
+      if (seller) {
+        seller.walletBalance = (seller.walletBalance || 0) + (order.amount || 0);
+        await seller.save();
+      }
+    }
+
+    return res.status(200).json({ success: true, message: `Escrow status updated to ${escrowStatus}`, data: order });
   } catch (error) {
     console.error("Update escrow error:", error);
     return res.status(500).json({
@@ -129,6 +211,37 @@ export const getUsers = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch users",
+      data: null,
+    });
+  }
+};
+
+export const toggleUserBan = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found", data: null });
+    }
+
+    const isCurrentlyBanned = user.status === "Banned" || user.isBanned === true;
+    user.status = isCurrentlyBanned ? "Active" : "Banned";
+    user.isBanned = !isCurrentlyBanned;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `User account ${user.status === "Banned" ? "banned" : "unbanned"} successfully`,
+      data: {
+        id: user._id,
+        status: user.status,
+        isBanned: user.isBanned,
+      },
+    });
+  } catch (error) {
+    console.error("Toggle user ban error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to toggle user ban status",
       data: null,
     });
   }
@@ -368,6 +481,78 @@ export const deleteAdminCoupon = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to delete coupon",
+      data: null,
+    });
+  }
+};
+
+// ─── Platform Settings ────────────────────────────────────────────────────────
+
+export const getSettings = async (req, res) => {
+  try {
+    let settings = await PlatformSetting.findOne();
+    if (!settings) {
+      settings = await PlatformSetting.create({
+        commission: 5,
+        rentalCommission: 10,
+        exchangeFee: 20,
+        escrowDuration: 48,
+        allowRentals: true,
+        allowExchanges: true,
+        allowDonations: false,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Platform settings fetched successfully",
+      data: settings,
+    });
+  } catch (error) {
+    console.error("Get platform settings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch platform settings",
+      data: null,
+    });
+  }
+};
+
+export const updateSettings = async (req, res) => {
+  try {
+    const {
+      commission,
+      rentalCommission,
+      exchangeFee,
+      escrowDuration,
+      allowRentals,
+      allowExchanges,
+      allowDonations,
+    } = req.body;
+
+    let settings = await PlatformSetting.findOne();
+    if (!settings) {
+      settings = await PlatformSetting.create(req.body);
+    } else {
+      if (commission !== undefined) settings.commission = Number(commission);
+      if (rentalCommission !== undefined) settings.rentalCommission = Number(rentalCommission);
+      if (exchangeFee !== undefined) settings.exchangeFee = Number(exchangeFee);
+      if (escrowDuration !== undefined) settings.escrowDuration = Number(escrowDuration);
+      if (allowRentals !== undefined) settings.allowRentals = Boolean(allowRentals);
+      if (allowExchanges !== undefined) settings.allowExchanges = Boolean(allowExchanges);
+      if (allowDonations !== undefined) settings.allowDonations = Boolean(allowDonations);
+      await settings.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Platform settings updated successfully",
+      data: settings,
+    });
+  } catch (error) {
+    console.error("Update platform settings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update platform settings",
       data: null,
     });
   }

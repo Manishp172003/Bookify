@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema({
   },
   isAuthor: { type: Boolean, default: false },
   adminCode: { type: String }, // 15-digit code for admin verification
+  status: { type: String, enum: ['Active', 'Banned'], default: 'Active' },
+  isBanned: { type: Boolean, default: false },
 
   // ─── Author Profile & Verification ────────────────────────────────────────
   authorProfile: {

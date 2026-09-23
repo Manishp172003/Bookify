@@ -11,8 +11,8 @@ const DEFAULT_DISPUTES = [
 
 export default function Disputes() {
   const [filter, setFilter] = useState("All");
-  const [disputes, setDisputes] = useState(DEFAULT_DISPUTES);
-  const [isLoading, setIsLoading] = useState(false);
+  const [disputes, setDisputes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedDispute, setSelectedDispute] = useState(null);
   const [resolutionDecision, setResolutionDecision] = useState("Refund Buyer");
   const [resolutionNotes, setResolutionNotes] = useState("");
@@ -23,11 +23,14 @@ export default function Disputes() {
       try {
         setIsLoading(true);
         const res = await api.get("/disputes");
-        if (res?.data && res.data.length > 0) {
+        if (Array.isArray(res?.data)) {
           setDisputes(res.data);
+        } else {
+          setDisputes([]);
         }
       } catch (err) {
-        console.warn("Could not fetch disputes from API, using default list:", err);
+        console.warn("Could not fetch disputes from API:", err);
+        setDisputes([]);
       } finally {
         setIsLoading(false);
       }
