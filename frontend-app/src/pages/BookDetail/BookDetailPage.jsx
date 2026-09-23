@@ -23,6 +23,7 @@ import ConditionBadge from "../../components/ui/ConditionBadge";
 import SellerCard from "../../components/book/SellerCard";
 import BookCard from "../../components/book/BookCard";
 import books from "../../data/books";
+import { api } from "../../services/apiClient";
 
 const modeConfig = {
   sell: {
@@ -97,7 +98,7 @@ export default function BookDetailPage() {
     }
   };
 
-  const handleSubmitProposal = () => {
+  const handleSubmitProposal = async () => {
     if (!book) return;
     const myBooks = [
       { id: "my_1", title: "Concepts of Physics Vol 1", author: "H.C. Verma" },
@@ -108,6 +109,31 @@ export default function BookDetailPage() {
     const defaultSeller = { id: 101, name: "Rahul Sharma", avatar: null, college: "IIT Delhi" };
     const customText = `🔄 Proposed swap for "${book.title}" in exchange for my "${chosen.title}" by ${chosen.author}.\n\nNote: ${proposalNote || "Let's meet up to exchange textbooks!"}`;
     const chatId = startOrGetConversation(book.seller || defaultSeller, book, customText);
+
+    try {
+      await api.post("/exchanges/propose", {
+        receiverId: book.seller?.id || book.sellerId,
+        receiverName: book.seller?.name || "Book Owner",
+        requestedBook: {
+          bookId: book._id || book.id,
+          title: book.title,
+          author: book.author || "",
+          condition: book.condition || "Good",
+          coverImage: book.coverImage || (book.photos && book.photos[0]) || "",
+        },
+        offeredBook: {
+          title: chosen.title,
+          author: chosen.author,
+          condition: "Very Good",
+        },
+        meetupLocation: "Campus Central Library / Student Center",
+        note: proposalNote || "Let's meet up to exchange textbooks!",
+        chatId,
+      });
+    } catch (err) {
+      console.warn("Could not save exchange proposal to backend:", err);
+    }
+
     setIsExchangeModalOpen(false);
     navigate(`/chat/${chatId}`);
   };

@@ -101,6 +101,8 @@ const userSchema = new mongoose.Schema({
     ifscCode: { type: String, default: '' },
   },
 
+  walletBalance: { type: Number, default: 0 },
+
   // ─── Settings: Notifications ─────────────────────────────────────────────
   notifications: {
     priceDrops: { type: Boolean, default: true },

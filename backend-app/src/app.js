@@ -9,6 +9,8 @@ import wantBoardRoutes from "./routes/wantBoardRoutes.js";
 import authorRoutes from "./routes/authorRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import rentalRoutes from "./routes/rentalRoutes.js";
+import exchangeRoutes from "./routes/exchangeRoutes.js";
 
 const app = express();
 
@@ -64,6 +66,8 @@ app.use("/api/want-board", wantBoardRoutes);
 app.use("/api/author", authorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/rentals", rentalRoutes);
+app.use("/api/exchanges", exchangeRoutes);
 
 // ==========================================
 // 404 Handler

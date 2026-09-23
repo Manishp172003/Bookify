@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
-import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck } from "lucide-react";
+import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { api } from "../../services/apiClient";
 
 const INITIAL_RECEIVED = [
   {
@@ -50,14 +51,44 @@ export default function Exchanges() {
   const [receivedList, setReceivedList] = useState(INITIAL_RECEIVED);
   const [sentList, setSentList] = useState(INITIAL_SENT);
   const [selectedMeetup, setSelectedMeetup] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchExchanges = async () => {
+      try {
+        setIsLoading(true);
+        const res = await api.get("/exchanges/my-exchanges");
+        if (res?.data) {
+          if (res.data.received && res.data.received.length > 0) {
+            setReceivedList(res.data.received);
+          }
+          if (res.data.sent && res.data.sent.length > 0) {
+            setSentList(res.data.sent);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch exchanges from backend, using fallback:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchExchanges();
+  }, []);
 
   const list = activeTab === "Received" ? receivedList : sentList;
 
-  const handleAction = (id, type) => {
+  const handleAction = async (id, type) => {
+    try {
+      await api.patch(`/exchanges/${id}/respond`, { action: type });
+    } catch (err) {
+      console.warn("API respond exchange failed:", err);
+    }
+
     if (type === "Accepted") {
       setReceivedList(prev =>
         prev.map(item =>
-          item.id === id
+          item.id === id || item._id === id
             ? {
                 ...item,
                 status: "Accepted - Meetup Pending",
@@ -70,7 +101,7 @@ export default function Exchanges() {
     } else {
       setReceivedList(prev =>
         prev.map(item =>
-          item.id === id
+          item.id === id || item._id === id
             ? {
                 ...item,
                 status: "Declined",
@@ -81,6 +112,29 @@ export default function Exchanges() {
       );
       if (showToast) showToast(`Swap proposal ${id} declined.`, "info");
     }
+  };
+
+  const handleComplete = async (id) => {
+    try {
+      await api.patch(`/exchanges/${id}/complete`);
+    } catch (err) {
+      console.warn("API complete exchange failed:", err);
+    }
+
+    const updater = prev =>
+      prev.map(item =>
+        item.id === id || item._id === id
+          ? {
+              ...item,
+              status: "Completed",
+              statusColor: "text-blue-600 bg-blue-50 border-blue-100"
+            }
+          : item
+      );
+
+    setReceivedList(updater);
+    setSentList(updater);
+    if (showToast) showToast("Exchange confirmed! Handover successfully completed. 🎉", "success");
   };
 
   const handleOpenChat = (item) => {
@@ -212,14 +266,27 @@ export default function Exchanges() {
                           Decline
                         </button>
                       </>
+                    ) : item.status === "Completed" ? (
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl">
+                        <CheckCircle2 size={14} /> Handover Completed
+                      </span>
                     ) : (
-                      <button
-                        onClick={() => setSelectedMeetup(item)}
-                        className="flex items-center gap-1.5 border border-[#6C4BF4] text-[#6C4BF4] hover:bg-[#6C4BF4]/5 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
-                      >
-                        <MapPin size={13} />
-                        View Meetup Details
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setSelectedMeetup(item)}
+                          className="flex items-center gap-1.5 border border-[#6C4BF4] text-[#6C4BF4] hover:bg-[#6C4BF4]/5 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                        >
+                          <MapPin size={13} />
+                          View Meetup Details
+                        </button>
+                        <button
+                          onClick={() => handleComplete(item.id)}
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        >
+                          <CheckCircle2 size={13} />
+                          Mark Completed
+                        </button>
+                      </>
                     )}
                     <Link
                       to="/chat"

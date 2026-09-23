@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { Calendar, ShieldCheck, Clock, MessageSquare, CornerUpLeft, Menu, PlusCircle, CheckCircle2 } from "lucide-react";
+import { api } from "../../services/apiClient";
 
 const INITIAL_RENTED = [
   {
@@ -55,43 +56,118 @@ export default function Rentals() {
   const [rentedList, setRentedList] = useState(INITIAL_RENTED);
   const [lentList, setLentList] = useState(INITIAL_LENT);
   const [selectedReturnItem, setSelectedReturnItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRentals = async () => {
+      try {
+        setIsLoading(true);
+        const res = await api.get("/rentals/my-rentals");
+        if (res?.data) {
+          if (res.data.rented && res.data.rented.length > 0) {
+            setRentedList(res.data.rented);
+          }
+          if (res.data.lent && res.data.lent.length > 0) {
+            setLentList(res.data.lent);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch rentals from backend, fallback to local:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRentals();
+  }, []);
 
   const list = activeTab === "Rented" ? rentedList : lentList;
 
-  const handleExtendRental = (itemId) => {
-    setRentedList(prev =>
-      prev.map(item => {
-        if (item.id === itemId) {
-          const newDays = item.daysLeft + 15;
-          return {
-            ...item,
-            daysLeft: newDays,
-            percentLeft: Math.min(100, Math.round((newDays / 30) * 100)),
-            dueDate: "Extended +15 days"
-          };
-        }
-        return item;
-      })
-    );
-    if (showToast) showToast("Rental period extended by 15 days!", "success");
+  const handleExtendRental = async (itemId) => {
+    try {
+      const res = await api.patch(`/rentals/${itemId}/extend`, { additionalDays: 15 });
+      if (res?.data) {
+        setRentedList((prev) =>
+          prev.map((item) => (item.id === itemId || item._id === itemId ? res.data : item))
+        );
+      } else {
+        setRentedList((prev) =>
+          prev.map((item) => {
+            if (item.id === itemId) {
+              const newDays = item.daysLeft + 15;
+              return {
+                ...item,
+                daysLeft: newDays,
+                percentLeft: Math.min(100, Math.round((newDays / 30) * 100)),
+                dueDate: "Extended +15 days"
+              };
+            }
+            return item;
+          })
+        );
+      }
+      if (showToast) showToast("Rental period extended by 15 days!", "success");
+    } catch (err) {
+      console.warn("Extend rental API failed:", err);
+      setRentedList((prev) =>
+        prev.map((item) => {
+          if (item.id === itemId) {
+            const newDays = item.daysLeft + 15;
+            return {
+              ...item,
+              daysLeft: newDays,
+              percentLeft: Math.min(100, Math.round((newDays / 30) * 100)),
+              dueDate: "Extended +15 days"
+            };
+          }
+          return item;
+        })
+      );
+      if (showToast) showToast("Rental period extended by 15 days!", "success");
+    }
   };
 
-  const handleConfirmReturn = () => {
+  const handleConfirmReturn = async () => {
     if (!selectedReturnItem) return;
-    if (activeTab === "Rented") {
-      setRentedList(prev =>
-        prev.map(item =>
-          item.id === selectedReturnItem.id ? { ...item, status: "return_initiated", daysLeft: 0, percentLeft: 0 } : item
-        )
-      );
-      if (showToast) showToast(`Return initiated for "${selectedReturnItem.title}". Deposit holding will be refunded upon handover.`, "success");
-    } else {
-      setLentList(prev =>
-        prev.map(item =>
-          item.id === selectedReturnItem.id ? { ...item, status: "completed" } : item
-        )
-      );
-      if (showToast) showToast(`Return verified for "${selectedReturnItem.title}". Transaction closed.`, "success");
+    const targetId = selectedReturnItem.id || selectedReturnItem._id;
+    try {
+      if (activeTab === "Rented") {
+        await api.patch(`/rentals/${targetId}/return-request`);
+        setRentedList((prev) =>
+          prev.map((item) =>
+            item.id === targetId || item._id === targetId
+              ? { ...item, status: "return_initiated", daysLeft: 0, percentLeft: 0 }
+              : item
+          )
+        );
+        if (showToast) showToast(`Return initiated for "${selectedReturnItem.title}". Deposit holding will be refunded upon handover.`, "success");
+      } else {
+        const res = await api.patch(`/rentals/${targetId}/confirm-return`);
+        setLentList((prev) =>
+          prev.map((item) =>
+            item.id === targetId || item._id === targetId ? { ...item, status: "completed" } : item
+          )
+        );
+        const msg = res?.message || `Return verified for "${selectedReturnItem.title}". Deposit refunded & transaction closed.`;
+        if (showToast) showToast(msg, "success");
+      }
+    } catch (err) {
+      console.warn("Confirm return API failed:", err);
+      if (activeTab === "Rented") {
+        setRentedList((prev) =>
+          prev.map((item) =>
+            item.id === selectedReturnItem.id ? { ...item, status: "return_initiated", daysLeft: 0, percentLeft: 0 } : item
+          )
+        );
+        if (showToast) showToast(`Return initiated for "${selectedReturnItem.title}". Deposit holding will be refunded upon handover.`, "success");
+      } else {
+        setLentList((prev) =>
+          prev.map((item) =>
+            item.id === selectedReturnItem.id ? { ...item, status: "completed" } : item
+          )
+        );
+        if (showToast) showToast(`Return verified for "${selectedReturnItem.title}". Transaction closed.`, "success");
+      }
     }
     setSelectedReturnItem(null);
   };
