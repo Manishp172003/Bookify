@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCommerce } from "../../context/CommerceContext";
 import {
@@ -56,8 +56,94 @@ export default function BookDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, startOrGetConversation, toggleWishlist, isBookWishlisted } = useCommerce();
-  const book = books.find((b) => b.id === Number(id));
+  const [book, setBook] = useState(() => {
+    return books.find((b) => String(b.id) === String(id)) || null;
+  });
+  const [loading, setLoading] = useState(!book);
   const [activePhoto, setActivePhoto] = useState(0);
+
+  useEffect(() => {
+    setActivePhoto(0);
+    const staticBook = books.find((b) => String(b.id) === String(id));
+    if (staticBook) {
+      setBook(staticBook);
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setLoading(true);
+
+    api.get(`/books/${id}`)
+      .then((res) => {
+        if (!isMounted) return;
+        const data = res.data?.data || res.data;
+        if (data && (data._id || data.id)) {
+          const rawPhotos = Array.isArray(data.images) && data.images.length > 0 
+            ? data.images 
+            : [data.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop"];
+
+          const sellerObj = data.sellerId && typeof data.sellerId === "object" ? data.sellerId : {};
+          const isVerified = Boolean(
+            data.isAuthorOriginal || 
+            sellerObj.isVerified || 
+            sellerObj.authorVerificationStatus === "verified"
+          );
+
+          const normalizedBook = {
+            id: data._id || data.id,
+            _id: data._id || data.id,
+            title: data.title || "Untitled Book",
+            author: data.author || "Unknown Author",
+            isbn: data.isbn || "N/A",
+            publisher: data.publisher || (data.isAuthorOriginal ? "Self-Published via Bookify" : "Independent"),
+            category: data.category || "General",
+            subCategory: data.subCategory || "",
+            coverImage: rawPhotos[0],
+            photos: rawPhotos,
+            condition: (data.condition || "Like New").toUpperCase().replace(" ", "_"),
+            askingPrice: data.price ?? (data.askingPrice ?? 0),
+            originalPrice: data.originalPrice || Math.round((data.price || 299) * 1.3),
+            mode: (data.transactionMode || data.mode || "sell").toLowerCase(),
+            rentalRate: data.rentalPrice || 15,
+            securityDeposit: Math.round((data.price || 200) * 0.8),
+            isNegotiable: data.isNegotiable ?? false,
+            deliveryAvailable: true,
+            isVerifiedAuthor: isVerified,
+            isAuthorOriginal: Boolean(data.isAuthorOriginal),
+            description: data.description || "No description provided for this listing.",
+            postedDaysAgo: data.createdAt 
+              ? Math.max(0, Math.floor((new Date() - new Date(data.createdAt)) / (1000 * 60 * 60 * 24))) 
+              : 0,
+            seller: {
+              id: sellerObj._id || sellerObj.id || "seller1@bookify.com",
+              name: sellerObj.fullName || sellerObj.penName || "Verified Bookify Author",
+              avatar: sellerObj.authorAvatar || sellerObj.authorProfile?.avatar || "https://i.pravatar.cc/150?img=33",
+              college: sellerObj.address?.campus || "Bookify Official Campus Partner",
+              isVerified: isVerified,
+              authorVerificationStatus: sellerObj.authorVerificationStatus || (data.isAuthorOriginal ? "verified" : "unverified"),
+              rating: 5.0,
+              totalSales: data.salesCount || 1,
+              location: data.location || sellerObj.address?.campus || "Campus Direct",
+            },
+          };
+          setBook(normalizedBook);
+        } else {
+          setBook(null);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch book from backend:", err);
+        if (isMounted) setBook(null);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
   const isFavorited = book ? isBookWishlisted(book.id) : false;
   const [triggerBounce, setTriggerBounce] = useState(false);
   const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
@@ -138,6 +224,15 @@ export default function BookDetailPage() {
     navigate(`/chat/${chatId}`);
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-24 text-center">
+        <div className="inline-block w-10 h-10 border-4 border-bookify-purple border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm font-medium text-bookify-text-secondary">Loading book details...</p>
+      </div>
+    );
+  }
+
   if (!book) {
     return (
       <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-16 text-center">
@@ -159,7 +254,7 @@ export default function BookDetailPage() {
     );
   }
 
-  const mode = modeConfig[book.mode];
+  const mode = modeConfig[book.mode] || modeConfig.sell;
   const discount = book.originalPrice
     ? Math.round(
         ((book.originalPrice - book.askingPrice) / book.originalPrice) * 100
@@ -167,7 +262,7 @@ export default function BookDetailPage() {
     : null;
 
   const relatedBooks = books
-    .filter((b) => b.id !== book.id && b.category === book.category)
+    .filter((b) => String(b.id) !== String(book.id) && b.category === book.category)
     .slice(0, 12);
 
   return (
@@ -430,7 +525,7 @@ export default function BookDetailPage() {
               </div>
               <div className="flex items-center gap-2 text-sm text-bookify-text-secondary">
                 <MapPin size={14} />
-                {book.seller.location}
+                {book.seller?.location || "Campus Direct"}
               </div>
             </div>
           </div>

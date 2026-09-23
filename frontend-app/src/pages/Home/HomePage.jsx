@@ -57,9 +57,9 @@ function AnimateCounter({ target, suffix, speed = 30 }) {
 var trendingFilters = ['All Books', 'Fiction', 'Non-Fiction', 'Academic & Exams', 'Comics & Manga', 'Self-Help'];
 
 var spotlightAuthors = [
-  { name: 'Devina Kaur', book: 'The Monsoon Chronicles', desc: 'An evasive journey through changing relationships and hea...', cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop' },
-  { name: 'Aravind Sharma', book: 'Beyond Code & Karma', desc: "Unveiling the struggles of India's Silicon Valley workforce. Tech...", cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=400&fit=crop' },
-  { name: 'Preeti Rai', book: 'Spices of the Soul', desc: 'Over 50 forgotten grandmother recipes stitched together with...', cover: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=300&h=400&fit=crop' },
+  { bookId: 1011, name: 'Devina Kaur', book: 'The Monsoon Chronicles', desc: 'An evasive journey through changing relationships and hea...', cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop' },
+  { bookId: 1012, name: 'Aravind Sharma', book: 'Beyond Code & Karma', desc: "Unveiling the struggles of India's Silicon Valley workforce. Tech...", cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=400&fit=crop' },
+  { bookId: 1013, name: 'Preeti Rai', book: 'Spices of the Soul', desc: 'Over 50 forgotten grandmother recipes stitched together with...', cover: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=300&h=400&fit=crop' },
 ];
 
 const DEFAULT_TESTIMONIALS = [

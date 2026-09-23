@@ -245,7 +245,7 @@ export const getBookById = async (req, res) => {
     }
 
     const book = await Book.findById(id)
-      .populate("sellerId", "fullName email")
+      .populate("sellerId", "fullName email phone isAuthor authorProfile isVerified authorVerificationStatus authorBio authorAvatar address")
       .lean();
 
     if (!book) {
