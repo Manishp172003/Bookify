@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const orderTimelineSchema = new mongoose.Schema({
   stage: {
     type: String,
-    enum: ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"],
+    enum: ["Placed", "Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned"],
     required: true,
   },
   title: { type: String, required: true },
@@ -81,8 +81,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: [
       "Placed",
+      "Confirmed",
       "Processing",
       "Shipped",
+      "Out for Delivery",
       "Delivered",
       "Cancelled",
       "Returned",

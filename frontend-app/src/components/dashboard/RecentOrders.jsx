@@ -84,9 +84,16 @@ function RecentOrders() {
                 <p className="truncate text-sm font-semibold text-[#17152A] group-hover:text-[#6C4BF4] transition">
                   {title}
                 </p>
-                <p className="mt-0.5 text-xs text-gray-400">
-                  {sellerName}
-                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-gray-400">
+                    {sellerName}
+                  </p>
+                  {(order.status === "placed" || order.status === "Placed") && (
+                    <span className="rounded-full bg-amber-100 text-amber-800 text-[9px] font-extrabold px-1.5 py-0.2">
+                      Needs Confirm
+                    </span>
+                  )}
+                </div>
               </div>
 
               <span className="text-sm font-semibold text-[#17152A] shrink-0">

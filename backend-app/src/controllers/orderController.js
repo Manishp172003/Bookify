@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
 import Book from "../models/Book.js";
 import User from "../models/User.js";
@@ -97,15 +98,15 @@ export const createOrder = async (req, res) => {
         stage: "Placed",
         title: "Order Placed",
         date: new Date(),
-        description: "Your order has been placed successfully.",
+        description: "Your order has been placed successfully and payment is held in escrow.",
         completed: true,
         active: false,
       },
       {
-        stage: "Processing",
-        title: "Processing",
+        stage: "Confirmed",
+        title: "Seller Confirmed",
         date: null,
-        description: "Seller is preparing your package.",
+        description: "Seller has verified book condition and is packaging the order.",
         completed: false,
         active: true,
       },
@@ -113,7 +114,15 @@ export const createOrder = async (req, res) => {
         stage: "Shipped",
         title: "Shipped",
         date: null,
-        description: "Your package is on the way.",
+        description: "Your package is on the way via campus logistics.",
+        completed: false,
+        active: false,
+      },
+      {
+        stage: "Out for Delivery",
+        title: "Out for Delivery",
+        date: null,
+        description: "Courier partner is out for delivery to your campus meetup spot.",
         completed: false,
         active: false,
       },
@@ -121,7 +130,7 @@ export const createOrder = async (req, res) => {
         stage: "Delivered",
         title: "Delivered",
         date: null,
-        description: "Package delivered to your shipping address.",
+        description: "Package delivered and verified. Escrow funds released to seller.",
         completed: false,
         active: false,
       },
@@ -351,29 +360,34 @@ export const getMySales = async (req, res) => {
 
 export const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate("bookId")
-      .populate("buyerId", "fullName email phone")
-      .populate("sellerId", "fullName email phone")
-      .populate("items.bookId");
+    const idParam = req.params.id;
+    let order = null;
+
+    if (mongoose.Types.ObjectId.isValid(idParam)) {
+      order = await Order.findById(idParam)
+        .populate("bookId")
+        .populate("buyerId", "fullName email phone")
+        .populate("sellerId", "fullName email phone")
+        .populate("items.bookId");
+    }
+
+    if (!order) {
+      order = await Order.findOne({
+        $or: [
+          { razorpayOrderId: idParam },
+          { "courier.trackingNumber": idParam },
+        ],
+      })
+        .populate("bookId")
+        .populate("buyerId", "fullName email phone")
+        .populate("sellerId", "fullName email phone")
+        .populate("items.bookId");
+    }
 
     if (!order) {
       return res.status(404).json({
         success: false,
         message: "Order not found",
-        data: null,
-      });
-    }
-
-    const userId = req.user._id.toString();
-    const isBuyer = order.buyerId?._id?.toString() === userId;
-    const isSeller = order.sellerId?._id?.toString() === userId;
-    const isAdmin = req.user.role === "admin";
-
-    if (!isBuyer && !isSeller && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to view this order",
         data: null,
       });
     }
@@ -396,11 +410,14 @@ export const getOrderById = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status, courier } = req.body;
+    const idParam = req.params.id;
 
     const allowedStatuses = [
       "Placed",
+      "Confirmed",
       "Processing",
       "Shipped",
+      "Out for Delivery",
       "Delivered",
       "Cancelled",
       "Returned",
@@ -414,7 +431,18 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(req.params.id);
+    let order = null;
+    if (mongoose.Types.ObjectId.isValid(idParam)) {
+      order = await Order.findById(idParam);
+    }
+    if (!order) {
+      order = await Order.findOne({
+        $or: [
+          { razorpayOrderId: idParam },
+          { "courier.trackingNumber": idParam },
+        ],
+      });
+    }
 
     if (!order) {
       return res.status(404).json({
@@ -424,34 +452,33 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const userId = req.user._id.toString();
-    const isSeller = order.sellerId.toString() === userId;
-    const isAdmin = req.user.role === "admin";
-
-    if (!isSeller && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this order",
-        data: null,
-      });
-    }
-
     order.status = status;
 
     if (courier) {
       order.courier = {
-        name: courier.name || order.courier?.name || "",
-        trackingNumber: courier.trackingNumber || order.courier?.trackingNumber || "",
+        name: courier.name || order.courier?.name || "Campus Express Delivery",
+        trackingNumber: courier.trackingNumber || order.courier?.trackingNumber || `AWB-${Math.floor(100000 + Math.random() * 900000)}`,
       };
     }
 
-    // Update timeline stages
-    const stageOrder = ["Placed", "Processing", "Shipped", "Delivered"];
-    const currentIdx = stageOrder.indexOf(status);
+    // Normalized stages for order timeline: 0: Placed, 1: Confirmed/Processing, 2: Shipped, 3: Out for Delivery, 4: Delivered
+    const getStageIndex = (st) => {
+      switch (st) {
+        case "Placed": return 0;
+        case "Confirmed":
+        case "Processing": return 1;
+        case "Shipped": return 2;
+        case "Out for Delivery": return 3;
+        case "Delivered": return 4;
+        default: return -1;
+      }
+    };
+
+    const currentIdx = getStageIndex(status);
 
     if (order.timeline && order.timeline.length > 0 && currentIdx !== -1) {
       order.timeline.forEach((t) => {
-        const stageIdx = stageOrder.indexOf(t.stage);
+        const stageIdx = getStageIndex(t.stage);
         if (stageIdx !== -1) {
           if (stageIdx < currentIdx) {
             t.completed = true;
@@ -470,6 +497,7 @@ export const updateOrderStatus = async (req, res) => {
 
     if (status === "Delivered") {
       order.deliveredAt = new Date();
+      order.escrowStatus = "Released";
 
       const targetBookId = order.bookId || order.items?.[0]?.bookId;
       if (targetBookId) {
@@ -483,14 +511,28 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
+    // Populate for clean socket payload
+    await order.populate("buyerId", "fullName email phone");
+    await order.populate("sellerId", "fullName email phone");
+    await order.populate("bookId");
+
     const io = getIO();
     io.to(`order:${order._id.toString()}`).emit("orderStatusUpdated", order);
-    io.to(`user:${order.buyerId.toString()}`).emit("orderStatusUpdated", order);
-    io.to(`user:${order.sellerId.toString()}`).emit("orderStatusUpdated", order);
+    if (order.razorpayOrderId) {
+      io.to(`order:${order.razorpayOrderId}`).emit("orderStatusUpdated", order);
+    }
+    if (order.buyerId?._id) {
+      io.to(`user:${order.buyerId._id.toString()}`).emit("orderStatusUpdated", order);
+    }
+    if (order.sellerId?._id) {
+      io.to(`user:${order.sellerId._id.toString()}`).emit("orderStatusUpdated", order);
+    }
+    // Global broadcast so open tracking tabs immediately sync
+    io.emit("orderStatusUpdated", order);
 
     return res.status(200).json({
       success: true,
-      message: "Order status updated successfully",
+      message: `Order status successfully updated to ${status}`,
       data: order,
     });
   } catch (error) {

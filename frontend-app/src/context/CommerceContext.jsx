@@ -184,7 +184,65 @@ const INITIAL_CONVERSATIONS = [
 
 const INITIAL_ORDERS = [
   {
+    id: "BK77109230",
+    isSellerOrder: true,
+    orderDateFormatted: "Today, 04:30 PM",
+    expectedDelivery: "28 Sep 2026",
+    status: "placed",
+    statusLabel: "Awaiting Seller Confirmation",
+    escrowStatus: "held_in_escrow",
+    paymentMethod: "Razorpay (UPI)",
+    transactionId: "pay_LV884029193",
+    subtotal: 299,
+    deliveryFee: 40,
+    platformFee: 15,
+    discount: 0,
+    total: 354,
+    buyer: {
+      id: "usr_aarav",
+      name: "Aarav Sharma",
+      phone: "+91 98765 43210",
+      hostelBlock: "Hostel Block C, Room 312",
+      campus: "IIT Bombay Campus",
+      meetupSpot: "Central Library Entrance"
+    },
+    address: {
+      name: "Aarav Sharma",
+      phone: "+91 98765 43210",
+      hostelBlock: "Hostel Block C, Room 312",
+      campus: "IIT Bombay Campus",
+      meetupSpot: "Central Library Entrance",
+      city: "Mumbai",
+      state: "Maharashtra",
+      pincode: "400076"
+    },
+    courier: {
+      name: "Campus Delivery Network",
+      trackingNumber: "CN-718290-IN",
+      supportPhone: "+91 9876543210"
+    },
+    items: [
+      {
+        id: 101,
+        title: "Concepts of Physics (HC Verma Vol 1)",
+        author: "H.C. Verma",
+        price: 299,
+        condition: "Like New",
+        image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
+        quantity: 1
+      }
+    ],
+    timeline: [
+      { stage: "placed", title: "Order Placed", date: "Today", description: "Payment verified & ₹354 held safely in escrow.", completed: true, active: false },
+      { stage: "confirmed", title: "Seller Confirmed", date: "Pending", description: "Waiting for seller to accept and package the book.", completed: false, active: true },
+      { stage: "shipped", title: "Shipped", date: "Pending", description: "Handed over to college logistics courier.", completed: false, active: false },
+      { stage: "out_for_delivery", title: "Out for Delivery", date: "Pending", description: "Campus courier heading to delivery meetup spot.", completed: false, active: false },
+      { stage: "delivered", title: "Delivered", date: "Pending", description: "Verify package contents & release escrow.", completed: false, active: false }
+    ]
+  },
+  {
     id: "BK82901840",
+    isSellerOrder: false,
     orderDateFormatted: "28 Aug 2026",
     expectedDelivery: "01 Sep 2026",
     status: "shipped",
@@ -200,7 +258,8 @@ const INITIAL_ORDERS = [
     address: INITIAL_ADDRESSES[0],
     courier: {
       name: "BlueDart Campus Express",
-      trackingNumber: "BD-90218390-IN"
+      trackingNumber: "BD-90218390-IN",
+      supportPhone: "+91 9876543210"
     },
     items: [
       {
@@ -433,6 +492,69 @@ export function CommerceProvider({ children }) {
         )
       );
       showToast("Chat request was declined.", "info");
+    });
+
+    // Real-Time Dynamic Order Tracking & Seller Status Socket Listener
+    newSocket.on("orderStatusUpdated", (data) => {
+      if (!data) return;
+      const targetId = data._id || data.id || data.razorpayOrderId;
+      console.log("[Bookify Socket] Received live orderStatusUpdated:", targetId, data.status);
+
+      const rawStatus = (data.status || "").toLowerCase();
+      const mappedStatus =
+        rawStatus === "confirmed" || rawStatus === "processing"
+          ? "confirmed"
+          : rawStatus === "out for delivery"
+          ? "out_for_delivery"
+          : rawStatus;
+
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === targetId || o._id === targetId || o.id === data._id || o._id === data.id) {
+            return {
+              ...o,
+              status: mappedStatus,
+              statusLabel:
+                mappedStatus === "confirmed"
+                  ? "Seller Confirmed & Packaging"
+                  : mappedStatus === "shipped"
+                  ? "In Transit via Campus Courier"
+                  : mappedStatus === "out_for_delivery"
+                  ? "Out for Delivery"
+                  : mappedStatus === "delivered"
+                  ? "Delivered & Escrow Released"
+                  : data.status,
+              courier: data.courier || o.courier,
+              escrowStatus: data.escrowStatus === "Released" ? "released_to_seller" : o.escrowStatus,
+              timeline: data.timeline
+                ? data.timeline.map((t) => ({
+                    stage: t.stage.toLowerCase().replace(/ /g, "_"),
+                    title: t.title,
+                    date: t.date
+                      ? new Date(t.date).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                        })
+                      : "Today",
+                    description: t.description,
+                    completed: t.completed,
+                    active: t.active,
+                  }))
+                : o.timeline,
+            };
+          }
+          return o;
+        })
+      );
+
+      // Dispatch global window event so any open tracking or dashboard views update instantly
+      window.dispatchEvent(
+        new CustomEvent("bookify_order_updated", {
+          detail: { ...data, mappedStatus },
+        })
+      );
+
+      showToast(`Order status updated: ${data.status} 🚀`, "info");
     });
 
     return () => {
@@ -751,6 +873,118 @@ export function CommerceProvider({ children }) {
     showToast("Payment released to seller! Transaction closed.");
   };
 
+  const updateOrderStatus = async (orderId, newStatus, courierData = null) => {
+    // 1. Send update to backend API if reachable
+    try {
+      let token = localStorage.getItem("token") || localStorage.getItem("bookify_token");
+      if (!token) {
+        try {
+          const user = JSON.parse(localStorage.getItem("bookify_user") || "{}");
+          token = user.token;
+        } catch {}
+      }
+
+      await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          courier: courierData
+        })
+      });
+    } catch (apiErr) {
+      console.warn("[CommerceContext] Backend status update notice:", apiErr.message);
+    }
+
+    // 2. Synchronize local state optimistically
+    const rawStatus = (newStatus || "").toLowerCase();
+    const mappedStatus =
+      rawStatus === "confirmed" || rawStatus === "processing"
+        ? "confirmed"
+        : rawStatus === "out for delivery"
+        ? "out_for_delivery"
+        : rawStatus;
+
+    const isDeliv = mappedStatus === "delivered";
+    const isShipped = mappedStatus === "shipped";
+    const isConfirmed = mappedStatus === "confirmed";
+    const isOutForDelivery = mappedStatus === "out_for_delivery";
+
+    const stageOrder = ["placed", "confirmed", "shipped", "out_for_delivery", "delivered"];
+    const targetIdx = stageOrder.indexOf(mappedStatus);
+
+    let updatedTargetOrder = null;
+
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id === orderId || order._id === orderId) {
+          const updatedTimeline = (order.timeline || []).map((step) => {
+            const stepIdx = stageOrder.indexOf(step.stage);
+            if (stepIdx < targetIdx) {
+              return { ...step, completed: true, active: false };
+            } else if (stepIdx === targetIdx) {
+              return { ...step, completed: true, active: !isDeliv, date: "Today" };
+            } else {
+              return { ...step, completed: false, active: false };
+            }
+          });
+
+          const courierObj = courierData
+            ? {
+                name: courierData.name || order.courier?.name || "Campus Express Delivery",
+                trackingNumber:
+                  courierData.trackingNumber ||
+                  order.courier?.trackingNumber ||
+                  `AWB-${Math.floor(100000 + Math.random() * 900000)}`,
+                supportPhone: order.courier?.supportPhone || "+91 9876543210"
+              }
+            : order.courier;
+
+          const updated = {
+            ...order,
+            status: mappedStatus,
+            statusLabel:
+              isConfirmed
+                ? "Seller Confirmed & Packaging"
+                : isShipped
+                ? "In Transit via Campus Courier"
+                : isOutForDelivery
+                ? "Out for Delivery"
+                : isDeliv
+                ? "Delivered & Escrow Released"
+                : newStatus,
+            escrowStatus: isDeliv ? "released_to_seller" : order.escrowStatus,
+            courier: courierObj,
+            timeline: updatedTimeline
+          };
+          updatedTargetOrder = updated;
+          return updated;
+        }
+        return order;
+      })
+    );
+
+    // 3. Emit via socket and window event so tracking and active screens refresh instantly
+    if (socket && socket.connected) {
+      socket.emit("sendMessage", {
+        orderId,
+        message: `Status updated to ${newStatus}`
+      });
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("bookify_order_updated", {
+        detail: updatedTargetOrder || { id: orderId, status: newStatus, courier: courierData }
+      })
+    );
+
+    showToast(`Order status updated to: ${newStatus}`, "success");
+    return updatedTargetOrder;
+  };
+
   // Chats direct messaging
   const startOrGetConversation = (seller, book, customInitialMessage = null) => {
     // Generate deterministic ID so both buyer and seller join the identical socket room
@@ -1048,7 +1282,9 @@ export function CommerceProvider({ children }) {
         setShippingMethod,
         createOrder,
         orders,
+        setOrders,
         getOrderById,
+        updateOrderStatus,
         releaseEscrowPayment,
         conversations,
         activeConversation,
