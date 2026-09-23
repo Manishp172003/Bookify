@@ -234,25 +234,7 @@ export const verifyAuthor = async (req, res) => {
 
 // ─── Dispute Handling ─────────────────────────────────────────────────────────
 
-export const getDisputes = async (req, res) => {
-  try {
-    const disputedOrders = await Order.find({ status: { $in: ["Cancelled", "Returned"] } })
-      .populate("bookId")
-      .populate("buyerId sellerId", "fullName email");
-    return res.status(200).json({
-      success: true,
-      message: "Disputes fetched successfully",
-      data: disputedOrders,
-    });
-  } catch (error) {
-    console.error("Get disputes error:", error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Failed to fetch disputes",
-      data: null,
-    });
-  }
-};
+export { getDisputes } from "./disputeController.js";
 
 // ─── Admin Coupon Management ──────────────────────────────────────────────────
 

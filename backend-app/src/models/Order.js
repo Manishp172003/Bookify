@@ -113,7 +113,7 @@ const orderSchema = new mongoose.Schema({
 
   escrowStatus: {
     type: String,
-    enum: ["Held", "Released", "Refunded"],
+    enum: ["Held", "Released", "Refunded", "Disputed"],
     default: "Held",
   },
 

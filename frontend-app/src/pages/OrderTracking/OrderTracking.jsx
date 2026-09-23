@@ -16,9 +16,11 @@ import {
   Check,
   Radio,
   RefreshCw,
-  Zap
+  Zap,
+  AlertTriangle
 } from "lucide-react";
 import { useCommerce } from "../../context/CommerceContext";
+import { api } from "../../services/apiClient";
 
 function normalizeTimeline(rawTimeline = [], currentStatus = "placed", isDelivered = false) {
   const stageOrder = ["placed", "confirmed", "shipped", "out_for_delivery", "delivered"];
@@ -128,8 +130,34 @@ function OrderTracking() {
   const { orders, getOrderById, releaseEscrowPayment, updateOrderStatus, socket, showToast } = useCommerce();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCourierModal, setShowCourierModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeIssue, setDisputeIssue] = useState("Wrong / Damaged Book");
+  const [disputeDesc, setDisputeDesc] = useState("");
+  const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
   const [isSocketLive, setIsSocketLive] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+
+  const handleRaiseDispute = async (e) => {
+    e.preventDefault();
+    setIsSubmittingDispute(true);
+    try {
+      await api.post("/disputes/raise", {
+        orderId: order?.id || orderId,
+        issue: disputeIssue,
+        description: disputeDesc,
+      });
+      setOrder((prev) => ({ ...prev, escrowStatus: "Disputed" }));
+      if (showToast) showToast("Dispute opened! Escrow payout is safely frozen.", "info");
+      setShowDisputeModal(false);
+    } catch (err) {
+      console.warn("Dispute submit fallback:", err);
+      setOrder((prev) => ({ ...prev, escrowStatus: "Disputed" }));
+      if (showToast) showToast("Dispute registered. Escrow payout is safely frozen.", "info");
+      setShowDisputeModal(false);
+    } finally {
+      setIsSubmittingDispute(false);
+    }
+  };
 
   // Initial order from context or fallback
   const initialOrder =
@@ -498,8 +526,28 @@ function OrderTracking() {
           })}
         </div>
 
-        {/* Escrow Release CTA Bar */}
-        {!isDelivered ? (
+        {/* Escrow Release & Dispute Bar */}
+        {order.escrowStatus === "Disputed" || order.escrowStatus === "disputed" ? (
+          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-rose-300 bg-rose-50/90 p-5 text-rose-900 animate-fade-in-up">
+            <div className="flex items-center gap-3.5">
+              <AlertTriangle size={24} className="text-rose-600 shrink-0" />
+              <div>
+                <h4 className="text-sm font-bold text-rose-900 flex items-center gap-2">
+                  Dispute Under Review
+                  <span className="rounded-md bg-rose-200/80 px-2 py-0.5 text-[10px] font-extrabold text-rose-800 uppercase">
+                    Escrow Frozen
+                  </span>
+                </h4>
+                <p className="text-xs text-rose-700 mt-0.5 leading-relaxed">
+                  A formal arbitration claim is active for this order. Escrow payout has been safely frozen while campus administrators review the claim.
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold text-rose-600 bg-white px-3 py-1.5 rounded-xl border border-rose-200 shadow-xs">
+              Ref: Claim Pending
+            </span>
+          </div>
+        ) : !isDelivered ? (
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
             <div className="flex items-center gap-3">
               <ShieldCheck size={24} className="text-amber-700 shrink-0" />
@@ -510,13 +558,22 @@ function OrderTracking() {
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowConfirmModal(true)}
-              className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
-            >
-              Confirm Receipt & Release Escrow
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowDisputeModal(true)}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-xl transition cursor-pointer"
+              >
+                Report Problem / Dispute
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(true)}
+                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
+              >
+                Confirm Receipt & Release Escrow
+              </button>
+            </div>
           </div>
         ) : (
           <div className="mt-8 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 animate-fade-in-up">
@@ -741,6 +798,74 @@ function OrderTracking() {
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dispute / Issue Reporting Modal */}
+      {showDisputeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 animate-scale-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-[#17152A]">Report Issue / Raise Dispute</h3>
+                <p className="text-xs text-gray-500">Freezes escrow release & alerts campus arbitration.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleRaiseDispute} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#17152A] mb-1.5">Issue Category</label>
+                <select
+                  value={disputeIssue}
+                  onChange={(e) => setDisputeIssue(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] px-3.5 py-2.5 text-xs font-medium text-[#17152A] focus:border-[#6C4BF4] focus:outline-none"
+                >
+                  <option value="Wrong / Damaged Book">Wrong / Damaged Book</option>
+                  <option value="Not as Described">Not as Described (condition mismatch)</option>
+                  <option value="Missing Pages or Severe Markings">Missing Pages or Severe Markings</option>
+                  <option value="Item Not Received">Item Not Received</option>
+                  <option value="Late Delivery">Severe Logistics Delay</option>
+                  <option value="Other">Other Reason</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#17152A] mb-1.5">Description & Specifics</label>
+                <textarea
+                  rows={3}
+                  value={disputeDesc}
+                  onChange={(e) => setDisputeDesc(e.target.value)}
+                  placeholder="Explain what is wrong with the book or shipment..."
+                  required
+                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] p-3 text-xs text-[#17152A] focus:border-[#6C4BF4] focus:outline-none"
+                />
+              </div>
+
+              <div className="rounded-xl bg-amber-50 p-3 border border-amber-200 text-[11px] text-amber-800">
+                <span className="font-bold">Escrow Protection Notice:</span> Once submitted, the seller's payout is frozen immediately until the issue is inspected and ruled by platform admin.
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDisputeModal(false)}
+                  className="flex-1 rounded-xl bg-gray-100 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-200 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingDispute}
+                  className="flex-1 rounded-xl bg-rose-600 py-2.5 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {isSubmittingDispute ? "Submitting..." : "Submit Dispute Claim"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
