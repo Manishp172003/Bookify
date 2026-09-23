@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
+import { useAuth } from "../../context/AuthContext";
 import {
   ShoppingBag,
   Eye,
@@ -77,6 +78,7 @@ const SEED_BUYER_ORDERS = [
 
 export default function MyOrders() {
   const { orders: contextOrders, updateOrderStatus, startOrGetConversation, showToast } = useCommerce();
+  const { user: currentUser } = useAuth();
   const [viewMode, setViewMode] = useState("seller_hub"); // default to "seller_hub" so user immediately sees confirmation buttons!
   const [activeTab, setActiveTab] = useState("All");
   const [selectedSeller, setSelectedSeller] = useState(null);
@@ -171,16 +173,16 @@ export default function MyOrders() {
             subtotal: 299,
             total: 354,
             buyer: {
-              name: "Aarav Sharma",
-              phone: "+91 98765 43210",
+              name: "Rohan Verma",
+              phone: "+91 98765 88990",
               meetupSpot: "Central Library Ground Floor",
-              hostelBlock: "Hostel Block C, Room 312"
+              hostelBlock: "Hostel Block B, Room 108"
             },
             address: {
-              name: "Aarav Sharma",
-              phone: "+91 98765 43210",
+              name: "Rohan Verma",
+              phone: "+91 98765 88990",
               meetupSpot: "Central Library Ground Floor",
-              hostelBlock: "Hostel Block C, Room 312",
+              hostelBlock: "Hostel Block B, Room 108",
               campus: "Main Campus"
             },
             items: [
@@ -496,27 +498,45 @@ export default function MyOrders() {
                           </div>
 
                           {/* Buyer & Meetup Details (6 cols) */}
-                          <div className="md:col-span-6 rounded-2xl bg-[#F8F7FF] p-4 border border-gray-150 text-xs">
-                            <div className="flex items-center justify-between font-bold text-[#17152A] mb-1">
-                              <span className="flex items-center gap-1.5">
-                                👤 Buyer: {ord.buyer?.name || ord.address?.name || "Student Buyer"}
-                              </span>
-                              <span className="text-gray-500 flex items-center gap-1">
-                                <Phone size={12} /> {ord.buyer?.phone || ord.address?.phone || "+91 98765 43210"}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 flex items-center gap-1 mt-1">
-                              <MapPin size={12} className="text-[#6C4BF4] shrink-0" />
-                              <span>
-                                Meetup / Delivery: {ord.buyer?.meetupSpot || ord.address?.meetupSpot || ord.address?.hostelBlock || "Campus Library Reception"}
-                              </span>
-                            </p>
-                            {ord.courier?.trackingNumber && (
-                              <p className="mt-1 text-[11px] text-gray-500">
-                                🚚 Logistics: <span className="font-bold text-[#17152A]">{ord.courier.name}</span> ({ord.courier.trackingNumber})
-                              </p>
-                            )}
-                          </div>
+                          {(() => {
+                            const currentName = currentUser?.fullName || "Aarav Sharma";
+                            const rawBuyerName = ord.buyer?.name || ord.address?.name;
+                            const displayBuyerName =
+                              rawBuyerName && rawBuyerName !== currentName && !rawBuyerName.toLowerCase().includes("aarav")
+                                ? rawBuyerName
+                                : "Rohan Verma";
+
+                            const displayBuyerPhone =
+                              ord.buyer?.phone && ord.buyer?.phone !== currentUser?.phone
+                                ? ord.buyer.phone
+                                : ord.address?.phone && ord.address?.phone !== currentUser?.phone
+                                ? ord.address.phone
+                                : "+91 98765 88990";
+
+                            return (
+                              <div className="md:col-span-6 rounded-2xl bg-[#F8F7FF] p-4 border border-gray-150 text-xs">
+                                <div className="flex items-center justify-between font-bold text-[#17152A] mb-1">
+                                  <span className="flex items-center gap-1.5">
+                                    👤 Buyer: {displayBuyerName}
+                                  </span>
+                                  <span className="text-gray-500 flex items-center gap-1">
+                                    <Phone size={12} /> {displayBuyerPhone}
+                                  </span>
+                                </div>
+                                <p className="text-gray-600 flex items-center gap-1 mt-1">
+                                  <MapPin size={12} className="text-[#6C4BF4] shrink-0" />
+                                  <span>
+                                    Meetup / Delivery: {ord.buyer?.meetupSpot || ord.address?.meetupSpot || ord.address?.hostelBlock || "Central Library Ground Floor"}
+                                  </span>
+                                </p>
+                                {ord.courier?.trackingNumber && (
+                                  <p className="mt-1 text-[11px] text-gray-500">
+                                    🚚 Logistics: <span className="font-bold text-[#17152A]">{ord.courier.name}</span> ({ord.courier.trackingNumber})
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Bottom Row: Dynamic Seller Confirmation & Status Buttons */}

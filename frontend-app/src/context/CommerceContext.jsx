@@ -199,19 +199,19 @@ const INITIAL_ORDERS = [
     discount: 0,
     total: 354,
     buyer: {
-      id: "usr_aarav",
-      name: "Aarav Sharma",
-      phone: "+91 98765 43210",
-      hostelBlock: "Hostel Block C, Room 312",
+      id: "usr_rohan",
+      name: "Rohan Verma",
+      phone: "+91 98765 88990",
+      hostelBlock: "Hostel Block B, Room 108",
       campus: "IIT Bombay Campus",
-      meetupSpot: "Central Library Entrance"
+      meetupSpot: "Central Library Ground Floor"
     },
     address: {
-      name: "Aarav Sharma",
-      phone: "+91 98765 43210",
-      hostelBlock: "Hostel Block C, Room 312",
+      name: "Rohan Verma",
+      phone: "+91 98765 88990",
+      hostelBlock: "Hostel Block B, Room 108",
       campus: "IIT Bombay Campus",
-      meetupSpot: "Central Library Entrance",
+      meetupSpot: "Central Library Ground Floor",
       city: "Mumbai",
       state: "Maharashtra",
       pincode: "400076"
@@ -327,7 +327,36 @@ export function CommerceProvider({ children }) {
   // Orders State
   const [orders, setOrders] = useState(() => {
     const saved = localStorage.getItem("bookify_orders");
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((o) => {
+            if (o.isSellerOrder && (o.buyer?.name === "Aarav Sharma" || o.buyer?.name?.includes("Aarav"))) {
+              return {
+                ...o,
+                buyer: {
+                  ...o.buyer,
+                  id: "usr_rohan",
+                  name: "Rohan Verma",
+                  phone: "+91 98765 88990",
+                  meetupSpot: "Central Library Ground Floor",
+                  hostelBlock: "Hostel Block B, Room 108"
+                },
+                address: {
+                  ...o.address,
+                  name: "Rohan Verma",
+                  phone: "+91 98765 88990",
+                  meetupSpot: "Central Library Ground Floor"
+                }
+              };
+            }
+            return o;
+          });
+        }
+      } catch {}
+    }
+    return INITIAL_ORDERS;
   });
 
   useEffect(() => {
