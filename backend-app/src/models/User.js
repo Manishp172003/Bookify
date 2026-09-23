@@ -13,6 +13,12 @@ const userSchema = new mongoose.Schema({
     default: 'student',
   },
   isAuthor: { type: Boolean, default: false },
+  hasStudentProfile: { type: Boolean, default: true },
+  accountCategory: {
+    type: String,
+    enum: ['student_only', 'author_only', 'student_author', 'admin'],
+    default: 'student_only',
+  },
   adminCode: { type: String }, // 15-digit code for admin verification
   status: { type: String, enum: ['Active', 'Banned'], default: 'Active' },
   isBanned: { type: Boolean, default: false },

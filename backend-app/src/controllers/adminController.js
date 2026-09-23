@@ -200,11 +200,56 @@ export const updateEscrow = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password -otp -resetToken").sort({ createdAt: -1 });
+    const { category } = req.query;
+    const rawUsers = await User.find().select("-password -otp -resetToken").sort({ createdAt: -1 });
+
+    const enriched = rawUsers.map((u) => {
+      const obj = u.toObject();
+      const isVerifiedAuthor = Boolean(
+        obj.role === "author" ||
+        obj.isAuthor === true ||
+        obj.authorVerificationStatus === "verified" ||
+        obj.authorProfile?.verificationStatus === "verified"
+      );
+      const hasStudent = obj.hasStudentProfile !== false && obj.role !== "author_only";
+
+      let calculatedCategory = "student_only";
+      if (obj.role === "admin" || obj.isAdmin) {
+        calculatedCategory = "admin";
+      } else if (isVerifiedAuthor && hasStudent) {
+        calculatedCategory = "student_author";
+      } else if (isVerifiedAuthor && !hasStudent) {
+        calculatedCategory = "author_only";
+      } else {
+        calculatedCategory = "student_only";
+      }
+
+      return {
+        ...obj,
+        accountCategory: calculatedCategory,
+        isVerifiedAuthor,
+        hasStudentProfile: hasStudent,
+      };
+    });
+
+    const counts = {
+      total: enriched.length,
+      studentOnly: enriched.filter((u) => u.accountCategory === "student_only").length,
+      authorOnly: enriched.filter((u) => u.accountCategory === "author_only").length,
+      studentAuthor: enriched.filter((u) => u.accountCategory === "student_author").length,
+      admin: enriched.filter((u) => u.accountCategory === "admin").length,
+    };
+
+    let filtered = enriched;
+    if (category && category !== "all") {
+      filtered = enriched.filter((u) => u.accountCategory === category);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Users fetched successfully",
-      data: users,
+      counts,
+      data: filtered,
     });
   } catch (error) {
     console.error("Get users error:", error);
@@ -242,6 +287,47 @@ export const toggleUserBan = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to toggle user ban status",
+      data: null,
+    });
+  }
+};
+
+export const toggleAuthorStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found", data: null });
+    }
+
+    const currentAuthor = Boolean(user.isAuthor || user.role === "author" || user.authorVerificationStatus === "verified");
+    const nextAuthor = !currentAuthor;
+
+    user.isAuthor = nextAuthor;
+    user.authorVerificationStatus = nextAuthor ? "verified" : "unverified";
+    if (user.authorProfile) {
+      user.authorProfile.verificationStatus = nextAuthor ? "verified" : "unverified";
+    }
+    if (!nextAuthor && user.role === "author") {
+      user.role = "student";
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Author publishing privileges ${nextAuthor ? "granted" : "revoked"} successfully`,
+      data: {
+        id: user._id,
+        isAuthor: user.isAuthor,
+        role: user.role,
+        authorVerificationStatus: user.authorVerificationStatus,
+      },
+    });
+  } catch (error) {
+    console.error("Toggle author status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to toggle author status",
       data: null,
     });
   }

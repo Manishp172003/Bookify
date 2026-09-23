@@ -8,6 +8,7 @@ import {
   updateEscrow,
   getUsers,
   toggleUserBan,
+  toggleAuthorStatus,
   getAuthorsForVerification,
   verifyAuthor,
   getDisputes,
@@ -40,6 +41,7 @@ router.patch("/orders/:id/escrow", updateEscrow);
 // ─── User Management & Author Verification ────────────────────────────────────
 router.get("/users", getUsers);
 router.patch("/users/:id/ban", toggleUserBan);
+router.patch("/users/:id/toggle-author", toggleAuthorStatus);
 router.get("/authors-verification", getAuthorsForVerification);
 router.patch("/authors-verification/:id", verifyAuthor);
 

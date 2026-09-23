@@ -41,14 +41,20 @@ export const adminService = {
   // ==========================================
   // Users Management
   // ==========================================
-  async getUsers() {
+  async getUsers(category = "all") {
     try {
-      const res = await fetch(`${API_BASE_URL}/users`, {
+      const url = category && category !== "all" 
+        ? `${API_BASE_URL}/users?category=${encodeURIComponent(category)}`
+        : `${API_BASE_URL}/users`;
+      const res = await fetch(url, {
         headers: getAdminHeaders(),
       });
       if (res.ok) {
         const json = await res.json();
-        return json.data || [];
+        return {
+          users: json.data || [],
+          counts: json.counts || { total: 0, studentOnly: 0, authorOnly: 0, studentAuthor: 0, admin: 0 },
+        };
       }
       if (res.status === 403 || res.status === 401) {
         throw new Error("Access Denied: You must be signed in with an Administrator account to view registered users.");
@@ -57,7 +63,25 @@ export const adminService = {
       console.warn("Could not fetch users from server:", err);
       throw err;
     }
-    return [];
+    return { users: [], counts: { total: 0, studentOnly: 0, authorOnly: 0, studentAuthor: 0, admin: 0 } };
+  },
+
+  async toggleAuthorStatus(userId) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/${userId}/toggle-author`, {
+        method: "PATCH",
+        headers: getAdminHeaders(),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+      const json = await res.json();
+      throw new Error(json.message || "Failed to toggle author status");
+    } catch (err) {
+      console.warn("Could not toggle author status on server:", err);
+      throw err;
+    }
   },
 
   async toggleUserBan(userId) {
