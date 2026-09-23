@@ -1,5 +1,6 @@
 import Testimonial from "../models/Testimonial.js";
 import User from "../models/User.js";
+import PlatformSetting from "../models/PlatformSetting.js";
 
 // ==========================================
 // Public: Get Featured Testimonials for Home Page
@@ -75,14 +76,17 @@ export const submitTestimonial = async (req, res) => {
     const displayName = user.fullName || user.name || "Bookify Reader";
     const displayAvatar = user.avatar || user.authorProfile?.avatar || user.profileImage || null;
 
+    // Check platform moderation setting for auto-approve vs manual
+    const platformSettings = await PlatformSetting.findOne();
+    const initialStatus = platformSettings?.autoApproveTestimonials ? "approved" : "pending";
+
     if (testimonial) {
       testimonial.name = displayName;
       testimonial.avatar = displayAvatar;
       testimonial.role = userRole;
       testimonial.rating = Number(rating);
       testimonial.comment = comment.trim();
-      testimonial.status = "pending"; // Requires re-approval upon edit
-      testimonial.isFeatured = false;
+      testimonial.status = initialStatus;
       await testimonial.save();
     } else {
       testimonial = await Testimonial.create({
@@ -92,14 +96,17 @@ export const submitTestimonial = async (req, res) => {
         role: userRole,
         rating: Number(rating),
         comment: comment.trim(),
-        status: "pending",
+        status: initialStatus,
         isFeatured: false,
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Your review has been submitted and is awaiting admin approval.",
+      message:
+        initialStatus === "approved"
+          ? "Thank you! Your review has been published."
+          : "Your review has been submitted and is awaiting admin approval.",
       data: testimonial,
     });
   } catch (error) {

@@ -667,6 +667,8 @@ export const updateSettings = async (req, res) => {
       if (allowCampusPickup !== undefined) settings.allowCampusPickup = Boolean(allowCampusPickup);
       if (announcementEnabled !== undefined) settings.announcementEnabled = Boolean(announcementEnabled);
       if (announcementText !== undefined) settings.announcementText = String(announcementText);
+      if (req.body.autoApproveTestimonials !== undefined)
+        settings.autoApproveTestimonials = Boolean(req.body.autoApproveTestimonials);
       await settings.save();
     }
 

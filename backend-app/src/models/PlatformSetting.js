@@ -58,6 +58,10 @@ const platformSettingSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    autoApproveTestimonials: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

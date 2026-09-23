@@ -35,6 +35,7 @@ function PlatformSettings() {
     allowCampusPickup: true,
     announcementEnabled: false,
     announcementText: "",
+    autoApproveTestimonials: false,
   });
 
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,7 @@ function PlatformSettings() {
             allowCampusPickup: data.allowCampusPickup ?? true,
             announcementEnabled: data.announcementEnabled ?? false,
             announcementText: data.announcementText ?? "",
+            autoApproveTestimonials: data.autoApproveTestimonials ?? false,
           });
         }
       })
@@ -146,6 +148,22 @@ function PlatformSettings() {
       loadTestimonials();
     } catch (err) {
       showToast("Failed to delete testimonial", "error");
+    }
+  };
+
+  const handleToggleAutoApprove = async () => {
+    const nextVal = !settings.autoApproveTestimonials;
+    setSettings((prev) => ({ ...prev, autoApproveTestimonials: nextVal }));
+    try {
+      await adminService.updatePlatformSettings({ autoApproveTestimonials: nextVal });
+      showToast(
+        nextVal
+          ? "Auto-approval enabled: New reviews will be published instantly."
+          : "Manual review enabled: New reviews will require admin approval.",
+        "success"
+      );
+    } catch (err) {
+      showToast("Failed to update auto-approval setting", "error");
     }
   };
 
@@ -511,6 +529,57 @@ function PlatformSettings() {
       {/* TAB 2: TESTIMONIALS MODERATION */}
       {activeTab === "testimonials" && (
         <div className="space-y-6">
+          {/* Moderation Mode Toggle Banner */}
+          <div className="bg-white p-5 rounded-2xl border border-[#E7E4F2] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  settings.autoApproveTestimonials
+                    ? "bg-green-100 text-green-700"
+                    : "bg-purple-100 text-[#6C4BF4]"
+                }`}
+              >
+                <Sliders size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#17152A]">
+                    Review Moderation Mode
+                  </h3>
+                  <span
+                    className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      settings.autoApproveTestimonials
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {settings.autoApproveTestimonials ? "Auto-Approve Active" : "Manual Review Required"}
+                  </span>
+                </div>
+                <p className="text-xs text-[#6B6880] mt-0.5">
+                  {settings.autoApproveTestimonials
+                    ? "New reviews submitted by students and authors will be automatically published immediately without manual admin approval."
+                    : "New reviews will be held in 'Pending' status until manually reviewed and approved by an administrator."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+              <span className="text-xs font-bold text-gray-500">
+                {settings.autoApproveTestimonials ? "Auto-Approve" : "Manual"}
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.autoApproveTestimonials}
+                  onChange={handleToggleAutoApprove}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+              </label>
+            </div>
+          </div>
+
           {/* Status Filter Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
