@@ -68,7 +68,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {[
                 { to: "/explore", label: "Explore Books" },
-                { to: "/categories", label: "Browse Categories" },
+                { to: "/explore?sort=popular", label: "Trending Books" },
                 { to: "/sell", label: "Sell a Book" },
                 { to: "/explore?mode=rent", label: "Rent Books" },
                 { to: "/want-board", label: "Want Board" },
@@ -91,7 +91,14 @@ export default function Footer() {
             <h4 className="font-[family-name:var(--font-heading)] font-semibold mb-4">Top Categories</h4>
             <ul className="space-y-2">
               {["Computer Science", "Competitive Exams", "Fiction", "Engineering", "Science"].map((cat) => (
-                <li key={cat}><Link to="/categories" className="text-sm text-gray-400 hover:text-bookify-purple transition-colors">{cat}</Link></li>
+                <li key={cat}>
+                  <Link
+                    to={`/explore?category=${encodeURIComponent(cat)}`}
+                    className="text-sm text-gray-400 hover:text-bookify-purple transition-colors"
+                  >
+                    {cat}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
