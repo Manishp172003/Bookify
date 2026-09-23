@@ -73,7 +73,6 @@ const Disputes = lazy(() => import("../pages/Admin/Disputes"));
 const Users = lazy(() => import("../pages/Admin/Users"));
 const AuthorsVerification = lazy(() => import("../pages/Admin/AuthorsVerification"));
 const PlatformSettings = lazy(() => import("../pages/Admin/PlatformSettings"));
-const AdminChat = lazy(() => import("../pages/Admin/Chat"));
 const AdminCoupons = lazy(() => import("../pages/Admin/Coupons"));
 
 function AppRoutes() {
@@ -578,15 +577,6 @@ function AppRoutes() {
           element={
             <AdminLayout>
               <PlatformSettings />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/chat"
-          element={
-            <AdminLayout>
-              <AdminChat />
             </AdminLayout>
           }
         />

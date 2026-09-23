@@ -9,7 +9,6 @@ import {
   UserCheck,
   Settings,
   LogOut,
-  MessageSquare,
   Ticket,
   X
 } from "lucide-react";
@@ -40,7 +39,6 @@ function AdminSidebar({ isOpen, onClose }) {
     { name: "Disputes", path: "/admin/disputes", icon: AlertTriangle },
     { name: "Authors", path: "/admin/authors", icon: UserCheck },
     { name: "Coupons", path: "/admin/coupons", icon: Ticket },
-    { name: "Chat", path: "/admin/chat", icon: MessageSquare },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ];
 
