@@ -320,4 +320,70 @@ export const adminService = {
       return false;
     }
   },
+
+  // ==========================================
+  // Testimonials Moderation
+  // ==========================================
+  async getTestimonials(status = "all") {
+    try {
+      const url =
+        status && status !== "all"
+          ? `http://localhost:5000/api/testimonials/admin?status=${status}`
+          : `http://localhost:5000/api/testimonials/admin`;
+      const res = await fetch(url, {
+        headers: getAdminHeaders(),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json;
+      }
+    } catch (err) {
+      console.warn("Could not fetch testimonials for admin:", err);
+    }
+    return { data: [], counts: { total: 0, pending: 0, approved: 0, rejected: 0 } };
+  },
+
+  async updateTestimonialStatus(id, status) {
+    try {
+      const res = await fetch(`http://localhost:5000/api/testimonials/admin/${id}/status`, {
+        method: "PATCH",
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ status }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to update testimonial status");
+      return json.data;
+    } catch (err) {
+      console.warn("Could not update testimonial status:", err);
+      throw err;
+    }
+  },
+
+  async toggleFeaturedTestimonial(id) {
+    try {
+      const res = await fetch(`http://localhost:5000/api/testimonials/admin/${id}/toggle-featured`, {
+        method: "PATCH",
+        headers: getAdminHeaders(),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to toggle featured status");
+      return json.data;
+    } catch (err) {
+      console.warn("Could not toggle featured testimonial:", err);
+      throw err;
+    }
+  },
+
+  async deleteTestimonial(id) {
+    try {
+      const res = await fetch(`http://localhost:5000/api/testimonials/admin/${id}`, {
+        method: "DELETE",
+        headers: getAdminHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn("Could not delete testimonial:", err);
+      return false;
+    }
+  },
 };

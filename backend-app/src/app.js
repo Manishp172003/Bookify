@@ -13,6 +13,7 @@ import rentalRoutes from "./routes/rentalRoutes.js";
 import exchangeRoutes from "./routes/exchangeRoutes.js";
 import disputeRoutes from "./routes/disputeRoutes.js";
 import payoutRoutes from "./routes/payoutRoutes.js";
+import testimonialRoutes from "./routes/testimonialRoutes.js";
 import { getPublicSettings } from "./controllers/adminController.js";
 
 const app = express();
@@ -73,6 +74,7 @@ app.use("/api/rentals", rentalRoutes);
 app.use("/api/exchanges", exchangeRoutes);
 app.use("/api/disputes", disputeRoutes);
 app.use("/api/payouts", payoutRoutes);
+app.use("/api/testimonials", testimonialRoutes);
 app.get("/api/settings/public", getPublicSettings);
 
 // ==========================================

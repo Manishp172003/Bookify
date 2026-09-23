@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Check, Settings, ShieldAlert, Loader2 } from "lucide-react";
+import {
+  Check,
+  Settings,
+  ShieldAlert,
+  Loader2,
+  Sliders,
+  MessageSquareQuote,
+  Star,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  Sparkles,
+} from "lucide-react";
 import { adminService } from "../../services/adminService";
 import { useCommerce } from "../../context/CommerceContext";
 
 function PlatformSettings() {
   const { showToast } = useCommerce();
+  const [activeTab, setActiveTab] = useState("fees"); // 'fees' | 'testimonials'
+
+  // Settings State
   const [settings, setSettings] = useState({
     commission: 5,
     rentalCommission: 10,
@@ -26,6 +41,18 @@ function PlatformSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Testimonials State
+  const [testimonials, setTestimonials] = useState([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(false);
+  const [testimonialStatusFilter, setTestimonialStatusFilter] = useState("all");
+  const [testimonialCounts, setTestimonialCounts] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
+
+  // Fetch Settings
   useEffect(() => {
     adminService
       .getPlatformSettings()
@@ -52,6 +79,24 @@ function PlatformSettings() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch Testimonials
+  const loadTestimonials = (status = testimonialStatusFilter) => {
+    setTestimonialsLoading(true);
+    adminService
+      .getTestimonials(status)
+      .then((res) => {
+        if (res && res.data) {
+          setTestimonials(res.data);
+          if (res.counts) setTestimonialCounts(res.counts);
+        }
+      })
+      .finally(() => setTestimonialsLoading(false));
+  };
+
+  useEffect(() => {
+    loadTestimonials(testimonialStatusFilter);
+  }, [testimonialStatusFilter]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -69,284 +114,581 @@ function PlatformSettings() {
     }
   };
 
+  // Testimonial Moderation Handlers
+  const handleStatusChange = async (id, status) => {
+    try {
+      await adminService.updateTestimonialStatus(id, status);
+      showToast(`Testimonial ${status} successfully.`, "success");
+      loadTestimonials();
+    } catch (err) {
+      showToast("Failed to update status", "error");
+    }
+  };
+
+  const handleToggleFeatured = async (id) => {
+    try {
+      const updated = await adminService.toggleFeaturedTestimonial(id);
+      showToast(
+        updated?.isFeatured ? "Featured on Home Page!" : "Removed from featured",
+        "success"
+      );
+      loadTestimonials();
+    } catch (err) {
+      showToast("Failed to toggle featured status", "error");
+    }
+  };
+
+  const handleDeleteTestimonial = async (id) => {
+    if (!window.confirm("Are you sure you want to permanently delete this testimonial?")) return;
+    try {
+      await adminService.deleteTestimonial(id);
+      showToast("Testimonial deleted", "success");
+      loadTestimonials();
+    } catch (err) {
+      showToast("Failed to delete testimonial", "error");
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-[#17152A] font-poppins">Platform Settings & Fees</h1>
+        <h1 className="text-3xl font-extrabold text-[#17152A] font-poppins">
+          Platform Settings & Moderation
+        </h1>
         <p className="text-[#6B6880] mt-1 text-sm">
-          Configure real-time system commissions, delivery charges, wallet limits, and transaction policies stored in MongoDB.
+          Configure real-time fees, delivery charges, global announcement banner, and moderate community reviews.
         </p>
       </div>
 
-      <div className="bg-white p-8 rounded-2xl border border-[#E7E4F2] shadow-sm">
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-4 border-[#6C4BF4] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-xs text-gray-400 font-bold">Loading settings from database...</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Input Grid (4x2) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Platform Commission (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={settings.commission}
-                  onChange={(e) =>
-                    setSettings({ ...settings, commission: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Standard fee on completed book sales.</span>
-              </div>
+      {/* Tab Selector */}
+      <div className="flex items-center gap-3 border-b border-[#E7E4F2] pb-3">
+        <button
+          onClick={() => setActiveTab("fees")}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeTab === "fees"
+              ? "bg-[#6C4BF4] text-white shadow-md shadow-[#6C4BF4]/20"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <Sliders size={16} />
+          <span>Platform Fees & Policies</span>
+        </button>
 
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Rental Commission (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={settings.rentalCommission}
-                  onChange={(e) =>
-                    setSettings({ ...settings, rentalCommission: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Fee applied to semester rental transactions.</span>
-              </div>
+        <button
+          onClick={() => setActiveTab("testimonials")}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer relative ${
+            activeTab === "testimonials"
+              ? "bg-[#6C4BF4] text-white shadow-md shadow-[#6C4BF4]/20"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <MessageSquareQuote size={16} />
+          <span>Community Testimonials</span>
+          {testimonialCounts.pending > 0 && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                activeTab === "testimonials"
+                  ? "bg-amber-400 text-gray-900"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {testimonialCounts.pending} pending
+            </span>
+          )}
+        </button>
+      </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Exchange Fee (INR ₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={settings.exchangeFee}
-                  onChange={(e) =>
-                    setSettings({ ...settings, exchangeFee: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Platform facilitation fee per student book swap.</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Escrow Hold Duration (Hrs)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={settings.escrowDuration}
-                  onChange={(e) =>
-                    setSettings({ ...settings, escrowDuration: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Time funds stay in escrow before auto-release.</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Standard Delivery Fee (INR ₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={settings.deliveryFee}
-                  onChange={(e) =>
-                    setSettings({ ...settings, deliveryFee: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Flat courier charge applied at student checkout.</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Free Delivery Threshold (INR ₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={settings.freeDeliveryThreshold}
-                  onChange={(e) =>
-                    setSettings({ ...settings, freeDeliveryThreshold: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Orders equal or above this amount get free delivery.</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Min. Wallet Withdrawal (INR ₹)
-                </label>
-                <input
-                  type="number"
-                  min="10"
-                  value={settings.minWithdrawalAmount}
-                  onChange={(e) =>
-                    setSettings({ ...settings, minWithdrawalAmount: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Minimum wallet earnings required to request bank payout.</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Return / Dispute Window (Days)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={settings.disputeWindowDays}
-                  onChange={(e) =>
-                    setSettings({ ...settings, disputeWindowDays: parseInt(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  required
-                />
-                <span className="text-[11px] text-gray-400 mt-1 block">Days a buyer has after delivery to report issues.</span>
-              </div>
+      {/* TAB 1: FEES & POLICIES */}
+      {activeTab === "fees" && (
+        <div className="bg-white p-8 rounded-2xl border border-[#E7E4F2] shadow-sm">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-4 border-[#6C4BF4] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs text-gray-400 font-bold">Loading settings from database...</p>
             </div>
-
-            {/* Transaction Mode Features */}
-            <div className="pt-6 border-t border-[#E7E4F2] space-y-4">
-              <h3 className="text-sm font-bold text-[#17152A] uppercase tracking-wider">
-                Transaction Mode Features
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.allowRentals}
-                    onChange={(e) => setSettings({ ...settings, allowRentals: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
-                  />
-                  <span className="text-sm font-medium text-[#17152A]">
-                    Enable Semester Rentals Marketplace
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.allowExchanges}
-                    onChange={(e) => setSettings({ ...settings, allowExchanges: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
-                  />
-                  <span className="text-sm font-medium text-[#17152A]">
-                    Enable Campus Swapping & Exchanges
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.allowCampusPickup}
-                    onChange={(e) => setSettings({ ...settings, allowCampusPickup: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
-                  />
-                  <span className="text-sm font-medium text-[#17152A]">
-                    Enable Free Campus Meetup / Pickup
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.allowDonations}
-                    onChange={(e) => setSettings({ ...settings, allowDonations: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
-                  />
-                  <span className="text-sm font-medium text-[#17152A]">
-                    Enable Campus Charity Donations
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            {/* Announcement Banner */}
-            <div className="pt-6 border-t border-[#E7E4F2] space-y-4">
-              <div className="flex items-center justify-between">
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Input Grid (4x2) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-sm font-bold text-[#17152A] uppercase tracking-wider">
-                    Global Announcement Banner
-                  </h3>
-                  <p className="text-xs text-[#6B6880] mt-0.5">
-                    Display a highlighted notice or promotional broadcast to students across the marketplace.
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Platform Commission (%)
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={settings.announcementEnabled}
-                    onChange={(e) => setSettings({ ...settings, announcementEnabled: e.target.checked })}
-                    className="sr-only peer"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={settings.commission}
+                    onChange={(e) =>
+                      setSettings({ ...settings, commission: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6C4BF4]"></div>
-                </label>
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Standard fee on completed book sales.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Rental Commission (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={settings.rentalCommission}
+                    onChange={(e) =>
+                      setSettings({ ...settings, rentalCommission: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Fee applied to semester rental transactions.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Exchange Fee (INR ₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={settings.exchangeFee}
+                    onChange={(e) =>
+                      setSettings({ ...settings, exchangeFee: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Platform facilitation fee per student book swap.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Escrow Hold Duration (Hrs)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={settings.escrowDuration}
+                    onChange={(e) =>
+                      setSettings({ ...settings, escrowDuration: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Time funds stay in escrow before auto-release.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Standard Delivery Fee (INR ₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={settings.deliveryFee}
+                    onChange={(e) =>
+                      setSettings({ ...settings, deliveryFee: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Flat courier charge applied at student checkout.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Free Delivery Threshold (INR ₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={settings.freeDeliveryThreshold}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        freeDeliveryThreshold: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Orders equal or above this amount get free delivery.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Min. Wallet Withdrawal (INR ₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="10"
+                    value={settings.minWithdrawalAmount}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        minWithdrawalAmount: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Minimum wallet earnings required to request bank payout.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
+                    Return / Dispute Window (Days)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={settings.disputeWindowDays}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        disputeWindowDays: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Days a buyer has after delivery to report issues.
+                  </span>
+                </div>
               </div>
 
-              {settings.announcementEnabled && (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. 🎓 Semester Book Fair is live! Use code EXAM50 for ₹50 off on all orders."
-                    value={settings.announcementText}
-                    onChange={(e) => setSettings({ ...settings, announcementText: e.target.value })}
-                    className="w-full rounded-xl border border-purple-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
-                  />
-                  <div className="bg-[#6C4BF4]/10 border border-[#6C4BF4]/20 rounded-xl px-4 py-2.5 flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-[#6C4BF4] text-white px-2 py-0.5 rounded-full">Preview</span>
-                    <span className="text-xs font-medium text-[#17152A] truncate">
-                      {settings.announcementText || "Your announcement text will appear here..."}
+              {/* Transaction Mode Features */}
+              <div className="pt-6 border-t border-[#E7E4F2] space-y-4">
+                <h3 className="text-sm font-bold text-[#17152A] uppercase tracking-wider">
+                  Transaction Mode Features
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.allowRentals}
+                      onChange={(e) => setSettings({ ...settings, allowRentals: e.target.checked })}
+                      className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
+                    />
+                    <span className="text-sm font-medium text-[#17152A]">
+                      Enable Semester Rentals Marketplace
                     </span>
-                  </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.allowExchanges}
+                      onChange={(e) =>
+                        setSettings({ ...settings, allowExchanges: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
+                    />
+                    <span className="text-sm font-medium text-[#17152A]">
+                      Enable Campus Swapping & Exchanges
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.allowCampusPickup}
+                      onChange={(e) =>
+                        setSettings({ ...settings, allowCampusPickup: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
+                    />
+                    <span className="text-sm font-medium text-[#17152A]">
+                      Enable Free Campus Meetup / Pickup
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.allowDonations}
+                      onChange={(e) =>
+                        setSettings({ ...settings, allowDonations: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-[#6C4BF4] focus:ring-[#6C4BF4]"
+                    />
+                    <span className="text-sm font-medium text-[#17152A]">
+                      Enable Campus Charity Donations
+                    </span>
+                  </label>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="pt-4 border-t border-[#E7E4F2] flex items-center justify-between">
-              <span className="text-xs text-[#6B6880]">
-                Changes persist system-wide to MongoDB Atlas.
-              </span>
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 flex items-center gap-2 cursor-pointer"
-              >
-                {saving ? (
-                  <span>Saving to DB...</span>
-                ) : saved ? (
-                  <>
-                    <Check size={16} />
-                    <span>Saved!</span>
-                  </>
-                ) : (
-                  <span>Save Settings</span>
+              {/* Announcement Banner */}
+              <div className="pt-6 border-t border-[#E7E4F2] space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#17152A] uppercase tracking-wider">
+                      Global Announcement Banner
+                    </h3>
+                    <p className="text-xs text-[#6B6880] mt-0.5">
+                      Display a highlighted notice or promotional broadcast to students across the marketplace.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.announcementEnabled}
+                      onChange={(e) =>
+                        setSettings({ ...settings, announcementEnabled: e.target.checked })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6C4BF4]"></div>
+                  </label>
+                </div>
+
+                {settings.announcementEnabled && (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. 🎓 Semester Book Fair is live! Use code EXAM50 for ₹50 off on all orders."
+                      value={settings.announcementText}
+                      onChange={(e) =>
+                        setSettings({ ...settings, announcementText: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-purple-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none focus:border-[#6C4BF4]"
+                    />
+                    <div className="bg-[#6C4BF4]/10 border border-[#6C4BF4]/20 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-[#6C4BF4] text-white px-2 py-0.5 rounded-full">
+                        Preview
+                      </span>
+                      <span className="text-xs font-medium text-[#17152A] truncate">
+                        {settings.announcementText || "Your announcement text will appear here..."}
+                      </span>
+                    </div>
+                  </div>
                 )}
+              </div>
+
+              <div className="pt-4 border-t border-[#E7E4F2] flex items-center justify-between">
+                <span className="text-xs text-[#6B6880]">
+                  Changes persist system-wide to MongoDB Atlas.
+                </span>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 flex items-center gap-2 cursor-pointer"
+                >
+                  {saving ? (
+                    <span>Saving to DB...</span>
+                  ) : saved ? (
+                    <>
+                      <Check size={16} />
+                      <span>Saved!</span>
+                    </>
+                  ) : (
+                    <span>Save Settings</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: TESTIMONIALS MODERATION */}
+      {activeTab === "testimonials" && (
+        <div className="space-y-6">
+          {/* Status Filter Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { id: "all", label: "All Reviews", count: testimonialCounts.total, color: "text-gray-700" },
+              { id: "pending", label: "Pending", count: testimonialCounts.pending, color: "text-amber-600" },
+              { id: "approved", label: "Approved", count: testimonialCounts.approved, color: "text-green-600" },
+              { id: "rejected", label: "Rejected", count: testimonialCounts.rejected, color: "text-red-600" },
+            ].map((card) => (
+              <button
+                key={card.id}
+                onClick={() => setTestimonialStatusFilter(card.id)}
+                className={`p-4 rounded-xl border text-left transition cursor-pointer ${
+                  testimonialStatusFilter === card.id
+                    ? "bg-[#6C4BF4]/5 border-[#6C4BF4] shadow-xs"
+                    : "bg-white border-[#E7E4F2] hover:bg-gray-50"
+                }`}
+              >
+                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  {card.label}
+                </p>
+                <p className={`text-2xl font-black mt-1 ${card.color}`}>{card.count}</p>
+              </button>
+            ))}
+          </div>
+
+          {/* Testimonial List */}
+          <div className="bg-white rounded-2xl border border-[#E7E4F2] shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-[#E7E4F2] flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#17152A]">
+                  Student & Author Stories ({testimonials.length})
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Moderate student reviews and feature top genuine stories on the Home Page.
+                </p>
+              </div>
+              <button
+                onClick={() => loadTestimonials()}
+                className="text-xs text-[#6C4BF4] font-semibold hover:underline cursor-pointer"
+              >
+                Refresh List
               </button>
             </div>
-          </form>
-        )}
-      </div>
+
+            {testimonialsLoading ? (
+              <div className="text-center py-12">
+                <div className="w-8 h-8 border-4 border-[#6C4BF4] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-xs text-gray-400 font-bold">Loading testimonials...</p>
+              </div>
+            ) : testimonials.length === 0 ? (
+              <div className="text-center py-12 px-4">
+                <MessageSquareQuote size={40} className="text-gray-300 mx-auto mb-3" />
+                <h4 className="text-sm font-bold text-gray-700">No reviews found</h4>
+                <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                  When students or authors submit reviews via the Home Page "Share Your Experience" button, they will appear here for moderation.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {testimonials.map((item) => (
+                  <div
+                    key={item._id}
+                    className="p-5 hover:bg-gray-50/50 transition flex flex-col md:flex-row md:items-start justify-between gap-4"
+                  >
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-3">
+                        {item.avatar ? (
+                          <img
+                            src={item.avatar}
+                            alt={item.name}
+                            className="w-9 h-9 rounded-full object-cover border border-purple-100"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6C4BF4] to-[#4828c2] text-white flex items-center justify-center font-bold text-xs">
+                            {item.name?.charAt(0) || "U"}
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-[#17152A]">{item.name}</span>
+                            <span className="text-[11px] text-gray-400">({item.role})</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <Star
+                                  key={n}
+                                  size={12}
+                                  className={
+                                    n <= item.rating
+                                      ? "text-amber-400 fill-amber-400"
+                                      : "text-gray-200 fill-gray-100"
+                                  }
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[11px] text-gray-400">
+                              {new Date(item.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-700 leading-relaxed bg-[#F8F7FF] p-3 rounded-xl border border-purple-50">
+                        "{item.comment}"
+                      </p>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                            item.status === "approved"
+                              ? "bg-green-100 text-green-700"
+                              : item.status === "rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+
+                        {item.isFeatured && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-[#6C4BF4] flex items-center gap-1">
+                            <Sparkles size={10} />
+                            Featured on Home
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                      {item.status !== "approved" && (
+                        <button
+                          onClick={() => handleStatusChange(item._id, "approved")}
+                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <CheckCircle2 size={13} />
+                          <span>Approve</span>
+                        </button>
+                      )}
+
+                      {item.status !== "rejected" && (
+                        <button
+                          onClick={() => handleStatusChange(item._id, "rejected")}
+                          className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <XCircle size={13} />
+                          <span>Reject</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleToggleFeatured(item._id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          item.isFeatured
+                            ? "bg-purple-100 text-[#6C4BF4] hover:bg-purple-200"
+                            : "border border-gray-200 text-gray-600 hover:border-[#6C4BF4] hover:text-[#6C4BF4]"
+                        }`}
+                      >
+                        <Star size={13} className={item.isFeatured ? "fill-[#6C4BF4]" : ""} />
+                        <span>{item.isFeatured ? "Unfeature" : "Feature on Home"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteTestimonial(item._id)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition cursor-pointer"
+                        title="Delete Review"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
