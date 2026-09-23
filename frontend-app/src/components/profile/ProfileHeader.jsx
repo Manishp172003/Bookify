@@ -185,7 +185,7 @@ function ProfileHeader() {
 
             <div className="flex items-center gap-2.5">
               <Phone size={16} className="text-[#6C4BF4]" />
-              <span>{user?.phone || "+91 9876543210"}</span>
+              <span>{user?.phone || "Not provided"}</span>
             </div>
           </div>
 

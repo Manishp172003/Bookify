@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { Pencil } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 function AboutMe() {
+  const { user } = useAuth();
+
   return (
     <div className="mt-5 rounded-2xl bg-white p-6 shadow-sm">
       <h2 className="text-base font-bold text-[#17152A]">
@@ -9,7 +12,7 @@ function AboutMe() {
       </h2>
 
       <p className="mt-3 text-sm leading-6 text-gray-500">
-        Final year Engineering student. Love reading and saving money!
+        {user?.bio || user?.authorBio || "Passionate reader and learner on Bokify."}
       </p>
 
       <Link

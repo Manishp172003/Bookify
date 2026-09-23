@@ -119,7 +119,12 @@ function DashboardHeader() {
 
         <div className="min-w-0">
           <h1 className="text-sm md:text-xl font-bold text-[#17152A] leading-tight truncate">
-            Good Morning, Manish! 👋
+            {new Date().getHours() < 12
+              ? "Good Morning"
+              : new Date().getHours() < 18
+              ? "Good Afternoon"
+              : "Good Evening"}
+            , {user?.fullName?.trim().split(/\s+/)[0] || user?.name?.trim().split(/\s+/)[0] || "Reader"}! 👋
           </h1>
           <p className="mt-0.5 text-[10px] md:text-xs text-gray-400 hidden md:block">
             Here's what's happening with your account today.

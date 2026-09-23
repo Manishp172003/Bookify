@@ -11,22 +11,51 @@ const INITIAL_COUPONS = [
   { code: "FREESHIP", discount: 60, description: "Free campus delivery credit (₹60 value)" }
 ];
 
-const INITIAL_ADDRESSES = [
-  {
-    id: "addr_1",
-    name: "Manish Pawar",
-    phone: "+91 9876543210",
-    type: "Campus / Hostel",
-    campus: "Nagpur University Campus",
-    hostelBlock: "Hostel Block A, Room 204",
-    meetupSpot: "Central Library Entrance",
-    street: "Hostel Block A, Room 204, Nagpur University Campus",
-    city: "Nagpur",
-    state: "Maharashtra",
-    pincode: "440033",
-    isDefault: true
-  }
-];
+const getInitialAddresses = () => {
+  try {
+    const saved = localStorage.getItem("bookify_addresses");
+    const userStr = localStorage.getItem("bookify_user");
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const currentName = currentUser?.fullName || currentUser?.name;
+
+    if (saved) {
+      let parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((addr) => {
+          if (addr.name === "Manish Pawar" || !addr.name) {
+            return {
+              ...addr,
+              name: currentName || "Campus Address",
+              phone: currentUser?.phone || addr.phone || "",
+            };
+          }
+          return addr;
+        });
+      }
+    }
+
+    if (currentUser && (currentName || currentUser?.address?.campus)) {
+      return [
+        {
+          id: "addr_1",
+          name: currentName || "Student User",
+          phone: currentUser.phone || "",
+          type: "Campus / Hostel",
+          campus: currentUser.address?.campus || "Campus",
+          hostelBlock: currentUser.address?.hostelBlock || "",
+          meetupSpot: currentUser.address?.meetupSpot || "Central Library Entrance",
+          street: `${currentUser.address?.hostelBlock || ""}, ${currentUser.address?.campus || ""}`.trim(),
+          city: "Campus City",
+          state: "State",
+          pincode: "110001",
+          isDefault: true,
+        },
+      ];
+    }
+  } catch {}
+  return [];
+};
+
 
 const INITIAL_CONVERSATIONS = [
   {
@@ -302,10 +331,7 @@ export function CommerceProvider({ children }) {
   }, [cartItems]);
 
   // Addresses State
-  const [addresses, setAddresses] = useState(() => {
-    const saved = localStorage.getItem("bookify_addresses");
-    return saved ? JSON.parse(saved) : INITIAL_ADDRESSES;
-  });
+  const [addresses, setAddresses] = useState(getInitialAddresses);
 
   useEffect(() => {
     localStorage.setItem("bookify_addresses", JSON.stringify(addresses));

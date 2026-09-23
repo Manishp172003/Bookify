@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
+import { useAuth } from "../../context/AuthContext";
 import { Wallet, Landmark, Shield, AlertCircle, Menu, CheckCircle2, ArrowDownRight, ArrowUpRight, QrCode } from "lucide-react";
 import { api } from "../../services/apiClient";
 
@@ -13,6 +14,7 @@ const INITIAL_TRANSACTIONS = [
 
 export default function Earnings() {
   const { showToast } = useCommerce();
+  const { user } = useAuth();
   const [totalEarned, setTotalEarned] = useState(1850);
   const [withdrawn, setWithdrawn] = useState(1000);
   const [escrowPending, setEscrowPending] = useState(650);
@@ -21,26 +23,60 @@ export default function Earnings() {
 
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [payoutMethod, setPayoutMethod] = useState("upi"); // 'upi' or 'bank'
-  const [upiId, setUpiId] = useState("manishpawar@okaxis");
+  const [upiId, setUpiId] = useState(() => {
+    try {
+      const saved = localStorage.getItem("bookify_user_payment");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.upiId && !parsed.upiId.includes("manishpawar")) return parsed.upiId;
+      }
+    } catch {}
+    return user?.payment?.upiId || "";
+  });
   const [isEditingUpi, setIsEditingUpi] = useState(false);
-  const [tempUpi, setTempUpi] = useState("manishpawar@okaxis");
-  const [bankAcc, setBankAcc] = useState("918273645019");
-  const [bankIfsc, setBankIfsc] = useState("HDFC0001245");
+  const [tempUpi, setTempUpi] = useState(() => upiId);
+  const [bankAcc, setBankAcc] = useState(() => {
+    try {
+      const saved = localStorage.getItem("bookify_user_payment");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.accountNumber && !parsed.accountNumber.includes("918273645019")) return parsed.accountNumber;
+      }
+    } catch {}
+    return user?.payment?.accountNumber || "";
+  });
+  const [bankIfsc, setBankIfsc] = useState(() => {
+    try {
+      const saved = localStorage.getItem("bookify_user_payment");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.ifscCode && !parsed.ifscCode.includes("HDFC0001245")) return parsed.ifscCode;
+      }
+    } catch {}
+    return user?.payment?.ifscCode || "";
+  });
   const [payoutAmount, setPayoutAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('bookify_user_payment');
+      const saved = localStorage.getItem("bookify_user_payment");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.upiId) {
+        if (parsed.upiId && !parsed.upiId.includes("manishpawar")) {
           setUpiId(parsed.upiId);
           setTempUpi(parsed.upiId);
         }
-        if (parsed.accountNumber) setBankAcc(parsed.accountNumber);
-        if (parsed.ifscCode) setBankIfsc(parsed.ifscCode);
-        if (parsed.mode === 'Bank Account') setPayoutMethod('bank');
+        if (parsed.accountNumber && !parsed.accountNumber.includes("918273645019")) setBankAcc(parsed.accountNumber);
+        if (parsed.ifscCode && !parsed.ifscCode.includes("HDFC0001245")) setBankIfsc(parsed.ifscCode);
+        if (parsed.mode === "Bank Account") setPayoutMethod("bank");
+      } else if (user?.payment) {
+        if (user.payment.upiId) {
+          setUpiId(user.payment.upiId);
+          setTempUpi(user.payment.upiId);
+        }
+        if (user.payment.accountNumber) setBankAcc(user.payment.accountNumber);
+        if (user.payment.ifscCode) setBankIfsc(user.payment.ifscCode);
       }
     } catch {}
 
