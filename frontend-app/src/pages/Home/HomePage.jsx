@@ -8,7 +8,8 @@ import {
   Shield,
   UserCheck,
   RotateCcw,
-  Headphones
+  Headphones,
+  Sparkles
 } from 'lucide-react';
 import HeroSlider from '../../components/hero/HeroSlider';
 import BookCard from '../../components/book/BookCard';
@@ -16,6 +17,7 @@ import books from '../../data/books';
 import categories from '../../data/categories';
 import ScrollReveal from '../../components/ui/ScrollReveal';
 import { useAuth } from '../../context/AuthContext';
+import { authorService } from '../../services/authorService';
 
 function AnimateCounter({ target, suffix, speed = 30 }) {
   const [count, setCount] = useState(0);
@@ -85,11 +87,52 @@ export default function HomePage() {
   var activeFilter = _f[0];
   var setActiveFilter = _f[1];
 
+  const [featuredPromotions, setFeaturedPromotions] = useState([]);
+
+  useEffect(() => {
+    authorService.getActiveFeaturedCampaigns().then((active) => {
+      if (Array.isArray(active) && active.length > 0) {
+        setFeaturedPromotions(active);
+        // Track impressions for all displayed active campaigns
+        active.forEach((camp) => {
+          authorService.trackCampaignEngagement(camp.id || camp.campaignId, "impression");
+        });
+      }
+    });
+  }, []);
+
   var featuredBooks = books.slice(0, 5);
   var trendingBooks = books.filter(function(b) {
     if (activeFilter === 'All Books') return true;
     return b.category && b.category.toLowerCase().includes(activeFilter.toLowerCase().split(' ')[0]);
   }).slice(0, 5);
+
+  // Blend dynamic author promotions with default spotlight showcase
+  const displaySpotlight = [
+    ...featuredPromotions.map((p) => ({
+      id: p.id,
+      bookId: p.bookId,
+      name: p.authorName,
+      book: p.bookTitle,
+      desc: p.description || p.authorBio,
+      cover: p.bookCover,
+      isSponsored: true,
+      price: p.price,
+      campaignId: p.id,
+    })),
+    ...spotlightAuthors,
+  ].slice(0, 3);
+
+  const handleSpotlightClick = (authorItem) => {
+    if (authorItem.isSponsored && authorItem.campaignId) {
+      authorService.trackCampaignEngagement(authorItem.campaignId, "click");
+    }
+    if (authorItem.bookId) {
+      navigate(`/book/${authorItem.bookId}`);
+    } else {
+      navigate(`/explore?search=${encodeURIComponent(authorItem.book)}`);
+    }
+  };
 
   const handleJoinClub = () => {
     if (isAuthenticated) {
@@ -206,19 +249,38 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            {spotlightAuthors.map(function(author, i) {
+            {displaySpotlight.map(function(author, i) {
               return (
-                <div key={i} className="bg-white rounded-xl border border-bookify-border p-4 sm:p-5 hover:shadow-md transition-shadow">
+                <div key={author.id || i} className="bg-white rounded-xl border border-bookify-border p-4 sm:p-5 hover:shadow-md transition-shadow flex flex-col justify-between">
                   <div className="flex gap-3.5 sm:gap-4">
-                    <img src={author.cover} alt={author.book} className="w-18 sm:w-20 h-26 sm:h-28 object-cover rounded-lg shrink-0 shadow-xs" />
+                    <img
+                      src={author.cover}
+                      alt={author.book}
+                      className="w-18 sm:w-20 h-26 sm:h-28 object-cover rounded-lg shrink-0 shadow-xs cursor-pointer hover:opacity-90 transition"
+                      onClick={() => handleSpotlightClick(author)}
+                    />
                     <div className="flex-1 min-w-0">
-                      <span className="inline-block px-2 py-0.5 bg-[#EEEAFE] text-[#6C4BF4] text-[9px] font-extrabold uppercase tracking-wider rounded mb-1.5">
-                        ★ SPOTLIGHT CREATOR
-                      </span>
-                      <h3 className="font-[family-name:var(--font-heading)] font-bold text-sm sm:text-base text-bookify-text truncate">{author.book}</h3>
+                      {author.isSponsored ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-[#6C4BF4] to-[#8C6DFD] text-white text-[9px] font-extrabold uppercase tracking-wider rounded shadow-xs mb-1.5">
+                          <Sparkles size={10} /> SPONSORED SPOTLIGHT
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 bg-[#EEEAFE] text-[#6C4BF4] text-[9px] font-extrabold uppercase tracking-wider rounded mb-1.5">
+                          ★ SPOTLIGHT CREATOR
+                        </span>
+                      )}
+                      <h3
+                        onClick={() => handleSpotlightClick(author)}
+                        className="font-[family-name:var(--font-heading)] font-bold text-sm sm:text-base text-bookify-text truncate cursor-pointer hover:text-bookify-purple transition-colors"
+                      >
+                        {author.book}
+                      </h3>
                       <p className="text-[11px] sm:text-xs text-bookify-text-secondary mt-0.5">By {author.name}</p>
                       <p className="text-[11px] sm:text-xs text-bookify-text-secondary mt-1 line-clamp-2">{author.desc}</p>
-                      <button className="mt-2.5 sm:mt-3 px-3.5 py-1 bg-bookify-purple text-white text-xs font-semibold rounded-lg hover:bg-bookify-purple-dark transition-colors cursor-pointer">
+                      <button
+                        onClick={() => handleSpotlightClick(author)}
+                        className="mt-2.5 sm:mt-3 px-3.5 py-1 bg-bookify-purple text-white text-xs font-semibold rounded-lg hover:bg-bookify-purple-dark transition-colors cursor-pointer"
+                      >
                         View Book
                       </button>
                     </div>

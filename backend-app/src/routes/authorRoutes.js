@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 
 import {
   getAuthorProfile,
@@ -17,6 +17,8 @@ import {
   createCampaign,
   updateCampaignStatus,
   deleteCampaign,
+  getActiveFeaturedCampaigns,
+  trackCampaignEngagement,
   getEarnings,
   requestPayout,
   getPayouts,
@@ -41,6 +43,10 @@ const router = express.Router();
 
 // ─── Public coupon validation route (used at student checkout) ───────────────
 router.post("/coupons/validate", validateCoupon);
+
+// ─── Public Storefront Campaign Promotion & Analytics Routes ─────────────────
+router.get("/campaigns/active-featured", getActiveFeaturedCampaigns);
+router.post("/campaigns/:id/track", trackCampaignEngagement);
 
 // ─── Author Profile & Verification (Protected: Student / Author / Admin) ──────
 router.put(

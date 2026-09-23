@@ -1,53 +1,163 @@
 import React, { useState, useEffect } from "react";
-import { Megaphone, Plus, Eye, MousePointer, Play, Pause, Trash2, Sparkles, X, Target } from "lucide-react";
-import { authorService } from "../../services/authorService";
+import { Megaphone, Plus, Eye, MousePointer, Play, Pause, Trash2, Sparkles, X, Target, Wallet, CreditCard, Gift, CheckCircle2 } from "lucide-react";
+import { authorService, getCurrentAuthor } from "../../services/authorService";
 import { useCommerce } from "../../context/CommerceContext";
+import { openRazorpayCheckout } from "../../services/paymentService";
 
 function Campaigns() {
   const { showToast } = useCommerce();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
+  const [myBooks, setMyBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
 
   const [newCampaign, setNewCampaign] = useState({
     name: "",
+    bookId: "",
     book: "",
     type: "Home Boost",
-    budget: "299",
-    targetCategory: "Self Help",
-    days: "7"
+    days: "7",
+    paymentMethod: "wallet"
   });
 
-  const loadCampaigns = () => {
-    authorService.getCampaigns().then((camps) => {
-      setCampaigns(Array.isArray(camps) ? camps : []);
-    }).finally(() => {
+  const loadData = async () => {
+    try {
+      const currentUser = getCurrentAuthor();
+      setUser(currentUser);
+
+      const [camps, books] = await Promise.all([
+        authorService.getCampaigns(),
+        authorService.getBooks()
+      ]);
+
+      const campList = Array.isArray(camps) ? camps : [];
+      setCampaigns(campList);
+      
+      const bookList = Array.isArray(books) ? books : [];
+      setMyBooks(bookList);
+
+      // Pre-select first book if available
+      if (bookList.length > 0 && !newCampaign.book) {
+        setNewCampaign(prev => ({
+          ...prev,
+          bookId: bookList[0].id || bookList[0]._id || "",
+          book: bookList[0].title || ""
+        }));
+      }
+
+      // Check if free trial already used
+      const trialUsed = campList.some(c => c.paymentMethod === "free_trial");
+      if (!trialUsed) {
+        setNewCampaign(prev => ({ ...prev, paymentMethod: "free_trial", days: "3" }));
+      }
+    } catch (err) {
+      console.error("Error loading campaign data:", err);
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {
-    loadCampaigns();
+    loadData();
   }, []);
+
+  const hasUsedTrial = campaigns.some(c => c.paymentMethod === "free_trial");
+  const walletBalance = user?.walletBalance || 0;
+  const dailyRate = newCampaign.type === "Home Boost" ? 299 : 149;
+  const isFreeTrial = newCampaign.paymentMethod === "free_trial";
+  const durationDays = isFreeTrial ? 3 : Number(newCampaign.days || 7);
+  const totalCost = isFreeTrial ? 0 : dailyRate * durationDays;
+
+  const handleBookSelect = (e) => {
+    const selectedId = e.target.value;
+    const found = myBooks.find(b => (b.id === selectedId || b._id === selectedId));
+    setNewCampaign(prev => ({
+      ...prev,
+      bookId: selectedId,
+      book: found ? found.title : e.target.value
+    }));
+  };
+
+  const executeCampaignCreation = async (paymentId = null) => {
+    setSubmitting(true);
+    try {
+      const payload = {
+        title: newCampaign.name.trim(),
+        campaignType: newCampaign.type === "Home Boost" ? "home_banner" : "category_boost",
+        bookId: newCampaign.bookId || null,
+        book: newCampaign.book || "Published Book",
+        days: durationDays,
+        paymentMethod: newCampaign.paymentMethod,
+        paymentId: paymentId || null,
+      };
+
+      const created = await authorService.createCampaign(payload);
+      setCampaigns((prev) => [created, ...prev]);
+      setShowCreateModal(false);
+      setNewCampaign({
+        name: "",
+        bookId: myBooks[0]?.id || "",
+        book: myBooks[0]?.title || "",
+        type: "Home Boost",
+        days: "7",
+        paymentMethod: "wallet"
+      });
+
+      // Refresh updated wallet balance
+      const updatedUser = getCurrentAuthor();
+      if (updatedUser) setUser(updatedUser);
+
+      showToast(
+        isFreeTrial 
+          ? "🎉 1-Time Free Starter Boost activated for 3 days!" 
+          : `Campaign "${created.name}" launched successfully!`, 
+        "success"
+      );
+    } catch (error) {
+      showToast(error.message || "Failed to launch campaign", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!newCampaign.name.trim()) return;
+    if (!newCampaign.name.trim()) {
+      showToast("Please provide a campaign name", "warning");
+      return;
+    }
 
-    const payload = {
-      title: newCampaign.name.trim(),
-      campaignType: newCampaign.type === "Home Boost" ? "home_banner" : "category_boost",
-      targetCategory: newCampaign.targetCategory,
-      budget: Number(newCampaign.budget) || 299,
-      book: newCampaign.book || "Published Book",
-      endDate: new Date(Date.now() + Number(newCampaign.days || 7) * 24 * 60 * 60 * 1000)
-    };
-
-    const created = await authorService.createCampaign(payload);
-    setCampaigns((prev) => [created, ...prev]);
-    setShowCreateModal(false);
-    setNewCampaign({ name: "", book: "", type: "Home Boost", budget: "299", targetCategory: "Self Help", days: "7" });
-    showToast(`Campaign "${created.name}" launched successfully!`, "success");
+    if (newCampaign.paymentMethod === "wallet") {
+      if (walletBalance < totalCost) {
+        showToast(`Insufficient wallet balance (₹${walletBalance}). Required: ₹${totalCost}. Please select Razorpay online payment.`, "error");
+        return;
+      }
+      await executeCampaignCreation();
+    } else if (newCampaign.paymentMethod === "razorpay") {
+      await openRazorpayCheckout({
+        order: {
+          id: `camp_order_${Date.now()}`,
+          amount: totalCost,
+          title: `Campaign: ${newCampaign.name.trim()}`
+        },
+        customer: {
+          name: user?.penName || user?.fullName || "Author",
+          email: user?.email || "author@bookify.com",
+          phone: user?.phone || "9999999999"
+        },
+        onSuccess: async (res) => {
+          await executeCampaignCreation(res.razorpay_payment_id || `pay_${Date.now()}`);
+        },
+        onError: (err) => {
+          showToast("Payment failed or cancelled: " + (err.message || ""), "error");
+        }
+      });
+    } else {
+      // Free trial
+      await executeCampaignCreation();
+    }
   };
 
   const toggleStatus = async (id) => {
@@ -288,33 +398,164 @@ function Campaigns() {
                 <div>
                   <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-1.5">Campaign Duration</label>
                   <select
-                    value={newCampaign.days}
+                    disabled={isFreeTrial}
+                    value={isFreeTrial ? "3" : newCampaign.days}
                     onChange={(e) => setNewCampaign({ ...newCampaign, days: e.target.value })}
-                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 px-3 text-xs outline-none focus:border-[#6C4BF4]"
+                    className={`w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 px-3 text-xs outline-none focus:border-[#6C4BF4] ${isFreeTrial ? "opacity-60 cursor-not-allowed" : ""}`}
                   >
                     <option value="3">3 Days</option>
                     <option value="7">7 Days (Recommended)</option>
                     <option value="14">14 Days</option>
                     <option value="30">30 Days</option>
                   </select>
+                  {isFreeTrial && <span className="text-[10px] text-[#6C4BF4] font-semibold mt-0.5 block">Locked to 3 days for Starter Boost</span>}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-1.5">Target Book Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. My Textbook Title"
-                  value={newCampaign.book}
-                  onChange={(e) => setNewCampaign({ ...newCampaign, book: e.target.value })}
-                  className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 px-4 text-xs outline-none focus:border-[#6C4BF4]"
-                  required
-                />
+                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-1.5">Target Published Book</label>
+                {myBooks.length > 0 ? (
+                  <select
+                    value={newCampaign.bookId}
+                    onChange={handleBookSelect}
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 px-3 text-xs outline-none focus:border-[#6C4BF4]"
+                  >
+                    {myBooks.map((b) => (
+                      <option key={b.id || b._id} value={b.id || b._id}>
+                        {b.title} ({b.category || "Book"})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="e.g. My Textbook Title"
+                    value={newCampaign.book}
+                    onChange={(e) => setNewCampaign({ ...newCampaign, book: e.target.value })}
+                    className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-2.5 px-4 text-xs outline-none focus:border-[#6C4BF4]"
+                    required
+                  />
+                )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#E7E4F2]">
+              {/* Payment Method Selector */}
+              <div className="space-y-2 pt-2">
+                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider">Payment Method</label>
+                
+                {/* 1-Time Free Trial Option (if eligible) */}
+                {!hasUsedTrial && (
+                  <label
+                    onClick={() => setNewCampaign({ ...newCampaign, paymentMethod: "free_trial", days: "3" })}
+                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
+                      newCampaign.paymentMethod === "free_trial"
+                        ? "border-[#6C4BF4] bg-[#EEEAFE]/50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#6C4BF4] text-white rounded-lg">
+                        <Gift size={16} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-[#17152A]">1-Time Free Starter Boost</span>
+                          <span className="px-1.5 py-0.2 bg-[#22C55E]/10 text-[#22C55E] text-[10px] font-bold rounded">FREE</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500">Test storefront promotions free for 3 days</p>
+                      </div>
+                    </div>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={newCampaign.paymentMethod === "free_trial"}
+                      onChange={() => setNewCampaign({ ...newCampaign, paymentMethod: "free_trial", days: "3" })}
+                      className="accent-[#6C4BF4]"
+                    />
+                  </label>
+                )}
+
+                {/* Wallet Balance Payment */}
+                <label
+                  onClick={() => setNewCampaign({ ...newCampaign, paymentMethod: "wallet" })}
+                  className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
+                    newCampaign.paymentMethod === "wallet"
+                      ? "border-[#6C4BF4] bg-[#EEEAFE]/50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                      <Wallet size={16} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-[#17152A]">Bookify Royalty Wallet</span>
+                        <span className="text-[11px] text-gray-500 font-medium">(Balance: ₹{walletBalance})</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500">
+                        {walletBalance >= totalCost
+                          ? "Sufficient balance for instant activation"
+                          : `Insufficient balance (₹${totalCost - walletBalance} short)`}
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    checked={newCampaign.paymentMethod === "wallet"}
+                    onChange={() => setNewCampaign({ ...newCampaign, paymentMethod: "wallet" })}
+                    className="accent-[#6C4BF4]"
+                  />
+                </label>
+
+                {/* Razorpay Online Payment */}
+                <label
+                  onClick={() => setNewCampaign({ ...newCampaign, paymentMethod: "razorpay" })}
+                  className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
+                    newCampaign.paymentMethod === "razorpay"
+                      ? "border-[#6C4BF4] bg-[#EEEAFE]/50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                      <CreditCard size={16} />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-[#17152A]">Pay Online (Razorpay)</span>
+                      <p className="text-[11px] text-gray-500">UPI (GPay / PhonePe / Paytm), Debit/Credit Cards</p>
+                    </div>
+                  </div>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    checked={newCampaign.paymentMethod === "razorpay"}
+                    onChange={() => setNewCampaign({ ...newCampaign, paymentMethod: "razorpay" })}
+                    className="accent-[#6C4BF4]"
+                  />
+                </label>
+              </div>
+
+              {/* Order / Cost Summary */}
+              <div className="bg-[#F8F7FF] rounded-2xl p-3.5 border border-[#E7E4F2] flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] text-[#6B6880] block">Campaign Budget</span>
+                  <span className="text-xs font-semibold text-[#17152A]">
+                    {isFreeTrial ? "Starter Boost (3 Days)" : `₹${dailyRate} x ${durationDays} days`}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[11px] text-[#6B6880] block">Total Payable</span>
+                  <span className="text-lg font-bold text-[#6C4BF4]">
+                    {isFreeTrial ? "FREE" : `₹${totalCost}`}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#E7E4F2]">
                 <button
                   type="button"
+                  disabled={submitting}
                   onClick={() => setShowCreateModal(false)}
                   className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
                 >
@@ -322,9 +563,16 @@ function Campaigns() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 cursor-pointer"
+                  disabled={submitting}
+                  className="px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 cursor-pointer flex items-center gap-1.5"
                 >
-                  Start Campaign
+                  {submitting ? (
+                    <span>Processing...</span>
+                  ) : isFreeTrial ? (
+                    <span>Activate Free Trial</span>
+                  ) : (
+                    <span>Launch Campaign (₹{totalCost})</span>
+                  )}
                 </button>
               </div>
             </form>

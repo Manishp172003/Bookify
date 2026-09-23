@@ -364,7 +364,21 @@ export const authorService = {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.data) && data.data.length > 0) {
-          return data.data;
+          // Format backend Campaign model to frontend dashboard structure
+          return data.data.map((c) => ({
+            id: c._id || c.id,
+            name: c.title,
+            type: c.campaignType === "category_boost" ? "Category Boost" : "Home Boost",
+            status: c.status === "active" ? "Running" : "Paused",
+            rate: `₹${c.dailyRate || (c.campaignType === "category_boost" ? 149 : 299)} / day`,
+            views: (c.impressions || 0).toString(),
+            clicks: (c.clicks || 0).toString(),
+            ctr: c.impressions > 0 ? `${((c.clicks / c.impressions) * 100).toFixed(2)}%` : "0.00%",
+            spent: `₹${c.totalCost || c.budget || 0}`,
+            book: c.bookId?.title || c.title,
+            paymentMethod: c.paymentMethod,
+            paymentStatus: c.paymentStatus,
+          }));
         }
       }
     } catch {}
@@ -374,32 +388,59 @@ export const authorService = {
 
   async createCampaign(campaignData) {
     const storageKey = getCampaignsStorageKey();
+    const rate = campaignData.campaignType === "category_boost" ? 149 : 299;
+    const days = Number(campaignData.days) || 7;
+    const isFree = campaignData.paymentMethod === "free_trial";
+    const totalCost = isFree ? 0 : rate * days;
+
     const newCamp = {
       id: `camp_${Date.now()}`,
       name: campaignData.title,
       type: campaignData.campaignType === "home_banner" ? "Home Boost" : "Category Boost",
       status: "Running",
-      rate: `₹${campaignData.budget || 299} / day`,
+      rate: `₹${rate} / day`,
       views: "0",
       clicks: "0",
       ctr: "0.00%",
-      spent: "₹0",
+      spent: `₹${totalCost}`,
       book: campaignData.book || "Published Book",
+      paymentMethod: campaignData.paymentMethod || "wallet",
     };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/campaigns`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(campaignData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to create campaign");
+      }
+
+      if (data.walletBalance !== undefined) {
+        const rawUser = localStorage.getItem("bookify_user");
+        if (rawUser) {
+          const u = JSON.parse(rawUser);
+          u.walletBalance = data.walletBalance;
+          localStorage.setItem("bookify_user", JSON.stringify(u));
+        }
+      }
+
+      if (data.data) {
+        newCamp.id = data.data._id || newCamp.id;
+      }
+    } catch (err) {
+      if (err.message && !err.message.includes("Failed to fetch")) {
+        throw err;
+      }
+    }
 
     let current = [];
     try {
       current = JSON.parse(localStorage.getItem(storageKey) || "[]");
     } catch {}
     localStorage.setItem(storageKey, JSON.stringify([newCamp, ...current]));
-
-    try {
-      await fetch(`${API_BASE_URL}/campaigns`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(campaignData),
-      });
-    } catch {}
 
     return newCamp;
   },
@@ -419,7 +460,7 @@ export const authorService = {
       await fetch(`${API_BASE_URL}/campaigns/${id}/status`, {
         method: "PATCH",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: status === "running" ? "active" : "paused" }),
       });
     } catch {}
   },
@@ -437,6 +478,30 @@ export const authorService = {
       await fetch(`${API_BASE_URL}/campaigns/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
+      });
+    } catch {}
+  },
+
+  async getActiveFeaturedCampaigns() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/campaigns/active-featured`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.data)) {
+          return data.data;
+        }
+      }
+    } catch {}
+    return [];
+  },
+
+  async trackCampaignEngagement(campaignId, action = "impression") {
+    if (!campaignId || campaignId.startsWith("demo_") || campaignId.startsWith("camp_")) return;
+    try {
+      await fetch(`${API_BASE_URL}/campaigns/${campaignId}/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
       });
     } catch {}
   },

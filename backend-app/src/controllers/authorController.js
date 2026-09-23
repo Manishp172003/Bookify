@@ -1,4 +1,5 @@
-﻿import Book from "../models/Book.js";
+import mongoose from "mongoose";
+import Book from "../models/Book.js";
 import Coupon from "../models/Coupon.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
@@ -391,25 +392,86 @@ export const getCampaigns = async (req, res) => {
 
 export const createCampaign = async (req, res) => {
   try {
-    const { title, campaignType, targetCategory, discountPercentage, startDate, endDate, budget, bookId } = req.body;
+    const {
+      title,
+      campaignType = "home_banner",
+      targetCategory = "All",
+      discountPercentage = 0,
+      startDate,
+      endDate,
+      bookId,
+      paymentMethod = "wallet",
+      paymentId = null,
+      days = 7,
+    } = req.body;
+
+    const rate = campaignType === "category_boost" ? 149 : 299;
+    const durationDays = Number(days) || 7;
+    let totalCost = rate * durationDays;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Free Trial Validation (1-time only)
+    if (paymentMethod === "free_trial") {
+      const existingTrial = await Campaign.findOne({
+        authorId: req.user._id,
+        paymentMethod: "free_trial",
+      });
+      if (existingTrial) {
+        return res.status(400).json({
+          success: false,
+          message: "You have already redeemed your 1-time Free Starter Boost trial. Please select Wallet or Online payment.",
+        });
+      }
+      totalCost = 0;
+    } else if (paymentMethod === "wallet") {
+      // Wallet Payment Validation
+      if ((user.walletBalance || 0) < totalCost) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient wallet balance (Available: ₹${user.walletBalance || 0}, Required: ₹${totalCost}). Please pay online via Razorpay or choose a shorter duration.`,
+        });
+      }
+      user.walletBalance -= totalCost;
+      await user.save();
+    }
+
+    const start = startDate ? new Date(startDate) : new Date();
+    const effectiveDays = paymentMethod === "free_trial" ? 3 : durationDays;
+    const end = endDate ? new Date(endDate) : new Date(start.getTime() + effectiveDays * 24 * 60 * 60 * 1000);
 
     const campaign = await Campaign.create({
       authorId: req.user._id,
       bookId: bookId || null,
-      title,
+      title: title || "Promotional Spotlight",
       campaignType: campaignType || "home_banner",
       targetCategory: targetCategory || "All",
       discountPercentage: Number(discountPercentage) || 0,
-      startDate: startDate ? new Date(startDate) : new Date(),
-      endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      budget: Number(budget) || 0,
+      startDate: start,
+      endDate: end,
+      budget: totalCost,
+      dailyRate: rate,
+      totalCost,
+      paymentStatus: "paid",
+      paymentMethod,
+      paymentId: paymentId || (paymentMethod === "wallet" ? `wal_${Date.now()}` : `free_${Date.now()}`),
       status: "active",
       impressions: 0,
       clicks: 0,
       conversions: 0,
     });
 
-    return res.status(201).json({ success: true, message: "Campaign created successfully", data: campaign });
+    return res.status(201).json({
+      success: true,
+      message: paymentMethod === "free_trial" 
+        ? "Free Starter Boost activated successfully for 3 days!" 
+        : `Campaign launched successfully! (Paid ₹${totalCost})`,
+      data: campaign,
+      walletBalance: user.walletBalance,
+    });
   } catch (error) {
     console.error("Create campaign error:", error);
     return res.status(500).json({ success: false, message: error.message, data: null });
@@ -447,6 +509,94 @@ export const deleteCampaign = async (req, res) => {
   } catch (error) {
     console.error("Delete campaign error:", error);
     return res.status(500).json({ success: false, message: error.message, data: null });
+  }
+};
+
+// ==========================================
+// Public Storefront Campaign Endpoints
+// ==========================================
+
+export const getActiveFeaturedCampaigns = async (req, res) => {
+  try {
+    const now = new Date();
+    const campaigns = await Campaign.find({
+      status: "active",
+      paymentStatus: "paid",
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    })
+      .populate({
+        path: "bookId",
+        select: "title subtitle author price originalPrice images rating reviewsCount category description",
+      })
+      .populate({
+        path: "authorId",
+        select: "fullName penName authorAvatar authorBio isVerified",
+      })
+      .sort({ createdAt: -1 })
+      .limit(6);
+
+    const formatted = campaigns.map((c) => {
+      const book = c.bookId;
+      const author = c.authorId;
+      return {
+        id: c._id,
+        campaignId: c._id,
+        campaignType: c.campaignType,
+        title: c.title,
+        bookId: book?._id || null,
+        bookTitle: book?.title || c.title,
+        bookCover: (book?.images && book.images[0]) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop",
+        authorName: author?.penName || author?.fullName || book?.author || "Spotlight Author",
+        authorBio: author?.authorBio || "Discover exciting new works directly from verified independent creators.",
+        authorAvatar: author?.authorAvatar || null,
+        price: book?.price || 299,
+        rating: book?.rating || 4.8,
+        category: book?.category || c.targetCategory || "Featured",
+        description: book?.description || "An extraordinary work now featured on Bookify.",
+        isSponsored: true,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Active featured campaigns fetched",
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("Get active featured campaigns error:", error);
+    return res.status(500).json({ success: false, message: error.message, data: [] });
+  }
+};
+
+export const trackCampaignEngagement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid campaign ID" });
+    }
+
+    const updateField = action === "click" ? { clicks: 1 } : { impressions: 1 };
+    const updated = await Campaign.findByIdAndUpdate(
+      id,
+      { $inc: updateField },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Campaign not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Engagement tracked: ${action}`,
+      data: { impressions: updated.impressions, clicks: updated.clicks },
+    });
+  } catch (error) {
+    console.error("Track engagement error:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
