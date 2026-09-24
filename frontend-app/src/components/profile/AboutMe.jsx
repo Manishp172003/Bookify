@@ -12,7 +12,7 @@ function AboutMe() {
       </h2>
 
       <p className="mt-3 text-sm leading-6 text-gray-500">
-        {user?.bio || user?.authorBio || "Passionate reader and learner on Bokify."}
+        {user?.bio || user?.authorBio || "No bio added yet. Tell peers about your academic interests and favorite books!"}
       </p>
 
       <Link

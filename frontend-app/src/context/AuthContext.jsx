@@ -62,6 +62,8 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("bookify_conversations");
       localStorage.removeItem("bookify_user_listings_v1");
       localStorage.removeItem("bookify_user_payment");
+      localStorage.removeItem("bookify_wishlist");
+      localStorage.removeItem("bookify_want_board_v1");
     }
 
     localStorage.setItem("bookify_user", JSON.stringify(userObj));
@@ -89,6 +91,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("bookify_conversations");
     localStorage.removeItem("bookify_user_listings_v1");
     localStorage.removeItem("bookify_user_payment");
+    localStorage.removeItem("bookify_wishlist");
+    localStorage.removeItem("bookify_want_board_v1");
     setIsAuthenticated(false);
     setUser(null);
   };

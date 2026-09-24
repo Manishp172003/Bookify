@@ -4,10 +4,27 @@ import ProfileHeader from "../../components/profile/ProfileHeader";
 import ProfileStats from "../../components/profile/ProfileStats";
 import AboutMe from "../../components/profile/AboutMe";
 import { Menu, Heart, ArrowRight } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import { useCommerce } from "../../context/CommerceContext";
 
 function ProfileWidgets() {
   const { wishlistItems } = useCommerce();
+  const { user } = useAuth();
+
+  const hasEmail = Boolean(user?.email);
+  const hasStudentId = Boolean(user?.studentId || user?.isStudentVerified || user?.role === "student");
+  const hasPhone = Boolean(user?.phone && user?.phone !== "Not provided" && user?.phone.length >= 7);
+  const hasBank = Boolean(user?.payment?.accountNumber || user?.payment?.upiId);
+
+  const steps = [
+    { label: "Verify Email", done: hasEmail },
+    { label: "Verify Student ID", done: hasStudentId },
+    { label: "Add Mobile Number", done: hasPhone },
+    { label: "Link Bank Account (for payouts)", done: hasBank },
+  ];
+
+  const completedCount = steps.filter((s) => s.done).length;
+  const completionPercentage = Math.round((completedCount / steps.length) * 100);
 
   return (
     <div className="space-y-6">
@@ -19,27 +36,25 @@ function ProfileWidgets() {
         <div className="mt-4">
           <div className="flex justify-between text-xs font-semibold text-gray-500 mb-1.5">
             <span>Profile Completion</span>
-            <span className="text-[#6C4BF4] font-bold">85%</span>
+            <span className="text-[#6C4BF4] font-bold">{completionPercentage}%</span>
           </div>
           <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-[#6C4BF4] rounded-full" style={{ width: "85%" }}></div>
+            <div className="h-full bg-[#6C4BF4] rounded-full transition-all duration-500" style={{ width: `${completionPercentage}%` }}></div>
           </div>
         </div>
 
         {/* Checklist */}
         <ul className="mt-5 space-y-2.5 text-xs">
-          <li className="flex items-center gap-2 text-gray-600">
-            <span className="text-green-500 font-bold">✓</span> Verify Email
-          </li>
-          <li className="flex items-center gap-2 text-gray-600">
-            <span className="text-green-500 font-bold">✓</span> Verify Student ID
-          </li>
-          <li className="flex items-center gap-2 text-gray-600">
-            <span className="text-green-500 font-bold">✓</span> Add Mobile Number
-          </li>
-          <li className="flex items-center gap-2 text-gray-400">
-            <span className="text-gray-300">•</span> Link Bank Account (for payouts)
-          </li>
+          {steps.map((step) => (
+            <li key={step.label} className={`flex items-center gap-2 ${step.done ? "text-gray-700 font-medium" : "text-gray-400"}`}>
+              {step.done ? (
+                <span className="text-green-500 font-bold">✓</span>
+              ) : (
+                <span className="text-gray-300">•</span>
+              )}
+              <span>{step.label}</span>
+            </li>
+          ))}
         </ul>
       </div>
 

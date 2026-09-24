@@ -6,49 +6,8 @@ import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck, Che
 import { api } from "../../services/apiClient";
 import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
-const INITIAL_RECEIVED = [
-  {
-    id: "SWP-9021",
-    partner: "Sneha Reddy",
-    partnerId: "usr_sneha",
-    status: "Pending Decision",
-    statusColor: "text-amber-600 bg-amber-50 border-amber-100",
-    yourBook: {
-      title: "Introduction to Algorithms",
-      condition: "Very Good",
-      image: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
-      coverClass: "from-[#111827] to-[#374151]"
-    },
-    theirBook: {
-      title: "Compiler Design: Principles",
-      condition: "Like New",
-      image: "https://covers.openlibrary.org/b/isbn/9780321486813-L.jpg",
-      coverClass: "from-[#065F46] to-[#047857]"
-    }
-  }
-];
-
-const INITIAL_SENT = [
-  {
-    id: "SWP-3820",
-    partner: "Aarav Sharma",
-    partnerId: "usr_aarav",
-    status: "Accepted - Meetup Pending",
-    statusColor: "text-green-600 bg-green-50 border-green-100",
-    yourBook: {
-      title: "Organic Chemistry, 8th Edition",
-      condition: "Good",
-      image: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
-      coverClass: "from-[#0F172A] to-[#1E293B]"
-    },
-    theirBook: {
-      title: "Concepts of Physics Vol 1",
-      condition: "Very Good",
-      image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
-      coverClass: "from-[#E11D48] to-[#F43F5E]"
-    }
-  }
-];
+const INITIAL_RECEIVED = [];
+const INITIAL_SENT = [];
 
 export default function Exchanges() {
   const { showToast, startOrGetConversation } = useCommerce();
@@ -67,7 +26,8 @@ export default function Exchanges() {
         localStorage.getItem("auth_token");
 
       if (!token) {
-        // Guest mode / unauthenticated session: keep local previews without failing network call
+        setReceivedList([]);
+        setSentList([]);
         return;
       }
 
@@ -75,15 +35,12 @@ export default function Exchanges() {
         setIsLoading(true);
         const res = await api.get("/exchanges/my-exchanges");
         if (res?.data) {
-          if (Array.isArray(res.data.received) && res.data.received.length > 0) {
-            setReceivedList(res.data.received);
-          }
-          if (Array.isArray(res.data.sent) && res.data.sent.length > 0) {
-            setSentList(res.data.sent);
-          }
+          setReceivedList(Array.isArray(res.data.received) ? res.data.received : []);
+          setSentList(Array.isArray(res.data.sent) ? res.data.sent : []);
         }
       } catch (err) {
-        // Fallback to local list silently
+        setReceivedList([]);
+        setSentList([]);
       } finally {
         setIsLoading(false);
       }

@@ -434,27 +434,19 @@ export function CommerceProvider({ children }) {
   // Wishlist State
   const [wishlistItems, setWishlistItems] = useState(() => {
     const saved = localStorage.getItem("bookify_wishlist");
-    const INITIAL_WISHLIST = [
-      {
-        id: 1,
-        title: "Introduction to Algorithms, 3rd Edition",
-        author: "Thomas H. Cormen",
-        price: "₹650",
-        condition: "Very Good",
-        alertActive: true,
-        coverImage: "https://covers.openlibrary.org/b/isbn/9780062315007-L.jpg"
-      },
-      {
-        id: 2,
-        title: "Concepts of Physics Vol 1",
-        author: "H.C. Verma",
-        price: "₹350",
-        condition: "Good",
-        alertActive: false,
-        coverImage: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg"
-      }
-    ];
-    return saved ? JSON.parse(saved) : INITIAL_WISHLIST;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((item) => item.id !== 1 && item.id !== 2);
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem("bookify_wishlist", JSON.stringify(cleaned));
+          }
+          return cleaned;
+        }
+      } catch {}
+    }
+    return [];
   });
 
   useEffect(() => {

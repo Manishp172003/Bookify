@@ -9,10 +9,12 @@ import QuickActions from "../../components/dashboard/QuickActions";
 import RecentMessages from "../../components/dashboard/RecentMessages";
 import { useCommerce } from "../../context/CommerceContext";
 import { listingService } from "../../services/listingService";
+import { api } from "../../services/apiClient";
 
 function StudentDashboard() {
   const { orders } = useCommerce();
   const [listingStats, setListingStats] = useState(() => listingService.getStats());
+  const [backendStats, setBackendStats] = useState(null);
 
   const updateStats = () => {
     setListingStats(listingService.getStats());
@@ -20,12 +22,22 @@ function StudentDashboard() {
 
   useEffect(() => {
     updateStats();
+    const fetchBackendStats = async () => {
+      try {
+        const res = await api.get("/dashboard/stats");
+        if (res?.data?.data) {
+          setBackendStats(res.data.data);
+        }
+      } catch {}
+    };
+    fetchBackendStats();
+
     window.addEventListener("bookify_user_listings_updated", updateStats);
     return () => window.removeEventListener("bookify_user_listings_updated", updateStats);
   }, []);
 
   const buyerOrders = (orders || []).filter((o) => !o.isSellerOrder);
-  const purchasedCount = buyerOrders.length;
+  const purchasedCount = backendStats?.orders?.total ?? buyerOrders.length;
 
   const totalSaved = buyerOrders.reduce((acc, o) => {
     const originalPrice = o.originalPrice || o.items?.[0]?.originalPrice || 0;
@@ -33,8 +45,8 @@ function StudentDashboard() {
     return acc + Math.max(0, originalPrice - paidPrice);
   }, 0);
 
-  const booksSold = listingStats.soldCount || 0;
-  const totalEarned = listingStats.totalEarned || 0;
+  const booksSold = backendStats?.listings?.sold ?? (listingStats.soldCount || 0);
+  const totalEarned = backendStats?.earnings?.net ?? (listingStats.totalEarned || 0);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">

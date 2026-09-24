@@ -6,53 +6,8 @@ import { Calendar, ShieldCheck, Clock, MessageSquare, CornerUpLeft, Menu, PlusCi
 import { api } from "../../services/apiClient";
 import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
-const INITIAL_RENTED = [
-  {
-    id: "RNT-10928",
-    title: "Operating System Concepts, 9th Edition",
-    owner: "Dev Kumar",
-    ownerId: "usr_dev",
-    deposit: "₹400",
-    fee: "₹150/mo",
-    daysLeft: 12,
-    percentLeft: 40,
-    dueDate: "06 Sep 2026",
-    image: "https://covers.openlibrary.org/b/isbn/9781118063330-L.jpg",
-    coverClass: "from-[#0F172A] to-[#1E293B]",
-    status: "active"
-  },
-  {
-    id: "RNT-51290",
-    title: "Core Java: An Integrated Approach",
-    owner: "Priya Patel",
-    ownerId: "usr_priya",
-    deposit: "₹300",
-    fee: "₹100/mo",
-    daysLeft: 25,
-    percentLeft: 83,
-    dueDate: "19 Sep 2026",
-    image: "https://covers.openlibrary.org/b/isbn/9789351199342-L.jpg",
-    coverClass: "from-[#4F46E5] to-[#7C3AED]",
-    status: "active"
-  }
-];
-
-const INITIAL_LENT = [
-  {
-    id: "LNT-38290",
-    title: "Database System Concepts",
-    renter: "Amit Sen",
-    renterId: "usr_amit",
-    deposit: "₹500",
-    fee: "₹200/mo",
-    daysLeft: 5,
-    percentLeft: 16,
-    dueDate: "30 Aug 2026",
-    image: "https://covers.openlibrary.org/b/isbn/9780073523323-L.jpg",
-    coverClass: "from-[#047857] to-[#065F46]",
-    status: "active"
-  }
-];
+const INITIAL_RENTED = [];
+const INITIAL_LENT = [];
 
 export default function Rentals() {
   const { showToast, startOrGetConversation } = useCommerce();
@@ -71,7 +26,8 @@ export default function Rentals() {
         localStorage.getItem("auth_token");
 
       if (!token) {
-        // Guest mode / unauthenticated session: keep local previews without failing network call
+        setRentedList([]);
+        setLentList([]);
         return;
       }
 
@@ -79,15 +35,12 @@ export default function Rentals() {
         setIsLoading(true);
         const res = await api.get("/rentals/my-rentals");
         if (res?.data) {
-          if (Array.isArray(res.data.rented) && res.data.rented.length > 0) {
-            setRentedList(res.data.rented);
-          }
-          if (Array.isArray(res.data.lent) && res.data.lent.length > 0) {
-            setLentList(res.data.lent);
-          }
+          setRentedList(Array.isArray(res.data.rented) ? res.data.rented : []);
+          setLentList(Array.isArray(res.data.lent) ? res.data.lent : []);
         }
       } catch (err) {
-        // Fallback to local list silently
+        setRentedList([]);
+        setLentList([]);
       } finally {
         setIsLoading(false);
       }

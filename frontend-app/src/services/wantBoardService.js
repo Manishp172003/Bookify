@@ -1,4 +1,6 @@
-﻿// Want Board Service with localStorage persistence and reactive sync
+import { api } from "./apiClient";
+
+// Want Board Service with localStorage persistence and reactive sync with backend
 
 const STORAGE_KEY = "bookify_want_board_v1";
 
@@ -31,6 +33,7 @@ const INITIAL_REQUESTS = [
     budget: 350,
     expectedPrice: "₹300 - ₹400",
     requestedBy: "Ananya Patel",
+    isMyRequest: false,
     campus: "BITS Pilani",
     date: "5 hours ago",
     status: "Open",
@@ -47,27 +50,11 @@ const INITIAL_REQUESTS = [
     budget: 500,
     expectedPrice: "₹500",
     requestedBy: "Kabir Mehta",
+    isMyRequest: false,
     campus: "Delhi University (North Campus)",
     date: "1 day ago",
     status: "Open",
     notes: "Willing to buy outright or rent for the remaining semester."
-  },
-  {
-    id: "REQ-001",
-    title: "Introduction to Algorithms, 3rd Edition",
-    author: "Thomas H. Cormen",
-    department: "Computer Science",
-    courseCode: "CS201",
-    urgency: "Low Urgency",
-    urgencyLevel: "Low",
-    budget: 550,
-    expectedPrice: "₹500 - ₹600",
-    requestedBy: "Me",
-    isMyRequest: true,
-    campus: "Main Campus Library",
-    date: "2 days ago",
-    status: "Open",
-    notes: "Urgent need for algorithmic assignment and semester core reference."
   },
   {
     id: "REQ-6184",
@@ -80,6 +67,7 @@ const INITIAL_REQUESTS = [
     budget: 650,
     expectedPrice: "₹600 - ₹700",
     requestedBy: "Priya Nair",
+    isMyRequest: false,
     campus: "IISc Bangalore",
     date: "3 days ago",
     status: "Fulfilled",
@@ -95,24 +83,90 @@ export const wantBoardService = {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_REQUESTS));
         return INITIAL_REQUESTS;
       }
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        // Clean out legacy fake request REQ-001
+        const cleaned = parsed.filter(r => r.id !== "REQ-001");
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+        }
+        return cleaned;
+      }
+      return INITIAL_REQUESTS;
     } catch {
       return INITIAL_REQUESTS;
     }
   },
 
+  syncWithBackend: async () => {
+    try {
+      const res = await api.get("/want-board");
+      if (res?.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        let user = null;
+        try { user = JSON.parse(localStorage.getItem("bookify_user")); } catch {}
+        const currentUserId = user?.id || user?._id;
+
+        const backendItems = res.data.data.map((item) => {
+          const isMine = Boolean(
+            currentUserId &&
+            (item.userId?._id === currentUserId ||
+              item.userId === currentUserId ||
+              item.userName === user?.fullName)
+          );
+          return {
+            id: item._id || item.id,
+            title: item.bookTitle,
+            author: item.author || "Unknown Author",
+            department: item.category || "General",
+            courseCode: "GEN101",
+            urgency: `${item.urgency || "Medium"} Urgency`,
+            urgencyLevel: item.urgency || "Medium",
+            budget: item.budget || 0,
+            expectedPrice: `₹${item.budget || 0}`,
+            requestedBy: isMine ? (user?.fullName || "Me") : (item.userName || item.userId?.fullName || "Campus Student"),
+            isMyRequest: isMine,
+            campus: "Campus Community",
+            date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recent",
+            status: item.status || "Open",
+            notes: item.notes || "Looking for campus copy."
+          };
+        });
+
+        // Merge with local requests
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(backendItems));
+        window.dispatchEvent(new Event("bookify_want_board_updated"));
+        return backendItems;
+      }
+    } catch {
+      // Offline fallback
+    }
+    return wantBoardService.getAllRequests();
+  },
+
   getMyRequests: () => {
     const all = wantBoardService.getAllRequests();
-    return all.filter(r => r.isMyRequest || r.requestedBy === "Me");
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem("bookify_user")); } catch {}
+    const myName = user?.fullName;
+
+    return all.filter((r) => r.isMyRequest || r.requestedBy === "Me" || (myName && r.requestedBy === myName));
   },
 
   getBrowseRequests: () => {
     const all = wantBoardService.getAllRequests();
-    return all.filter(r => !r.isMyRequest && r.requestedBy !== "Me");
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem("bookify_user")); } catch {}
+    const myName = user?.fullName;
+
+    return all.filter((r) => !r.isMyRequest && r.requestedBy !== "Me" && (!myName || r.requestedBy !== myName));
   },
 
-  createRequest: (data) => {
+  createRequest: async (data) => {
     const all = wantBoardService.getAllRequests();
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem("bookify_user")); } catch {}
+    const myName = user?.fullName || "Me";
+
     const newReq = {
       id: `REQ-${Math.floor(1000 + Math.random() * 9000)}`,
       title: data.title,
@@ -123,9 +177,9 @@ export const wantBoardService = {
       urgencyLevel: data.urgencyLevel || (data.urgency?.includes("High") ? "High" : data.urgency?.includes("Low") ? "Low" : "Medium"),
       budget: Number(data.budget) || (data.expectedPrice ? parseInt(data.expectedPrice.replace(/[^0-9]/g, "")) || 400 : 400),
       expectedPrice: data.expectedPrice || (data.budget ? `₹${data.budget}` : "₹300 - ₹500"),
-      requestedBy: "Me",
+      requestedBy: myName,
       isMyRequest: true,
-      campus: data.campus || "Main Campus Library",
+      campus: data.campus || user?.campus || "Main Campus Library",
       date: "Just now",
       status: "Open",
       notes: data.notes || data.details || "Looking for urgent semester copy."
@@ -138,10 +192,28 @@ export const wantBoardService = {
     } catch (e) {
       console.error("Failed to save want board request", e);
     }
+
+    // Sync to backend if authenticated
+    try {
+      const backendRes = await api.post("/want-board", {
+        bookTitle: newReq.title,
+        author: newReq.author,
+        category: newReq.department,
+        budget: newReq.budget,
+        urgency: newReq.urgencyLevel,
+        notes: newReq.notes,
+      });
+      if (backendRes?.data?.data?._id) {
+        newReq.id = backendRes.data.data._id;
+      }
+    } catch (err) {
+      console.warn("Backend sync failed for want board post:", err);
+    }
+
     return newReq;
   },
 
-  deleteRequest: (id) => {
+  deleteRequest: async (id) => {
     const all = wantBoardService.getAllRequests();
     const updated = all.filter(r => r.id !== id);
     try {
@@ -150,6 +222,16 @@ export const wantBoardService = {
     } catch (e) {
       console.error("Failed to delete request", e);
     }
+
+    // Sync deletion with backend if MongoDB id
+    try {
+      if (id && !id.startsWith("REQ-")) {
+        await api.delete(`/want-board/${id}`);
+      }
+    } catch (err) {
+      console.warn("Backend delete sync failed:", err);
+    }
+
     return updated;
   },
 
