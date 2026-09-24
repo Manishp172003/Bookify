@@ -60,19 +60,30 @@ export default function Exchanges() {
 
   useEffect(() => {
     const fetchExchanges = async () => {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("auth_token");
+
+      if (!token) {
+        // Guest mode / unauthenticated session: keep local previews without failing network call
+        return;
+      }
+
       try {
         setIsLoading(true);
         const res = await api.get("/exchanges/my-exchanges");
         if (res?.data) {
-          if (res.data.received && res.data.received.length > 0) {
+          if (Array.isArray(res.data.received) && res.data.received.length > 0) {
             setReceivedList(res.data.received);
           }
-          if (res.data.sent && res.data.sent.length > 0) {
+          if (Array.isArray(res.data.sent) && res.data.sent.length > 0) {
             setSentList(res.data.sent);
           }
         }
       } catch (err) {
-        console.warn("Could not fetch exchanges from backend, using fallback:", err);
+        // Fallback to local list silently
       } finally {
         setIsLoading(false);
       }

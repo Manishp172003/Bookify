@@ -64,19 +64,30 @@ export default function Rentals() {
 
   useEffect(() => {
     const fetchRentals = async () => {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("auth_token");
+
+      if (!token) {
+        // Guest mode / unauthenticated session: keep local previews without failing network call
+        return;
+      }
+
       try {
         setIsLoading(true);
         const res = await api.get("/rentals/my-rentals");
         if (res?.data) {
-          if (res.data.rented && res.data.rented.length > 0) {
+          if (Array.isArray(res.data.rented) && res.data.rented.length > 0) {
             setRentedList(res.data.rented);
           }
-          if (res.data.lent && res.data.lent.length > 0) {
+          if (Array.isArray(res.data.lent) && res.data.lent.length > 0) {
             setLentList(res.data.lent);
           }
         }
       } catch (err) {
-        console.warn("Could not fetch rentals from backend, fallback to local:", err);
+        // Fallback to local list silently
       } finally {
         setIsLoading(false);
       }
