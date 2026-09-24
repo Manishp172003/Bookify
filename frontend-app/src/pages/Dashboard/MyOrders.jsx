@@ -26,56 +26,7 @@ import {
   Sparkles
 } from "lucide-react";
 
-const SEED_BUYER_ORDERS = [
-  {
-    id: "ORD-98725",
-    title: "Introduction to Algorithms, 3rd Edition",
-    author: "Thomas H. Cormen",
-    price: "₹650",
-    date: "24 Aug 2026",
-    status: "Meetup Scheduled",
-    statusColor: "text-amber-600 bg-amber-50 border-amber-100",
-    coverClass: "from-[#111827] to-[#374151]",
-    step: 2,
-    seller: {
-      name: "Sneha Reddy",
-      phone: "+91 98765 12345",
-      meetup: "Central Library Ground Floor, 4:00 PM Wednesday"
-    }
-  },
-  {
-    id: "ORD-82710",
-    title: "Cracking the Coding Interview",
-    author: "Gayle Laakmann McDowell",
-    price: "₹450",
-    date: "18 Aug 2026",
-    status: "Completed",
-    statusColor: "text-green-600 bg-green-50 border-green-100",
-    coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
-    step: 3,
-    seller: {
-      name: "Aarav Sharma",
-      phone: "+91 99887 76655",
-      meetup: "Campus Cafeteria, Completed"
-    }
-  },
-  {
-    id: "ORD-51920",
-    title: "Organic Chemistry, 8th Edition",
-    author: "L. G. Wade Jr.",
-    price: "₹800",
-    date: "12 Aug 2026",
-    status: "Cancelled",
-    statusColor: "text-red-600 bg-red-50 border-red-100",
-    coverClass: "from-[#059669] to-[#10B981]",
-    step: 0,
-    seller: {
-      name: "Rohan Das",
-      phone: "N/A",
-      meetup: "Cancelled by seller"
-    }
-  }
-];
+const SEED_BUYER_ORDERS = [];
 
 export default function MyOrders() {
   const { orders: contextOrders, updateOrderStatus, startOrGetConversation, showToast } = useCommerce();
@@ -150,57 +101,11 @@ export default function MyOrders() {
       };
     });
 
-  const allBuyerOrders = [
-    ...buyerPurchases,
-    ...SEED_BUYER_ORDERS.filter((s) => !buyerPurchases.some((c) => c.id === s.id))
-  ];
+  const allBuyerOrders = buyerPurchases;
 
   // Seller Incoming Orders (books sold by me waiting to be fulfilled)
   const sellerOrders = (contextOrders || []).filter((ord) => ord.isSellerOrder);
-
-  // Fallback demo seller order if none in state
-  const effectiveSellerOrders =
-    sellerOrders.length > 0
-      ? sellerOrders
-      : [
-          {
-            id: "BK77109230",
-            isSellerOrder: true,
-            orderDateFormatted: "Today, 04:30 PM",
-            expectedDelivery: "28 Sep 2026",
-            status: "placed",
-            statusLabel: "Awaiting Seller Confirmation",
-            escrowStatus: "held_in_escrow",
-            subtotal: 299,
-            total: 354,
-            buyer: {
-              name: "Rohan Verma",
-              phone: "+91 98765 88990",
-              meetupSpot: "Central Library Ground Floor",
-              hostelBlock: "Hostel Block B, Room 108"
-            },
-            address: {
-              name: "Rohan Verma",
-              phone: "+91 98765 88990",
-              meetupSpot: "Central Library Ground Floor",
-              hostelBlock: "Hostel Block B, Room 108",
-              campus: "Main Campus"
-            },
-            items: [
-              {
-                title: "Concepts of Physics (HC Verma Vol 1)",
-                author: "H.C. Verma",
-                price: 299,
-                condition: "Like New",
-                image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg"
-              }
-            ],
-            courier: {
-              name: "Campus Courier Logistics",
-              trackingNumber: "CN-718290-IN"
-            }
-          }
-        ];
+  const effectiveSellerOrders = sellerOrders;
 
   // Filter Buyer Orders
   const filteredBuyerOrders = allBuyerOrders.filter((order) => {

@@ -2,6 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useCommerce } from "../../context/CommerceContext";
 
+import { ShoppingBag } from "lucide-react";
+
 function BookCover({ title, bgClass = "from-[#2E189A] to-[#6C4BF4]" }) {
   const words = title ? title.split(" ") : ["BK"];
   const initials = words.length >= 2 
@@ -20,45 +22,43 @@ function BookCover({ title, bgClass = "from-[#2E189A] to-[#6C4BF4]" }) {
 function RecentOrders() {
   const { orders } = useCommerce();
 
-  // Show up to 3 recent orders
-  const displayOrders = orders && orders.length > 0 ? orders.slice(0, 3) : [
-    { 
-      id: "ord_1",
-      title: "Java The Complete Reference", 
-      user: "Rahul Sharma", 
-      price: "₹450",
-      bgClass: "from-[#2E189A] to-[#6C4BF4]"
-    },
-    { 
-      id: "ord_2",
-      title: "DBMS Concepts", 
-      user: "Priya Verma", 
-      price: "₹300",
-      bgClass: "from-[#C2410C] to-[#F97316]"
-    },
-    { 
-      id: "ord_3",
-      title: "Operating Systems", 
-      user: "Aman Tiwari", 
-      price: "₹400",
-      bgClass: "from-[#0F766E] to-[#14B8A6]"
-    },
-  ];
+  // Show up to 3 recent buyer orders
+  const buyerOrders = (orders || []).filter((o) => !o.isSellerOrder);
+  const displayOrders = buyerOrders.slice(0, 3);
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-semibold text-[#17152A]">Recent Orders</h3>
-        <Link 
-          to="/dashboard/orders" 
-          className="text-xs font-semibold text-[#6C4BF4] cursor-pointer hover:underline"
-        >
-          View All
-        </Link>
+        {displayOrders.length > 0 && (
+          <Link 
+            to="/dashboard/orders" 
+            className="text-xs font-semibold text-[#6C4BF4] cursor-pointer hover:underline"
+          >
+            View All
+          </Link>
+        )}
       </div>
 
       <div className="space-y-4">
-        {displayOrders.map((order, idx) => {
+        {displayOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EDE7FF] text-[#6C4BF4] mb-2.5">
+              <ShoppingBag size={18} />
+            </div>
+            <p className="text-xs font-semibold text-[#17152A]">No orders placed yet</p>
+            <p className="text-[11px] text-gray-400 mt-0.5 max-w-[200px]">
+              Find textbooks for your course and save up to 70%.
+            </p>
+            <Link
+              to="/explore"
+              className="mt-3 inline-flex items-center rounded-lg bg-[#6C4BF4] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#5B3DE0] transition shadow-xs"
+            >
+              Browse Textbooks
+            </Link>
+          </div>
+        ) : (
+          displayOrders.map((order, idx) => {
           const title = order.title || order.bookTitle || order.items?.[0]?.title || `Order #${order.id || idx + 1}`;
           const sellerName = order.sellerName || order.user || order.seller?.name || "Campus Seller";
           const price = order.total ? `₹${order.total}` : (order.price || "₹450");
@@ -101,7 +101,7 @@ function RecentOrders() {
               </span>
             </Link>
           );
-        })}
+        }))}
       </div>
     </div>
   );

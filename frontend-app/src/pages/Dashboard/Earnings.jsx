@@ -4,21 +4,18 @@ import { useCommerce } from "../../context/CommerceContext";
 import { useAuth } from "../../context/AuthContext";
 import { Wallet, Landmark, Shield, AlertCircle, Menu, CheckCircle2, ArrowDownRight, ArrowUpRight, QrCode } from "lucide-react";
 import { api } from "../../services/apiClient";
+import { listingService } from "../../services/listingService";
 
-const INITIAL_TRANSACTIONS = [
-  { id: "TXN-00192", date: "24 Aug 2026", desc: "Sold Introduction to Algorithms", type: "credit", amount: "₹650", method: "Wallet Credit" },
-  { id: "TXN-00154", date: "18 Aug 2026", desc: "Sold Cracking the Coding Interview", type: "credit", amount: "₹450", method: "Wallet Credit" },
-  { id: "TXN-00120", date: "15 Aug 2026", desc: "Requested Payout to Bank Account", type: "debit", amount: "₹1,000", method: "Bank Transfer" },
-  { id: "TXN-00098", date: "10 Aug 2026", desc: "Rental Deposit Refunded", type: "debit", amount: "₹300", method: "UPI Refund" }
-];
+const INITIAL_TRANSACTIONS = [];
 
 export default function Earnings() {
   const { showToast } = useCommerce();
   const { user } = useAuth();
-  const [totalEarned, setTotalEarned] = useState(1850);
-  const [withdrawn, setWithdrawn] = useState(1000);
-  const [escrowPending, setEscrowPending] = useState(650);
-  const [availableToWithdraw, setAvailableToWithdraw] = useState(850);
+  const listingStats = listingService.getStats();
+  const [totalEarned, setTotalEarned] = useState(() => listingStats.totalEarned || 0);
+  const [withdrawn, setWithdrawn] = useState(0);
+  const [escrowPending, setEscrowPending] = useState(0);
+  const [availableToWithdraw, setAvailableToWithdraw] = useState(() => listingStats.totalEarned || 0);
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
 
   const [showPayoutModal, setShowPayoutModal] = useState(false);
@@ -315,30 +312,38 @@ export default function Earnings() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-gray-600 font-medium">
-                  {transactions.map((txn) => (
-                    <tr key={txn.id} className="hover:bg-gray-50/50">
-                      <td className="p-4 font-bold text-gray-400">{txn.id}</td>
-                      <td className="p-4 text-gray-500">{txn.date}</td>
-                      <td className="p-4 text-[#17152A] font-semibold flex items-center gap-1.5">
-                        {txn.type === "credit" ? (
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shrink-0">
-                            <ArrowDownRight size={12} />
-                          </span>
-                        ) : (
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-50 text-rose-500 shrink-0">
-                            <ArrowUpRight size={12} />
-                          </span>
-                        )}
-                        <span>{txn.desc}</span>
-                      </td>
-                      <td className="p-4 text-gray-500">{txn.method}</td>
-                      <td className={`p-4 text-right font-black ${
-                        txn.type === "credit" ? "text-emerald-600" : "text-rose-500"
-                      }`}>
-                        {txn.type === "credit" ? "+" : "-"}{txn.amount}
+                  {transactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-xs text-gray-400">
+                        No transactions recorded yet. Earnings will appear once textbook sales or rentals are completed.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    transactions.map((txn) => (
+                      <tr key={txn.id} className="hover:bg-gray-50/50">
+                        <td className="p-4 font-bold text-gray-400">{txn.id}</td>
+                        <td className="p-4 text-gray-500">{txn.date}</td>
+                        <td className="p-4 text-[#17152A] font-semibold flex items-center gap-1.5">
+                          {txn.type === "credit" ? (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shrink-0">
+                              <ArrowDownRight size={12} />
+                            </span>
+                          ) : (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-50 text-rose-500 shrink-0">
+                              <ArrowUpRight size={12} />
+                            </span>
+                          )}
+                          <span>{txn.desc}</span>
+                        </td>
+                        <td className="p-4 text-gray-500">{txn.method}</td>
+                        <td className={`p-4 text-right font-black ${
+                          txn.type === "credit" ? "text-emerald-600" : "text-rose-500"
+                        }`}>
+                          {txn.type === "credit" ? "+" : "-"}{txn.amount}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

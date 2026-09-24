@@ -13,40 +13,7 @@ import {
 import { useCommerce } from "../../context/CommerceContext";
 import { useAuth } from "../../context/AuthContext";
 
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: "message",
-    text: "Sneha Reddy sent you a message: 'Is the price negotiable?'",
-    time: "5m ago",
-    unread: true,
-    link: "/dashboard/messages",
-  },
-  {
-    id: 2,
-    type: "meetup",
-    text: "Meetup scheduled for 'Concepts of Physics' today at 4:00 PM.",
-    time: "2h ago",
-    unread: true,
-    link: "/dashboard/orders",
-  },
-  {
-    id: 3,
-    type: "price_drop",
-    text: "Price dropped! 'Introduction to Algorithms' in your wishlist is now ₹650.",
-    time: "1d ago",
-    unread: false,
-    link: "/dashboard/wishlist",
-  },
-  {
-    id: 4,
-    type: "system",
-    text: "Your listing for 'Compiler Design' has been successfully published.",
-    time: "2d ago",
-    unread: false,
-    link: "/dashboard/listings",
-  },
-];
+const INITIAL_NOTIFICATIONS = [];
 
 function DashboardHeader() {
   const { user } = useAuth();
@@ -189,29 +156,36 @@ function DashboardHeader() {
 
               {/* List */}
               <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
-                {notifications.map((item) => (
-                  <Link
-                    key={item.id}
-                    to={item.link}
-                    onClick={() => toggleReadStatus(item.id)}
-                    className={`flex gap-3 p-3.5 hover:bg-gray-50/60 transition-colors ${
-                      item.unread ? "bg-[#6C4BF4]/3" : ""
-                    }`}
-                  >
-                    {getNotificationIcon(item.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs text-gray-700 leading-snug line-clamp-2 ${item.unread ? "font-semibold text-gray-900" : "text-gray-500"}`}>
-                        {item.text}
-                      </p>
-                      <span className="text-[10px] text-gray-400 mt-1 block">
-                        {item.time}
-                      </span>
-                    </div>
-                    {item.unread && (
-                      <span className="h-1.5 w-1.5 bg-[#6C4BF4] rounded-full mt-1.5 shrink-0" />
-                    )}
-                  </Link>
-                ))}
+                {notifications.length === 0 ? (
+                  <div className="py-8 px-4 text-center">
+                    <p className="text-xs font-semibold text-gray-700">No new notifications</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">We'll alert you about order updates, messages, and meetups.</p>
+                  </div>
+                ) : (
+                  notifications.map((item) => (
+                    <Link
+                      key={item.id}
+                      to={item.link}
+                      onClick={() => toggleReadStatus(item.id)}
+                      className={`flex gap-3 p-3.5 hover:bg-gray-50/60 transition-colors ${
+                        item.unread ? "bg-[#6C4BF4]/3" : ""
+                      }`}
+                    >
+                      {getNotificationIcon(item.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs text-gray-700 leading-snug line-clamp-2 ${item.unread ? "font-semibold text-gray-900" : "text-gray-500"}`}>
+                          {item.text}
+                        </p>
+                        <span className="text-[10px] text-gray-400 mt-1 block">
+                          {item.time}
+                        </span>
+                      </div>
+                      {item.unread && (
+                        <span className="h-1.5 w-1.5 bg-[#6C4BF4] rounded-full mt-1.5 shrink-0" />
+                      )}
+                    </Link>
+                  ))
+                )}
               </div>
             </div>
           )}

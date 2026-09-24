@@ -23,6 +23,10 @@ export function AuthProvider({ children }) {
 
   const login = (userData) => {
     localStorage.setItem("bookify_auth", "true");
+    const prevUserRaw = localStorage.getItem("bookify_user");
+    let prevUser = null;
+    try { prevUser = prevUserRaw ? JSON.parse(prevUserRaw) : null; } catch {}
+
     let userObj;
     if (typeof userData === "object" && userData !== null) {
       userObj = {
@@ -51,6 +55,15 @@ export function AuthProvider({ children }) {
         isAuthor: false,
       };
     }
+
+    // If new user session or switching user, clear stale cache
+    if (!prevUser || prevUser.id !== userObj.id || prevUser.email !== userObj.email) {
+      localStorage.removeItem("bookify_orders");
+      localStorage.removeItem("bookify_conversations");
+      localStorage.removeItem("bookify_user_listings_v1");
+      localStorage.removeItem("bookify_user_payment");
+    }
+
     localStorage.setItem("bookify_user", JSON.stringify(userObj));
     setIsAuthenticated(true);
     setUser(userObj);
@@ -72,6 +85,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("bookify_auth");
     localStorage.removeItem("bookify_user");
     localStorage.removeItem("token");
+    localStorage.removeItem("bookify_orders");
+    localStorage.removeItem("bookify_conversations");
+    localStorage.removeItem("bookify_user_listings_v1");
+    localStorage.removeItem("bookify_user_payment");
     setIsAuthenticated(false);
     setUser(null);
   };

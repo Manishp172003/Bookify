@@ -57,273 +57,10 @@ const getInitialAddresses = () => {
 };
 
 
-const INITIAL_CONVERSATIONS = [
-  {
-    id: "chat_1",
-    active: true,
-    requestStatus: "accepted",
-    requesterId: "usr_me",
-    seller: {
-      id: "usr_aarav",
-      name: "Aarav Sharma",
-      avatar: null,
-      online: true,
-      verified: true,
-      college: "IIT Bombay",
-      responseTime: "< 10 min",
-      rating: "4.9",
-      reviewsCount: 28,
-      memberSince: "Jan 2024",
-      totalSales: 22,
-      location: "Powai, Mumbai"
-    },
-    book: {
-      id: 101,
-      title: "Concepts of Physics (HC Verma Vol 1)",
-      author: "H.C. Verma",
-      price: 299,
-      originalPrice: 450,
-      condition: "Like New",
-      image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg"
-    },
-    lastMessage: "Is ₹280 fine with you? I can hand it over at the campus library today.",
-    lastMessageTimestamp: "10:30 AM",
-    unreadCount: 2,
-    messages: [
-      {
-        id: "m1",
-        sender: "them",
-        text: "Hey! Are you still interested in HC Verma Vol 1?",
-        time: "10:25 AM",
-        status: "read"
-      },
-      {
-        id: "m2",
-        sender: "me",
-        text: "Yes! Is the condition good with no markings?",
-        time: "10:28 AM",
-        status: "read"
-      },
-      {
-        id: "m3",
-        sender: "them",
-        text: "It is in pristine condition, no pen marks.",
-        time: "10:29 AM",
-        status: "delivered"
-      },
-      {
-        id: "m4",
-        sender: "them",
-        text: "Is ₹280 fine with you? I can hand it over at the campus library today.",
-        time: "10:30 AM",
-        status: "delivered"
-      }
-    ]
-  },
-  {
-    id: "chat_2",
-    active: true,
-    requestStatus: "accepted",
-    requesterId: "usr_me",
-    seller: {
-      id: "usr_sneha",
-      name: "Sneha Reddy",
-      avatar: null,
-      online: true,
-      verified: true,
-      college: "BITS Pilani",
-      responseTime: "< 5 min",
-      rating: "4.8",
-      reviewsCount: 16,
-      memberSince: "Mar 2024",
-      totalSales: 14,
-      location: "Hyderabad"
-    },
-    book: {
-      id: 102,
-      title: "Introduction to Algorithms (CLRS 3rd Ed)",
-      author: "Thomas H. Cormen",
-      price: 650,
-      originalPrice: 1200,
-      condition: "Good",
-      image: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg"
-    },
-    lastMessage: "Yes, I can ship it by this evening through campus speed post.",
-    lastMessageTimestamp: "Yesterday",
-    unreadCount: 1,
-    messages: [
-      {
-        id: "m5",
-        sender: "me",
-        text: "Hi Sneha, when can you dispatch the Algorithms book?",
-        time: "Yesterday 4:15 PM",
-        status: "read"
-      },
-      {
-        id: "m6",
-        sender: "them",
-        text: "Yes, I can ship it by this evening through campus speed post.",
-        time: "Yesterday 4:20 PM",
-        status: "delivered"
-      }
-    ]
-  },
-  {
-    id: "chat_3",
-    active: true,
-    requestStatus: "pending",
-    requesterId: "usr_vikram",
-    seller: {
-      id: "usr_vikram",
-      name: "Vikram Malhotra",
-      avatar: null,
-      online: true,
-      verified: true,
-      college: "VNIT Nagpur",
-      responseTime: "< 15 min",
-      rating: "4.7",
-      reviewsCount: 9,
-      memberSince: "May 2024",
-      totalSales: 8,
-      location: "Nagpur, Maharashtra"
-    },
-    book: {
-      id: 103,
-      title: "Cracking the Coding Interview (6th Edition)",
-      author: "Gayle Laakmann McDowell",
-      price: 499,
-      originalPrice: 999,
-      condition: "Like New",
-      image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300"
-    },
-    lastMessage: "Hi! I want to purchase this book for campus meetup. Can we finalize the deal?",
-    lastMessageTimestamp: "11:15 AM",
-    unreadCount: 1,
-    messages: [
-      {
-        id: "m7",
-        sender: "them",
-        text: "Hi! I want to purchase this book for campus meetup. Can we finalize the deal?",
-        time: "11:15 AM",
-        status: "delivered"
-      }
-    ]
-  }
-];
-
-const INITIAL_ORDERS = [
-  {
-    id: "BK77109230",
-    isSellerOrder: true,
-    orderDateFormatted: "Today, 04:30 PM",
-    expectedDelivery: "28 Sep 2026",
-    status: "placed",
-    statusLabel: "Awaiting Seller Confirmation",
-    escrowStatus: "held_in_escrow",
-    paymentMethod: "Razorpay (UPI)",
-    transactionId: "pay_LV884029193",
-    subtotal: 299,
-    deliveryFee: 40,
-    platformFee: 15,
-    discount: 0,
-    total: 354,
-    buyer: {
-      id: "usr_rohan",
-      name: "Rohan Verma",
-      phone: "+91 98765 88990",
-      hostelBlock: "Hostel Block B, Room 108",
-      campus: "IIT Bombay Campus",
-      meetupSpot: "Central Library Ground Floor"
-    },
-    address: {
-      name: "Rohan Verma",
-      phone: "+91 98765 88990",
-      hostelBlock: "Hostel Block B, Room 108",
-      campus: "IIT Bombay Campus",
-      meetupSpot: "Central Library Ground Floor",
-      city: "Mumbai",
-      state: "Maharashtra",
-      pincode: "400076"
-    },
-    courier: {
-      name: "Campus Delivery Network",
-      trackingNumber: "CN-718290-IN",
-      supportPhone: "+91 9876543210"
-    },
-    items: [
-      {
-        id: 101,
-        title: "Concepts of Physics (HC Verma Vol 1)",
-        author: "H.C. Verma",
-        price: 299,
-        condition: "Like New",
-        image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
-        quantity: 1
-      }
-    ],
-    timeline: [
-      { stage: "placed", title: "Order Placed", date: "Today", description: "Payment verified & ₹354 held safely in escrow.", completed: true, active: false },
-      { stage: "confirmed", title: "Seller Confirmed", date: "Pending", description: "Waiting for seller to accept and package the book.", completed: false, active: true },
-      { stage: "shipped", title: "Shipped", date: "Pending", description: "Handed over to college logistics courier.", completed: false, active: false },
-      { stage: "out_for_delivery", title: "Out for Delivery", date: "Pending", description: "Campus courier heading to delivery meetup spot.", completed: false, active: false },
-      { stage: "delivered", title: "Delivered", date: "Pending", description: "Verify package contents & release escrow.", completed: false, active: false }
-    ]
-  },
-  {
-    id: "BK82901840",
-    isSellerOrder: false,
-    orderDateFormatted: "28 Aug 2026",
-    expectedDelivery: "01 Sep 2026",
-    status: "shipped",
-    statusLabel: "In Transit via Campus Courier",
-    escrowStatus: "held_in_escrow",
-    paymentMethod: "Razorpay (UPI)",
-    transactionId: "pay_HP820DFKSLAD9",
-    subtotal: 450,
-    deliveryFee: 40,
-    platformFee: 15,
-    discount: 0,
-    total: 505,
-    address: {
-      id: "addr_1",
-      name: "Student Buyer",
-      phone: "+91 98765 43210",
-      type: "Campus / Hostel",
-      campus: "Nagpur University Campus",
-      hostelBlock: "Hostel Block A",
-      meetupSpot: "Central Library Entrance",
-      street: "Hostel Block A, Nagpur University Campus",
-      city: "Nagpur",
-      state: "Maharashtra",
-      pincode: "440033",
-      isDefault: true,
-    },
-    courier: {
-      name: "BlueDart Campus Express",
-      trackingNumber: "BD-90218390-IN",
-      supportPhone: "+91 9876543210"
-    },
-    items: [
-      {
-        id: 2,
-        title: "To Kill a Mockingbird",
-        author: "Harper Lee",
-        price: 450,
-        condition: "Good",
-        image: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg",
-        seller: { name: "Priya Patel" },
-        quantity: 1
-      }
-    ],
-    timeline: [
-      { stage: "placed", title: "Order Placed", date: "28 Aug", description: "Payment verified & held in escrow.", completed: true, active: false },
-      { stage: "confirmed", title: "Seller Confirmed", date: "28 Aug", description: "Seller accepted and packaged the book.", completed: true, active: false },
-      { stage: "shipped", title: "Shipped", date: "29 Aug", description: "Handed over to college logistics.", completed: true, active: true },
-      { stage: "out_for_delivery", title: "Out for Delivery", date: "31 Aug", description: "Campus courier is on their way.", completed: false, active: false },
-      { stage: "delivered", title: "Delivered", date: "01 Sep", description: "Verify package contents within 48h.", completed: false, active: false }
-    ]
-  }
-];
+const MOCK_ORDER_IDS = new Set(["BK77109230", "BK82901840"]);
+const MOCK_CHAT_IDS = new Set(["chat_1", "chat_2", "chat_3"]);
+const INITIAL_CONVERSATIONS = [];
+const INITIAL_ORDERS = [];
 
 export function CommerceProvider({ children }) {
   // Toast notifications
@@ -369,27 +106,12 @@ export function CommerceProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((o) => {
-            if (o.isSellerOrder && (o.buyer?.name === "Aarav Sharma" || o.buyer?.name?.includes("Aarav"))) {
-              return {
-                ...o,
-                buyer: {
-                  ...o.buyer,
-                  id: "usr_rohan",
-                  name: "Rohan Verma",
-                  phone: "+91 98765 88990",
-                  meetupSpot: "Central Library Ground Floor",
-                  hostelBlock: "Hostel Block B, Room 108"
-                },
-                address: {
-                  ...o.address,
-                  name: "Rohan Verma",
-                  phone: "+91 98765 88990",
-                  meetupSpot: "Central Library Ground Floor"
-                }
-              };
-            }
+        if (Array.isArray(parsed)) {
+          const cleanOrders = parsed.filter((o) => !MOCK_ORDER_IDS.has(o.id));
+          if (cleanOrders.length !== parsed.length) {
+            localStorage.setItem("bookify_orders", JSON.stringify(cleanOrders));
+          }
+          return cleanOrders.map((o) => {
             if (o.address?.name === "Manish Pawar") {
               const userStr = localStorage.getItem("bookify_user");
               const currentUser = userStr ? JSON.parse(userStr) : null;
@@ -420,8 +142,12 @@ export function CommerceProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((c) => ({
+        if (Array.isArray(parsed)) {
+          const cleanChats = parsed.filter((c) => !MOCK_CHAT_IDS.has(c.id));
+          if (cleanChats.length !== parsed.length) {
+            localStorage.setItem("bookify_conversations", JSON.stringify(cleanChats));
+          }
+          return cleanChats.map((c) => ({
             ...c,
             seller: {
               ...c.seller,
@@ -433,7 +159,7 @@ export function CommerceProvider({ children }) {
     }
     return INITIAL_CONVERSATIONS;
   });
-  const [activeConversationId, setActiveConversationId] = useState("chat_1");
+  const [activeConversationId, setActiveConversationId] = useState(null);
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {

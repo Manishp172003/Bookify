@@ -5,87 +5,20 @@ import { getBookCover } from "../utils/bookCoverUtils";
 
 const LISTINGS_STORAGE_KEY = "bookify_user_listings_v1";
 
-const INITIAL_USER_LISTINGS = [
-  {
-    id: "BKFY-518290",
-    title: "Introduction to Algorithms, 3rd Edition",
-    author: "Thomas H. Cormen, Charles E. Leiserson",
-    price: 650,
-    mrp: 1200,
-    condition: "very-good",
-    conditionLabel: "Very Good",
-    status: "Active",
-    mode: "sell",
-    views: 42,
-    wishlists: 12,
-    cover: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
-    image: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
-    photos: ["https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg"],
-    coverClass: "from-[#111827] to-[#374151]",
-    date: "2026-08-25"
-  },
-  {
-    id: "BKFY-982741",
-    title: "Cracking the Coding Interview",
-    author: "Gayle Laakmann McDowell",
-    price: 450,
-    mrp: 850,
-    condition: "good",
-    conditionLabel: "Good",
-    status: "Active",
-    mode: "sell",
-    views: 29,
-    wishlists: 5,
-    cover: "https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg",
-    image: "https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg",
-    photos: ["https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg"],
-    coverClass: "from-[#6C4BF4] to-[#8B3FD9]",
-    date: "2026-08-22"
-  },
-  {
-    id: "BKFY-304910",
-    title: "Organic Chemistry, 8th Edition",
-    author: "L. G. Wade Jr.",
-    price: 800,
-    mrp: 1400,
-    condition: "like-new",
-    conditionLabel: "Like New",
-    status: "Sold",
-    mode: "sell",
-    views: 95,
-    wishlists: 18,
-    cover: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
-    image: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
-    photos: ["https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg"],
-    coverClass: "from-[#059669] to-[#10B981]",
-    date: "2026-08-15"
-  },
-  {
-    id: "BKFY-298301",
-    title: "Calculus: Early Transcendentals",
-    author: "James Stewart",
-    price: 950,
-    mrp: 1600,
-    condition: "fair",
-    conditionLabel: "Fair",
-    status: "Inactive",
-    mode: "sell",
-    views: 14,
-    wishlists: 2,
-    cover: "https://covers.openlibrary.org/b/isbn/9781285741550-L.jpg",
-    image: "https://covers.openlibrary.org/b/isbn/9781285741550-L.jpg",
-    photos: ["https://covers.openlibrary.org/b/isbn/9781285741550-L.jpg"],
-    coverClass: "from-[#E11D48] to-[#F43F5E]",
-    date: "2026-08-10"
-  }
-];
+const MOCK_LISTING_IDS = new Set(["BKFY-518290", "BKFY-982741", "BKFY-304910", "BKFY-298301"]);
 
 function getStoredListings() {
   try {
     const raw = localStorage.getItem(LISTINGS_STORAGE_KEY);
-    let listings = raw ? JSON.parse(raw) : INITIAL_USER_LISTINGS;
-    if (Array.isArray(listings) && listings.length > 0) {
-      return listings.map((item) => {
+    if (!raw) return [];
+    let listings = JSON.parse(raw);
+    if (Array.isArray(listings)) {
+      // Filter out any legacy dummy mock listings
+      const cleanListings = listings.filter((item) => !MOCK_LISTING_IDS.has(item.id));
+      if (cleanListings.length !== listings.length) {
+        localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(cleanListings));
+      }
+      return cleanListings.map((item) => {
         const coverUrl = getBookCover(item);
         return {
           ...item,
@@ -95,10 +28,9 @@ function getStoredListings() {
         };
       });
     }
-    localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(INITIAL_USER_LISTINGS));
-    return INITIAL_USER_LISTINGS;
+    return [];
   } catch {
-    return INITIAL_USER_LISTINGS;
+    return [];
   }
 }
 

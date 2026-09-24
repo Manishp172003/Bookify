@@ -24,8 +24,17 @@ function StudentDashboard() {
     return () => window.removeEventListener("bookify_user_listings_updated", updateStats);
   }, []);
 
-  const purchasedCount = (orders?.length || 0) + 3;
-  const totalEarned = listingStats.totalEarned > 0 ? listingStats.totalEarned : 1850;
+  const buyerOrders = (orders || []).filter((o) => !o.isSellerOrder);
+  const purchasedCount = buyerOrders.length;
+
+  const totalSaved = buyerOrders.reduce((acc, o) => {
+    const originalPrice = o.originalPrice || o.items?.[0]?.originalPrice || 0;
+    const paidPrice = o.total || o.price || 0;
+    return acc + Math.max(0, originalPrice - paidPrice);
+  }, 0);
+
+  const booksSold = listingStats.soldCount || 0;
+  const totalEarned = listingStats.totalEarned || 0;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">
@@ -47,13 +56,13 @@ function StudentDashboard() {
 
             <StatCard
               type="saved"
-              value="₹2,450"
+              value={`₹${totalSaved.toLocaleString()}`}
               label="Total Saved"
             />
 
             <StatCard
               type="sold"
-              value={String(listingStats.soldCount > 0 ? listingStats.soldCount : 8)}
+              value={String(booksSold)}
               label="Books Sold"
             />
 
