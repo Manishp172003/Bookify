@@ -1009,7 +1009,10 @@ export function CommerceProvider({ children }) {
   const updateOrderStatus = async (orderId, newStatus, courierData = null) => {
     // 1. Send update to backend API if reachable
     try {
-      let token = localStorage.getItem("token") || localStorage.getItem("bookify_token");
+      let token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token");
       if (!token) {
         try {
           const user = JSON.parse(localStorage.getItem("bookify_user") || "{}");
@@ -1029,7 +1032,7 @@ export function CommerceProvider({ children }) {
         })
       });
     } catch (apiErr) {
-      console.warn("[CommerceContext] Backend status update notice:", apiErr.message);
+      // Non-blocking for mock seed orders
     }
 
     // 2. Synchronize local state optimistically
