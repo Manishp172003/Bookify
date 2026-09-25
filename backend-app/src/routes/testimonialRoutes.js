@@ -14,6 +14,7 @@ const router = express.Router();
 // ==========================================
 // Public Routes
 // ==========================================
+router.get("/", getFeaturedTestimonials);
 router.get("/featured", getFeaturedTestimonials);
 
 // ==========================================

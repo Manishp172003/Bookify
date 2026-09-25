@@ -91,9 +91,12 @@ export const register = async (req, res) => {
       );
     }
 
+    const token = signToken({ id: user._id, role: user.role });
+
     res.status(201).json({
       success: true,
       message: "Account created successfully. Verification OTP dispatched.",
+      token,
       user: publicUser(user),
     });
   } catch (error) {
@@ -105,7 +108,8 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { identifier, password } = req.body;
+    const identifier = req.body.identifier || req.body.email || req.body.phone;
+    const { password } = req.body;
 
     if (!identifier || !password) {
       return res.status(400).json({ success: false, message: "Identifier and password are required" });

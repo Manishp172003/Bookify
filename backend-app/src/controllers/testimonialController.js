@@ -47,7 +47,8 @@ export const getFeaturedTestimonials = async (req, res) => {
 // ==========================================
 export const submitTestimonial = async (req, res) => {
   try {
-    const { rating, comment, role } = req.body;
+    const { rating, role } = req.body;
+    const comment = req.body.comment || req.body.content || "";
     const userId = req.user._id || req.user.id;
 
     if (!rating || !comment || comment.trim().length < 10) {

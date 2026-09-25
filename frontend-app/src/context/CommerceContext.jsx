@@ -174,7 +174,9 @@ export function CommerceProvider({ children }) {
     } catch {}
     const token = localStorage.getItem("token");
 
-    const newSocket = io("http://localhost:5000", {
+    const rawApiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    const socketBase = import.meta.env.VITE_SOCKET_URL || rawApiBase.replace(/\/api\/?$/, "");
+    const newSocket = io(socketBase, {
       auth: {
         token: token || "",
         user: savedUser || null,
@@ -563,7 +565,7 @@ export function CommerceProvider({ children }) {
     const cleanCode = code.trim().toUpperCase();
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
       const res = await fetch(`${apiUrl}/author/coupons/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -738,7 +740,8 @@ export function CommerceProvider({ children }) {
         } catch {}
       }
 
-      await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      await fetch(`${apiUrl}/orders/${orderId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

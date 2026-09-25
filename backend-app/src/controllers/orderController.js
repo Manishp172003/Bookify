@@ -137,7 +137,10 @@ export const createOrder = async (req, res) => {
       },
     ];
 
+    const generatedCode = req.body.orderCode || `BK${Math.floor(10000000 + Math.random() * 90000000)}`;
+
     const order = await Order.create({
+      orderCode: generatedCode,
       buyerId: req.user._id,
       sellerId: book.sellerId,
       bookId: book._id,
@@ -189,8 +192,12 @@ export const createOrder = async (req, res) => {
       ).catch((cErr) => console.warn("Failed to increment coupon usedCount:", cErr.message));
     }
 
-    const io = getIO();
-    io.to(`user:${book.sellerId.toString()}`).emit("newOrder", { order });
+    try {
+      const io = getIO();
+      io.to(`user:${book.sellerId.toString()}`).emit("newOrder", { order });
+    } catch (sErr) {
+      // Non-blocking socket notification
+    }
 
     // Send transactional order notification emails to buyer and seller
     User.findById(book.sellerId)
@@ -383,6 +390,7 @@ export const getOrderById = async (req, res) => {
     if (!order) {
       order = await Order.findOne({
         $or: [
+          { orderCode: idParam },
           { razorpayOrderId: idParam },
           { "courier.trackingNumber": idParam },
         ],
@@ -467,6 +475,7 @@ export const updateOrderStatus = async (req, res) => {
     if (!order) {
       order = await Order.findOne({
         $or: [
+          { orderCode: idParam },
           { razorpayOrderId: idParam },
           { "courier.trackingNumber": idParam },
         ],

@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://localhost:5000/api/admin";
+const RAW_API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const ROOT_API = RAW_API_URL.replace(/\/api\/?$/, "");
+const API_BASE_URL = `${ROOT_API}/api/admin`;
 
 const getAdminHeaders = () => {
   let token = null;
@@ -328,8 +330,8 @@ export const adminService = {
     try {
       const url =
         status && status !== "all"
-          ? `http://localhost:5000/api/testimonials/admin?status=${status}`
-          : `http://localhost:5000/api/testimonials/admin`;
+          ? `${ROOT_API}/api/testimonials/admin?status=${status}`
+          : `${ROOT_API}/api/testimonials/admin`;
       const res = await fetch(url, {
         headers: getAdminHeaders(),
       });
@@ -345,7 +347,7 @@ export const adminService = {
 
   async updateTestimonialStatus(id, status) {
     try {
-      const res = await fetch(`http://localhost:5000/api/testimonials/admin/${id}/status`, {
+      const res = await fetch(`${ROOT_API}/api/testimonials/admin/${id}/status`, {
         method: "PATCH",
         headers: getAdminHeaders(),
         body: JSON.stringify({ status }),
@@ -361,7 +363,7 @@ export const adminService = {
 
   async toggleFeaturedTestimonial(id) {
     try {
-      const res = await fetch(`http://localhost:5000/api/testimonials/admin/${id}/toggle-featured`, {
+      const res = await fetch(`${ROOT_API}/api/testimonials/admin/${id}/toggle-featured`, {
         method: "PATCH",
         headers: getAdminHeaders(),
       });
@@ -376,7 +378,7 @@ export const adminService = {
 
   async deleteTestimonial(id) {
     try {
-      const res = await fetch(`http://localhost:5000/api/testimonials/admin/${id}`, {
+      const res = await fetch(`${ROOT_API}/api/testimonials/admin/${id}`, {
         method: "DELETE",
         headers: getAdminHeaders(),
       });
@@ -391,7 +393,7 @@ export const adminService = {
   // Newsletter Subscribers
   // ==========================================
   async subscribeNewsletter(email, source = "explore_page") {
-    const res = await fetch("http://localhost:5000/api/newsletter/subscribe", {
+    const res = await fetch(`${ROOT_API}/api/newsletter/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, source }),
@@ -404,7 +406,7 @@ export const adminService = {
   async getNewsletterSubscribers(params = {}) {
     try {
       const query = new URLSearchParams(params).toString();
-      const url = `http://localhost:5000/api/newsletter/admin/subscribers${query ? `?${query}` : ""}`;
+      const url = `${ROOT_API}/api/newsletter/admin/subscribers${query ? `?${query}` : ""}`;
       const res = await fetch(url, { headers: getAdminHeaders() });
       if (!res.ok) throw new Error("Failed to fetch subscribers");
       const json = await res.json();
@@ -417,7 +419,7 @@ export const adminService = {
 
   async deleteNewsletterSubscriber(id) {
     try {
-      const res = await fetch(`http://localhost:5000/api/newsletter/admin/subscribers/${id}`, {
+      const res = await fetch(`${ROOT_API}/api/newsletter/admin/subscribers/${id}`, {
         method: "DELETE",
         headers: getAdminHeaders(),
       });
@@ -430,7 +432,7 @@ export const adminService = {
 
   async exportNewsletterSubscribers() {
     try {
-      const res = await fetch("http://localhost:5000/api/newsletter/admin/export", {
+      const res = await fetch(`${ROOT_API}/api/newsletter/admin/export`, {
         headers: getAdminHeaders(),
       });
       if (!res.ok) throw new Error("Failed to export subscribers");

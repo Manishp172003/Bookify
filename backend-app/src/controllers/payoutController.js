@@ -86,6 +86,34 @@ export const requestPayout = async (req, res) => {
 };
 
 /**
+ * @desc Get available and held wallet balance
+ * @route GET /api/payouts/balance
+ * @access Private
+ */
+export const getWalletBalance = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const pendingSales = await Order.find({
+      sellerId: user._id,
+      escrowStatus: "Held",
+    });
+    const escrowPending = pendingSales.reduce((sum, o) => sum + (o.amount || 0), 0);
+    return res.status(200).json({
+      success: true,
+      data: {
+        availableBalance: user.walletBalance || 0,
+        escrowPending,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
  * @desc Get payout history and wallet summary for logged in user
  * @route GET /api/payouts/my-payouts
  * @access Private
