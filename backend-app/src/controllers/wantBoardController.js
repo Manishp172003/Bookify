@@ -35,7 +35,12 @@ export const getWantBoard = async (req, res) => {
 
 export const createWantBoardPost = async (req, res) => {
   try {
-    const { bookTitle, author, category, budget, urgency, notes } = req.body;
+    const bookTitle = req.body.bookTitle || req.body.title;
+    const author = req.body.author || "";
+    const category = req.body.category || "General";
+    const budget = Number(req.body.budget || req.body.maxBudget) || 0;
+    const urgency = req.body.urgency || "Medium";
+    const notes = req.body.notes || req.body.location || "";
 
     if (!bookTitle) {
       return res.status(400).json({
@@ -51,8 +56,8 @@ export const createWantBoardPost = async (req, res) => {
       bookTitle,
       author,
       category,
-      budget: Number(budget) || 0,
-      urgency: urgency || "Medium",
+      budget,
+      urgency,
       notes,
     });
 

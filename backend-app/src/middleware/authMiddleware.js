@@ -50,6 +50,14 @@ export const protect = async (req, res, next) => {
       user.role = user.isAdmin ? "admin" : "student";
     }
 
+    if ((user.status === "Banned" || user.isBanned) && user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been restricted by administration. Please contact support.",
+        data: null,
+      });
+    }
+
     req.user = user;
     next();
   } catch (error) {

@@ -4,51 +4,10 @@ import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { Calendar, ShieldCheck, Clock, MessageSquare, CornerUpLeft, Menu, PlusCircle, CheckCircle2 } from "lucide-react";
 import { api } from "../../services/apiClient";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
-const INITIAL_RENTED = [
-  {
-    id: "RNT-10928",
-    title: "Operating System Concepts, 9th Edition",
-    owner: "Dev Kumar",
-    ownerId: "usr_dev",
-    deposit: "₹400",
-    fee: "₹150/mo",
-    daysLeft: 12,
-    percentLeft: 40,
-    dueDate: "06 Sep 2026",
-    coverClass: "from-[#0F172A] to-[#1E293B]",
-    status: "active"
-  },
-  {
-    id: "RNT-51290",
-    title: "Core Java: An Integrated Approach",
-    owner: "Priya Patel",
-    ownerId: "usr_priya",
-    deposit: "₹300",
-    fee: "₹100/mo",
-    daysLeft: 25,
-    percentLeft: 83,
-    dueDate: "19 Sep 2026",
-    coverClass: "from-[#4F46E5] to-[#7C3AED]",
-    status: "active"
-  }
-];
-
-const INITIAL_LENT = [
-  {
-    id: "LNT-38290",
-    title: "Database System Concepts",
-    renter: "Amit Sen",
-    renterId: "usr_amit",
-    deposit: "₹500",
-    fee: "₹200/mo",
-    daysLeft: 5,
-    percentLeft: 16,
-    dueDate: "30 Aug 2026",
-    coverClass: "from-[#047857] to-[#065F46]",
-    status: "active"
-  }
-];
+const INITIAL_RENTED = [];
+const INITIAL_LENT = [];
 
 export default function Rentals() {
   const { showToast, startOrGetConversation } = useCommerce();
@@ -60,19 +19,28 @@ export default function Rentals() {
 
   useEffect(() => {
     const fetchRentals = async () => {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("auth_token");
+
+      if (!token) {
+        setRentedList([]);
+        setLentList([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const res = await api.get("/rentals/my-rentals");
         if (res?.data) {
-          if (res.data.rented && res.data.rented.length > 0) {
-            setRentedList(res.data.rented);
-          }
-          if (res.data.lent && res.data.lent.length > 0) {
-            setLentList(res.data.lent);
-          }
+          setRentedList(Array.isArray(res.data.rented) ? res.data.rented : []);
+          setLentList(Array.isArray(res.data.lent) ? res.data.lent : []);
         }
       } catch (err) {
-        console.warn("Could not fetch rentals from backend, fallback to local:", err);
+        setRentedList([]);
+        setLentList([]);
       } finally {
         setIsLoading(false);
       }
@@ -238,8 +206,16 @@ export default function Rentals() {
                   
                   {/* Top block */}
                   <div className="flex gap-4">
-                    <div className={`h-24 w-16 shrink-0 rounded-lg bg-gradient-to-br ${item.coverClass} flex items-center justify-center text-[9px] font-extrabold text-white uppercase tracking-wider border border-black/5`}>
-                      {item.title.split(' ').map(w => w[0]).join('')}
+                    <div className="h-24 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-gray-200 shadow-2xs relative">
+                      <img
+                        src={getBookCover(item)}
+                        alt={item?.title || "Rented Book"}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = DEFAULT_BOOK_COVER;
+                        }}
+                      />
                     </div>
 
                     <div className="min-w-0 flex-1">

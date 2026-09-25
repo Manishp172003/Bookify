@@ -6,7 +6,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export async function apiRequest(endpoint, options = {}) {
-  const token = localStorage.getItem("bookify_token") || localStorage.getItem("bookify_auth_token");
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("bookify_token") ||
+    localStorage.getItem("bookify_auth_token") ||
+    localStorage.getItem("auth_token");
   
   const headers = {
     "Content-Type": "application/json",

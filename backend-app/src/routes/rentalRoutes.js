@@ -13,6 +13,7 @@ const router = express.Router();
 router.use(protect);
 
 router.get("/my-rentals", getMyRentals);
+router.post("/", createRental);
 router.post("/create", createRental);
 router.patch("/:id/extend", extendRental);
 router.patch("/:id/return-request", requestReturn);

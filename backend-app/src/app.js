@@ -13,6 +13,9 @@ import rentalRoutes from "./routes/rentalRoutes.js";
 import exchangeRoutes from "./routes/exchangeRoutes.js";
 import disputeRoutes from "./routes/disputeRoutes.js";
 import payoutRoutes from "./routes/payoutRoutes.js";
+import testimonialRoutes from "./routes/testimonialRoutes.js";
+import newsletterRoutes from "./routes/newsletterRoutes.js";
+import { getPublicSettings } from "./controllers/adminController.js";
 
 const app = express();
 
@@ -20,9 +23,30 @@ const app = express();
 // Global Middlewares
 // ==========================================
 
+const allowedOrigins = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((u) => u.trim())
+  .filter(Boolean);
+
+["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"].forEach((origin) => {
+  if (!allowedOrigins.includes(origin)) allowedOrigins.push(origin);
+});
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        process.env.NODE_ENV !== "production" ||
+        origin.includes("vercel.app") ||
+        origin.includes("onrender.com") ||
+        origin.includes("netlify.app")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -72,6 +96,9 @@ app.use("/api/rentals", rentalRoutes);
 app.use("/api/exchanges", exchangeRoutes);
 app.use("/api/disputes", disputeRoutes);
 app.use("/api/payouts", payoutRoutes);
+app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/newsletter", newsletterRoutes);
+app.get("/api/settings/public", getPublicSettings);
 
 // ==========================================
 // 404 Handler

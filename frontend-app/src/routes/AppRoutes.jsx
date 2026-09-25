@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 // Main layout
 import MainLayout from "../components/layout/MainLayout";
@@ -14,7 +14,6 @@ import AdminLayout from "../components/layout/AdminLayout";
 const HomePage = lazy(() => import("../pages/Home/HomePage"));
 const ExplorePage = lazy(() => import("../pages/Explore/ExplorePage"));
 const NotFoundPage = lazy(() => import("../pages/NotFound/NotFoundPage"));
-const CategoriesPage = lazy(() => import("../pages/Categories/CategoriesPage"));
 const BookDetailPage = lazy(() => import("../pages/BookDetail/BookDetailPage"));
 const Cart = lazy(() => import("../pages/Cart/Cart"));
 const Checkout = lazy(() => import("../pages/Checkout/Checkout"));
@@ -73,7 +72,6 @@ const Disputes = lazy(() => import("../pages/Admin/Disputes"));
 const Users = lazy(() => import("../pages/Admin/Users"));
 const AuthorsVerification = lazy(() => import("../pages/Admin/AuthorsVerification"));
 const PlatformSettings = lazy(() => import("../pages/Admin/PlatformSettings"));
-const AdminChat = lazy(() => import("../pages/Admin/Chat"));
 const AdminCoupons = lazy(() => import("../pages/Admin/Coupons"));
 
 function AppRoutes() {
@@ -122,11 +120,7 @@ function AppRoutes() {
 
         <Route
           path="/categories"
-          element={
-            <MainLayout>
-              <CategoriesPage />
-            </MainLayout>
-          }
+          element={<Navigate to="/explore" replace />}
         />
 
         <Route
@@ -578,15 +572,6 @@ function AppRoutes() {
           element={
             <AdminLayout>
               <PlatformSettings />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/chat"
-          element={
-            <AdminLayout>
-              <AdminChat />
             </AdminLayout>
           }
         />

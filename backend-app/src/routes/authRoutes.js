@@ -50,7 +50,10 @@ router.post("/reset-password", resetPassword);
 router.post("/verify-otp", authLimiter, verifyOTP);
 router.post("/resend-otp", authLimiter, resendOTP);
 
-// ─── Settings Routes (Protected) ─────────────────────────────────────────────
+// ─── Settings & Profile Routes (Protected) ──────────────────────────────────
+router.get("/profile", verifyToken, getUserSettings);
+router.get("/me", verifyToken, getUserSettings);
+router.put("/profile", verifyToken, updateProfile);
 router.get("/settings", verifyToken, getUserSettings);
 router.put("/settings/profile", verifyToken, updateProfile);
 router.put("/settings/privacy", verifyToken, updatePrivacy);

@@ -2,13 +2,27 @@ import Book from "../models/Book.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
 import Coupon from "../models/Coupon.js";
+import Dispute from "../models/Dispute.js";
+import PlatformSetting from "../models/PlatformSetting.js";
 import { sendVerificationStatusEmail } from "../services/emailService.js";
 
 // ─── Platform Metrics ─────────────────────────────────────────────────────────
 
 export const getMetrics = async (req, res) => {
   try {
-    const [totalUsers, totalBooks, totalOrders, totalEarnings] = await Promise.all([
+    const [
+      totalUsers,
+      totalBooks,
+      totalOrders,
+      totalEarnings,
+      pendingListings,
+      pendingAuthors,
+      openDisputes,
+      recentUsers,
+      recentBooks,
+      recentOrders,
+      recentDisputes,
+    ] = await Promise.all([
       User.countDocuments(),
       Book.countDocuments(),
       Order.countDocuments(),
@@ -16,7 +30,57 @@ export const getMetrics = async (req, res) => {
         { $match: { paymentStatus: "Completed" } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
+      Book.countDocuments({ status: { $in: ["Pending", "pending"] } }),
+      User.countDocuments({
+        $or: [
+          { authorVerificationStatus: "pending" },
+          { "authorProfile.verificationStatus": "pending" },
+        ],
+      }),
+      Dispute.countDocuments({ status: { $ne: "Resolved" } }),
+      User.find().sort({ createdAt: -1 }).limit(3).select("fullName role createdAt"),
+      Book.find().sort({ createdAt: -1 }).limit(3).select("title createdAt"),
+      Order.find().sort({ createdAt: -1 }).limit(3).select("amount createdAt"),
+      Dispute.find().sort({ createdAt: -1 }).limit(3).select("orderCode issue createdAt"),
     ]);
+
+    // Build real-time activity log from actual DB events
+    const rawLogs = [
+      ...recentUsers.map((u) => ({
+        id: `u_${u._id}`,
+        text: `New open registration: ${u.fullName}`,
+        role: u.role === "author" ? "Author" : "Student",
+        time: u.createdAt,
+      })),
+      ...recentBooks.map((b) => ({
+        id: `b_${b._id}`,
+        text: `New book listed: ${b.title}`,
+        role: `Listing ID: #${b._id.toString().slice(-5)}`,
+        time: b.createdAt,
+      })),
+      ...recentOrders.map((o) => ({
+        id: `o_${o._id}`,
+        text: `Order placed: #${o._id.toString().slice(-6)}`,
+        role: `Amount: ₹${o.amount}`,
+        time: o.createdAt,
+      })),
+      ...recentDisputes.map((d) => ({
+        id: `d_${d._id}`,
+        text: `Dispute raised: ${d.orderCode || d._id.toString().slice(-6)}`,
+        role: d.issue || "Item Issue",
+        time: d.createdAt,
+      })),
+    ];
+
+    rawLogs.sort((a, b) => new Date(b.time) - new Date(a.time));
+    const recentLogs = rawLogs.slice(0, 5).map((log) => {
+      const diffSec = Math.floor((Date.now() - new Date(log.time).getTime()) / 1000);
+      let timeStr = "Just now";
+      if (diffSec >= 86400) timeStr = `${Math.floor(diffSec / 86400)}d ago`;
+      else if (diffSec >= 3600) timeStr = `${Math.floor(diffSec / 3600)}h ago`;
+      else if (diffSec >= 60) timeStr = `${Math.floor(diffSec / 60)}m ago`;
+      return { ...log, time: timeStr };
+    });
 
     return res.status(200).json({
       success: true,
@@ -26,6 +90,10 @@ export const getMetrics = async (req, res) => {
         totalBooks,
         totalOrders,
         platformRevenue: totalEarnings[0]?.total || 0,
+        pendingListings,
+        pendingAuthors,
+        openDisputes,
+        recentLogs,
       },
     });
   } catch (error) {
@@ -99,11 +167,25 @@ export const getOrdersEscrow = async (req, res) => {
 export const updateEscrow = async (req, res) => {
   try {
     const { escrowStatus } = req.body;
-    const order = await Order.findByIdAndUpdate(req.params.id, { escrowStatus }, { new: true });
+    const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found", data: null });
     }
-    return res.status(200).json({ success: true, message: "Escrow updated", data: order });
+
+    const previousStatus = order.escrowStatus;
+    order.escrowStatus = escrowStatus;
+    await order.save();
+
+    // If escrow is released to seller, credit seller wallet balance
+    if (escrowStatus === "Released" && previousStatus !== "Released" && order.sellerId) {
+      const seller = await User.findById(order.sellerId);
+      if (seller) {
+        seller.walletBalance = (seller.walletBalance || 0) + (order.amount || 0);
+        await seller.save();
+      }
+    }
+
+    return res.status(200).json({ success: true, message: `Escrow status updated to ${escrowStatus}`, data: order });
   } catch (error) {
     console.error("Update escrow error:", error);
     return res.status(500).json({
@@ -118,17 +200,134 @@ export const updateEscrow = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password -otp -resetToken").sort({ createdAt: -1 });
+    const { category } = req.query;
+    const rawUsers = await User.find().select("-password -otp -resetToken").sort({ createdAt: -1 });
+
+    const enriched = rawUsers.map((u) => {
+      const obj = u.toObject();
+      const isVerifiedAuthor = Boolean(
+        obj.role === "author" ||
+        obj.isAuthor === true ||
+        obj.authorVerificationStatus === "verified" ||
+        obj.authorProfile?.verificationStatus === "verified"
+      );
+      const hasStudent = obj.hasStudentProfile !== false && obj.role !== "author_only";
+
+      let calculatedCategory = "student_only";
+      if (obj.role === "admin" || obj.isAdmin) {
+        calculatedCategory = "admin";
+      } else if (isVerifiedAuthor && hasStudent) {
+        calculatedCategory = "student_author";
+      } else if (isVerifiedAuthor && !hasStudent) {
+        calculatedCategory = "author_only";
+      } else {
+        calculatedCategory = "student_only";
+      }
+
+      return {
+        ...obj,
+        accountCategory: calculatedCategory,
+        isVerifiedAuthor,
+        hasStudentProfile: hasStudent,
+      };
+    });
+
+    const counts = {
+      total: enriched.length,
+      studentOnly: enriched.filter((u) => u.accountCategory === "student_only").length,
+      authorOnly: enriched.filter((u) => u.accountCategory === "author_only").length,
+      studentAuthor: enriched.filter((u) => u.accountCategory === "student_author").length,
+      admin: enriched.filter((u) => u.accountCategory === "admin").length,
+    };
+
+    let filtered = enriched;
+    if (category && category !== "all") {
+      filtered = enriched.filter((u) => u.accountCategory === category);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Users fetched successfully",
-      data: users,
+      counts,
+      data: filtered,
     });
   } catch (error) {
     console.error("Get users error:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch users",
+      data: null,
+    });
+  }
+};
+
+export const toggleUserBan = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found", data: null });
+    }
+
+    const isCurrentlyBanned = user.status === "Banned" || user.isBanned === true;
+    user.status = isCurrentlyBanned ? "Active" : "Banned";
+    user.isBanned = !isCurrentlyBanned;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `User account ${user.status === "Banned" ? "banned" : "unbanned"} successfully`,
+      data: {
+        id: user._id,
+        status: user.status,
+        isBanned: user.isBanned,
+      },
+    });
+  } catch (error) {
+    console.error("Toggle user ban error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to toggle user ban status",
+      data: null,
+    });
+  }
+};
+
+export const toggleAuthorStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found", data: null });
+    }
+
+    const currentAuthor = Boolean(user.isAuthor || user.role === "author" || user.authorVerificationStatus === "verified");
+    const nextAuthor = !currentAuthor;
+
+    user.isAuthor = nextAuthor;
+    user.authorVerificationStatus = nextAuthor ? "verified" : "unverified";
+    if (user.authorProfile) {
+      user.authorProfile.verificationStatus = nextAuthor ? "verified" : "unverified";
+    }
+    if (!nextAuthor && user.role === "author") {
+      user.role = "student";
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Author publishing privileges ${nextAuthor ? "granted" : "revoked"} successfully`,
+      data: {
+        id: user._id,
+        isAuthor: user.isAuthor,
+        role: user.role,
+        authorVerificationStatus: user.authorVerificationStatus,
+      },
+    });
+  } catch (error) {
+    console.error("Toggle author status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to toggle author status",
       data: null,
     });
   }
@@ -268,7 +467,7 @@ export const getAdminCoupons = async (req, res) => {
  */
 export const createAdminCoupon = async (req, res) => {
   try {
-    const { code, discountType, discountValue, expiresAt, maxUses, applicableBooks } = req.body;
+    const { code, discountType, discountValue, expiresAt, maxUses, applicableBooks, minPurchase } = req.body;
 
     if (!code || !discountType || discountValue === undefined) {
       return res.status(400).json({
@@ -278,7 +477,7 @@ export const createAdminCoupon = async (req, res) => {
       });
     }
 
-    const existing = await Coupon.findOne({ code: code.toUpperCase() });
+    const existing = await Coupon.findOne({ code: code.toUpperCase().trim() });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -287,11 +486,14 @@ export const createAdminCoupon = async (req, res) => {
       });
     }
 
+    const normType = discountType.toLowerCase() === "percentage" ? "percentage" : "flat";
+
     const coupon = await Coupon.create({
-      authorId: req.user._id, // admin acts as creator
-      code: code.toUpperCase(),
-      discountType,
+      authorId: req.user?._id || null, // admin acts as creator
+      code: code.toUpperCase().trim(),
+      discountType: normType,
       discountValue: Number(discountValue),
+      minPurchase: Number(minPurchase) || 0,
       expiresAt: expiresAt || null,
       maxUses: Number(maxUses) || 0,
       applicableBooks: Array.isArray(applicableBooks) ? applicableBooks : [],
@@ -315,7 +517,7 @@ export const createAdminCoupon = async (req, res) => {
 
 /**
  * PATCH /api/admin/coupons/:id
- * Admin toggles or updates a coupon's fields (isActive, discountValue, expiresAt, maxUses).
+ * Admin toggles or updates a coupon's fields (isActive, discountValue, expiresAt, maxUses, minPurchase, code, etc.).
  */
 export const updateCouponStatus = async (req, res) => {
   try {
@@ -324,18 +526,35 @@ export const updateCouponStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "Coupon not found", data: null });
     }
 
-    const { isActive, discountValue, expiresAt, maxUses } = req.body;
+    const { isActive, discountValue, expiresAt, maxUses, minPurchase, discountType, code, applicableBooks } = req.body;
 
     if (isActive !== undefined) coupon.isActive = Boolean(isActive);
     if (discountValue !== undefined) coupon.discountValue = Number(discountValue);
     if (expiresAt !== undefined) coupon.expiresAt = expiresAt;
     if (maxUses !== undefined) coupon.maxUses = Number(maxUses);
+    if (minPurchase !== undefined) coupon.minPurchase = Number(minPurchase);
+    if (discountType !== undefined) {
+      coupon.discountType = discountType.toLowerCase() === "percentage" ? "percentage" : "flat";
+    }
+    if (code !== undefined && code.trim()) {
+      const upper = code.toUpperCase().trim();
+      if (upper !== coupon.code) {
+        const dup = await Coupon.findOne({ code: upper, _id: { $ne: coupon._id } });
+        if (dup) {
+          return res.status(400).json({ success: false, message: "Coupon code already exists", data: null });
+        }
+        coupon.code = upper;
+      }
+    }
+    if (applicableBooks !== undefined) {
+      coupon.applicableBooks = Array.isArray(applicableBooks) ? applicableBooks : [];
+    }
 
     await coupon.save();
 
     return res.status(200).json({
       success: true,
-      message: `Coupon ${coupon.isActive ? "activated" : "deactivated"} successfully`,
+      message: `Coupon updated successfully`,
       data: coupon,
     });
   } catch (error) {
@@ -368,6 +587,131 @@ export const deleteAdminCoupon = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to delete coupon",
+      data: null,
+    });
+  }
+};
+
+// ─── Platform Settings ────────────────────────────────────────────────────────
+
+export const getSettings = async (req, res) => {
+  try {
+    let settings = await PlatformSetting.findOne();
+    if (!settings) {
+      settings = await PlatformSetting.create({
+        commission: 5,
+        rentalCommission: 10,
+        exchangeFee: 20,
+        escrowDuration: 48,
+        deliveryFee: 40,
+        freeDeliveryThreshold: 499,
+        minWithdrawalAmount: 200,
+        disputeWindowDays: 3,
+        allowRentals: true,
+        allowExchanges: true,
+        allowDonations: false,
+        allowCampusPickup: true,
+        announcementEnabled: false,
+        announcementText: "",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Platform settings fetched successfully",
+      data: settings,
+    });
+  } catch (error) {
+    console.error("Get platform settings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch platform settings",
+      data: null,
+    });
+  }
+};
+
+export const updateSettings = async (req, res) => {
+  try {
+    const {
+      commission,
+      rentalCommission,
+      exchangeFee,
+      escrowDuration,
+      deliveryFee,
+      freeDeliveryThreshold,
+      minWithdrawalAmount,
+      disputeWindowDays,
+      allowRentals,
+      allowExchanges,
+      allowDonations,
+      allowCampusPickup,
+      announcementEnabled,
+      announcementText,
+    } = req.body;
+
+    let settings = await PlatformSetting.findOne();
+    if (!settings) {
+      settings = await PlatformSetting.create(req.body);
+    } else {
+      if (commission !== undefined) settings.commission = Number(commission);
+      if (rentalCommission !== undefined) settings.rentalCommission = Number(rentalCommission);
+      if (exchangeFee !== undefined) settings.exchangeFee = Number(exchangeFee);
+      if (escrowDuration !== undefined) settings.escrowDuration = Number(escrowDuration);
+      if (deliveryFee !== undefined) settings.deliveryFee = Number(deliveryFee);
+      if (freeDeliveryThreshold !== undefined) settings.freeDeliveryThreshold = Number(freeDeliveryThreshold);
+      if (minWithdrawalAmount !== undefined) settings.minWithdrawalAmount = Number(minWithdrawalAmount);
+      if (disputeWindowDays !== undefined) settings.disputeWindowDays = Number(disputeWindowDays);
+      if (allowRentals !== undefined) settings.allowRentals = Boolean(allowRentals);
+      if (allowExchanges !== undefined) settings.allowExchanges = Boolean(allowExchanges);
+      if (allowDonations !== undefined) settings.allowDonations = Boolean(allowDonations);
+      if (allowCampusPickup !== undefined) settings.allowCampusPickup = Boolean(allowCampusPickup);
+      if (announcementEnabled !== undefined) settings.announcementEnabled = Boolean(announcementEnabled);
+      if (announcementText !== undefined) settings.announcementText = String(announcementText);
+      if (req.body.autoApproveTestimonials !== undefined)
+        settings.autoApproveTestimonials = Boolean(req.body.autoApproveTestimonials);
+      await settings.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Platform settings updated successfully",
+      data: settings,
+    });
+  } catch (error) {
+    console.error("Update platform settings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update platform settings",
+      data: null,
+    });
+  }
+};
+
+export const getPublicSettings = async (req, res) => {
+  try {
+    let settings = await PlatformSetting.findOne();
+    if (!settings) {
+      settings = await PlatformSetting.create({});
+    }
+    return res.status(200).json({
+      success: true,
+      data: {
+        deliveryFee: settings.deliveryFee ?? 40,
+        freeDeliveryThreshold: settings.freeDeliveryThreshold ?? 499,
+        minWithdrawalAmount: settings.minWithdrawalAmount ?? 200,
+        disputeWindowDays: settings.disputeWindowDays ?? 3,
+        allowRentals: settings.allowRentals ?? true,
+        allowExchanges: settings.allowExchanges ?? true,
+        allowDonations: settings.allowDonations ?? false,
+        allowCampusPickup: settings.allowCampusPickup ?? true,
+        announcementEnabled: settings.announcementEnabled ?? false,
+        announcementText: settings.announcementText ?? "",
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch public settings",
       data: null,
     });
   }

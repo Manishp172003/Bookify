@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { wantBoardService } from "../../services/wantBoardService";
@@ -40,6 +40,7 @@ export default function WantBoardPage() {
 
   useEffect(() => {
     loadRequests();
+    wantBoardService.syncWithBackend().then(() => loadRequests()).catch(() => {});
     window.addEventListener("bookify_want_board_updated", loadRequests);
     return () => window.removeEventListener("bookify_want_board_updated", loadRequests);
   }, []);

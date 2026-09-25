@@ -9,9 +9,6 @@ import {
   UserCheck,
   Settings,
   LogOut,
-  PenTool,
-  Globe,
-  MessageSquare,
   Ticket,
   X
 } from "lucide-react";
@@ -42,7 +39,6 @@ function AdminSidebar({ isOpen, onClose }) {
     { name: "Disputes", path: "/admin/disputes", icon: AlertTriangle },
     { name: "Authors", path: "/admin/authors", icon: UserCheck },
     { name: "Coupons", path: "/admin/coupons", icon: Ticket },
-    { name: "Chat", path: "/admin/chat", icon: MessageSquare },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ];
 
@@ -88,26 +84,6 @@ function AdminSidebar({ isOpen, onClose }) {
 
       {/* Logout Footer Section */}
       <div className="border-t border-white/15 pt-4 mt-4">
-        <Link
-          to="/"
-          onClick={() => {
-            if (onItemClick) onItemClick();
-          }}
-          className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer text-white/80 hover:text-white"
-        >
-          <Globe size={18} className="text-white/80" />
-          <span className="text-sm font-semibold">Switch to Dashboard</span>
-        </Link>
-        <Link
-          to="/author"
-          onClick={() => {
-            if (onItemClick) onItemClick();
-          }}
-          className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 hover:bg-white/5 transition duration-200 cursor-pointer text-white/80 hover:text-white"
-        >
-          <PenTool size={18} className="text-white/80" />
-          <span className="text-sm font-semibold">Switch to Author</span>
-        </Link>
         <Link
           to="/login"
           onClick={() => {

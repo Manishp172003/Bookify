@@ -7,6 +7,8 @@ import {
   getOrdersEscrow,
   updateEscrow,
   getUsers,
+  toggleUserBan,
+  toggleAuthorStatus,
   getAuthorsForVerification,
   verifyAuthor,
   getDisputes,
@@ -14,6 +16,8 @@ import {
   createAdminCoupon,
   updateCouponStatus,
   deleteAdminCoupon,
+  getSettings,
+  updateSettings,
 } from "../controllers/adminController.js";
 
 import { protect, authorize } from "../middleware/authMiddleware.js";
@@ -36,6 +40,8 @@ router.patch("/orders/:id/escrow", updateEscrow);
 
 // ─── User Management & Author Verification ────────────────────────────────────
 router.get("/users", getUsers);
+router.patch("/users/:id/ban", toggleUserBan);
+router.patch("/users/:id/toggle-author", toggleAuthorStatus);
 router.get("/authors-verification", getAuthorsForVerification);
 router.patch("/authors-verification/:id", verifyAuthor);
 
@@ -47,5 +53,9 @@ router.get("/coupons", getAdminCoupons);
 router.post("/coupons", createAdminCoupon);
 router.patch("/coupons/:id", updateCouponStatus);
 router.delete("/coupons/:id", deleteAdminCoupon);
+
+// ─── Platform Settings & Configuration ────────────────────────────────────────
+router.get("/settings", getSettings);
+router.put("/settings", updateSettings);
 
 export default router;

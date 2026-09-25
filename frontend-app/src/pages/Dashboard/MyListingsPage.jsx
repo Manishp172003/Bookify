@@ -3,13 +3,23 @@ import { useNavigate, Link } from 'react-router-dom';
 import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
 import { useCommerce } from '../../context/CommerceContext';
 import { listingService } from '../../services/listingService';
-import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu, Plus, Package, AlertCircle } from 'lucide-react';
+import { getBookCover, DEFAULT_BOOK_COVER } from '../../utils/bookCoverUtils';
+import { Edit2, Trash2, CheckCircle2, TrendingUp, Heart, BookOpen, Menu, Plus, Package, AlertCircle, X, Save } from 'lucide-react';
 
 export default function MyListingsPage() {
   const navigate = useNavigate();
-  const { orders } = useCommerce();
+  const { orders, showToast } = useCommerce();
   const [listings, setListings] = useState(() => listingService.getAllListings());
   const [activeFilter, setActiveFilter] = useState('All');
+  const [editingListing, setEditingListing] = useState(null);
+  const [editForm, setEditForm] = useState({
+    price: '',
+    mrp: '',
+    condition: 'good',
+    status: 'Active',
+    conditionNotes: '',
+    cover: '',
+  });
 
   const pendingOrdersCount = (orders || []).filter(
     (o) => o.isSellerOrder && (o.status === 'placed' || o.status === 'Placed')
@@ -27,16 +37,49 @@ export default function MyListingsPage() {
 
   const handleMarkSold = (id) => {
     listingService.updateStatus(id, 'Sold');
+    if (showToast) showToast('Listing marked as sold!', 'success');
   };
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
       listingService.deleteListing(id);
+      if (showToast) showToast('Listing deleted successfully', 'info');
     }
   };
 
-  const handleEdit = (id) => {
-    navigate('/sell');
+  const handleEdit = (item) => {
+    setEditingListing(item);
+    setEditForm({
+      price: item.price || '',
+      mrp: item.mrp || '',
+      condition: item.condition || 'good',
+      status: item.status || 'Active',
+      conditionNotes: item.conditionNotes || '',
+      cover: getBookCover(item),
+    });
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    if (!editingListing) return;
+    if (!editForm.price || Number(editForm.price) <= 0) {
+      alert("Please enter a valid price");
+      return;
+    }
+
+    listingService.updateListing(editingListing.id, {
+      price: Number(editForm.price),
+      mrp: editForm.mrp ? Number(editForm.mrp) : undefined,
+      condition: editForm.condition,
+      status: editForm.status,
+      conditionNotes: editForm.conditionNotes,
+      cover: editForm.cover,
+    });
+
+    if (showToast) {
+      showToast(`Listing ${editingListing.id} updated successfully!`, 'success');
+    }
+    setEditingListing(null);
   };
 
   // Filter listings
@@ -161,8 +204,16 @@ export default function MyListingsPage() {
                   
                   {/* Left block: info */}
                   <div className="flex gap-4 min-w-0">
-                    <div className={`h-20 w-14 shrink-0 rounded-lg bg-gradient-to-br ${item.coverClass} flex items-center justify-center text-[8px] font-extrabold text-white uppercase tracking-wider border border-black/5`}>
-                      {item.title.split(' ').map(w => w[0]).join('')}
+                    <div className="h-20 w-15 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-gray-200 shadow-2xs relative">
+                      <img
+                        src={getBookCover(item)}
+                        alt={item.title}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = DEFAULT_BOOK_COVER;
+                        }}
+                      />
                     </div>
 
                     <div className="min-w-0">
@@ -174,7 +225,9 @@ export default function MyListingsPage() {
                         <span className="text-[10px] font-semibold text-gray-500">{item.condition}</span>
                       </div>
                       <h3 className="font-bold text-[#17152A] text-sm mt-1.5 truncate">{item.title}</h3>
-                      <p className="text-xs font-bold text-[#6C4BF4] mt-1">{item.price}</p>
+                      <p className="text-xs font-bold text-[#6C4BF4] mt-1">
+                        {typeof item.price === "number" ? `₹${item.price}` : String(item.price).startsWith("₹") ? item.price : `₹${item.price}`}
+                      </p>
                     </div>
                   </div>
 
@@ -211,7 +264,7 @@ export default function MyListingsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => handleEdit(item.id)}
+                      onClick={() => handleEdit(item)}
                       className="flex-1 lg:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
                     >
                       <Edit2 size={13} />
@@ -232,6 +285,196 @@ export default function MyListingsPage() {
 
         </main>
       </div>
+
+      {/* Edit Listing Modal */}
+      {editingListing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 md:p-7 shadow-2xl border border-gray-150 animate-scale-in my-8">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#6C4BF4]/10 text-[#6C4BF4]">
+                  <Edit2 size={16} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-[#17152A]">Edit Listing</h2>
+                  <span className="text-[10px] font-mono font-bold text-gray-400">
+                    ID: {editingListing.id}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingListing(null)}
+                className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Book Preview Card */}
+            <div className="flex items-center gap-3.5 rounded-2xl bg-gray-50 p-3.5 border border-gray-100 mb-5">
+              <div className="h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-200 border border-gray-200 shadow-2xs relative">
+                <img
+                  src={editForm.cover || getBookCover(editingListing)}
+                  alt={editingListing.title}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = DEFAULT_BOOK_COVER;
+                  }}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xs md:text-sm font-bold text-[#17152A] truncate">
+                  {editingListing.title}
+                </h3>
+                <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                  by {editingListing.author || "Specified Author"}
+                </p>
+                <span className="inline-block text-[9px] font-bold text-[#6C4BF4] bg-[#6C4BF4]/10 px-2 py-0.5 rounded-md mt-1">
+                  Current Status: {editingListing.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Edit Form */}
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              
+              {/* Price & MRP */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Your Price (₹) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={editForm.price}
+                      onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                      placeholder="e.g. 450"
+                      className="w-full rounded-xl border border-gray-200 pl-8 pr-3 py-2.5 text-xs font-bold text-[#17152A] outline-none transition focus:border-[#6C4BF4] focus:ring-1 focus:ring-[#6C4BF4]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Original MRP (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={editForm.mrp}
+                      onChange={(e) => setEditForm({ ...editForm, mrp: e.target.value })}
+                      placeholder="e.g. 999"
+                      className="w-full rounded-xl border border-gray-200 pl-8 pr-3 py-2.5 text-xs font-semibold text-gray-600 outline-none transition focus:border-[#6C4BF4] focus:ring-1 focus:ring-[#6C4BF4]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Condition Selection */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Book Condition
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: "like-new", label: "Like New" },
+                    { id: "very-good", label: "Very Good" },
+                    { id: "good", label: "Good" },
+                    { id: "fair", label: "Fair" },
+                  ].map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, condition: c.id })}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition cursor-pointer border text-center ${
+                        editForm.condition === c.id
+                          ? "bg-[#6C4BF4] text-white border-[#6C4BF4] shadow-xs"
+                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Selection */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Listing Status
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "Active", label: "Active" },
+                    { id: "Inactive", label: "Paused" },
+                    { id: "Sold", label: "Sold" },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, status: s.id })}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition cursor-pointer border text-center ${
+                        editForm.status === s.id
+                          ? "border-[#6C4BF4] bg-[#6C4BF4]/10 text-[#6C4BF4] ring-2 ring-[#6C4BF4]/20"
+                          : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Condition Notes */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Condition Notes / Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={editForm.conditionNotes}
+                  onChange={(e) => setEditForm({ ...editForm, conditionNotes: e.target.value })}
+                  placeholder="e.g. Light pencil markings in chapter 3, binding is tight..."
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-[#17152A] outline-none transition focus:border-[#6C4BF4] focus:ring-1 focus:ring-[#6C4BF4]"
+                />
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setEditingListing(null)}
+                  className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#6C4BF4] hover:bg-[#5B3DE0] px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-[#6C4BF4]/20 transition cursor-pointer active:scale-[0.98]"
+                >
+                  <Save size={14} />
+                  Save Changes
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

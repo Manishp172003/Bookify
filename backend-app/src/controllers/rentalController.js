@@ -68,6 +68,7 @@ export const getMyRentals = async (req, res) => {
         dueDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
         depositAmount: 400,
         rentalFee: 150,
+        coverImage: "https://covers.openlibrary.org/b/isbn/9781118063330-L.jpg",
         coverClass: "from-[#0F172A] to-[#1E293B]",
         status: "active",
       });
@@ -85,6 +86,7 @@ export const getMyRentals = async (req, res) => {
         dueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
         depositAmount: 300,
         rentalFee: 100,
+        coverImage: "https://covers.openlibrary.org/b/isbn/9789351199342-L.jpg",
         coverClass: "from-[#4F46E5] to-[#7C3AED]",
         status: "active",
       });
@@ -102,6 +104,7 @@ export const getMyRentals = async (req, res) => {
         dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
         depositAmount: 500,
         rentalFee: 200,
+        coverImage: "https://covers.openlibrary.org/b/isbn/9780073523323-L.jpg",
         coverClass: "from-[#047857] to-[#065F46]",
         status: "active",
       });

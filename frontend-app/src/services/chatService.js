@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:5000/api/chat";
+const RAW_API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE_URL = `${RAW_API_URL.replace(/\/api\/?$/, "")}/api/chat`;
 
 /**
  * Chat Service to interact with the backend persistent chat endpoints

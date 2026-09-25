@@ -1,5 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { MessageSquare, ChevronRight } from "lucide-react";
 import { useCommerce } from "../../context/CommerceContext";
 import { isRealUserAvatar, getInitials } from "../../utils/avatarUtils";
 
@@ -12,7 +12,7 @@ function RecentMessages() {
     navigate(`/chat/${id}`);
   };
 
-  const displayList = conversations.slice(0, 4);
+  const displayList = (conversations || []).slice(0, 4);
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-5">
@@ -21,17 +21,27 @@ function RecentMessages() {
           Recent Messages
         </h3>
 
-        <Link
-          to="/chat"
-          className="text-xs font-semibold text-[#6C4BF4] cursor-pointer hover:underline"
-        >
-          View All
-        </Link>
+        {displayList.length > 0 && (
+          <Link
+            to="/chat"
+            className="text-xs font-semibold text-[#6C4BF4] cursor-pointer hover:underline"
+          >
+            View All
+          </Link>
+        )}
       </div>
 
       <div className="space-y-3">
         {displayList.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-4">No recent messages</p>
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EDE7FF] text-[#6C4BF4] mb-2.5">
+              <MessageSquare size={18} />
+            </div>
+            <p className="text-xs font-semibold text-[#17152A]">No messages yet</p>
+            <p className="text-[11px] text-gray-400 mt-0.5 max-w-[220px]">
+              Chat inquiries from campus buyers and sellers will appear here.
+            </p>
+          </div>
         ) : (
           displayList.map((conv) => {
             const lastMsg =

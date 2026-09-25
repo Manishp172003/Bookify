@@ -4,46 +4,10 @@ import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { api } from "../../services/apiClient";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
-const INITIAL_RECEIVED = [
-  {
-    id: "SWP-9021",
-    partner: "Sneha Reddy",
-    partnerId: "usr_sneha",
-    status: "Pending Decision",
-    statusColor: "text-amber-600 bg-amber-50 border-amber-100",
-    yourBook: {
-      title: "Introduction to Algorithms",
-      condition: "Very Good",
-      coverClass: "from-[#111827] to-[#374151]"
-    },
-    theirBook: {
-      title: "Compiler Design: Principles",
-      condition: "Like New",
-      coverClass: "from-[#065F46] to-[#047857]"
-    }
-  }
-];
-
-const INITIAL_SENT = [
-  {
-    id: "SWP-3820",
-    partner: "Aarav Sharma",
-    partnerId: "usr_aarav",
-    status: "Accepted - Meetup Pending",
-    statusColor: "text-green-600 bg-green-50 border-green-100",
-    yourBook: {
-      title: "Organic Chemistry, 8th Edition",
-      condition: "Good",
-      coverClass: "from-[#0F172A] to-[#1E293B]"
-    },
-    theirBook: {
-      title: "Concepts of Physics Vol 1",
-      condition: "Very Good",
-      coverClass: "from-[#E11D48] to-[#F43F5E]"
-    }
-  }
-];
+const INITIAL_RECEIVED = [];
+const INITIAL_SENT = [];
 
 export default function Exchanges() {
   const { showToast, startOrGetConversation } = useCommerce();
@@ -55,19 +19,28 @@ export default function Exchanges() {
 
   useEffect(() => {
     const fetchExchanges = async () => {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("auth_token");
+
+      if (!token) {
+        setReceivedList([]);
+        setSentList([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const res = await api.get("/exchanges/my-exchanges");
         if (res?.data) {
-          if (res.data.received && res.data.received.length > 0) {
-            setReceivedList(res.data.received);
-          }
-          if (res.data.sent && res.data.sent.length > 0) {
-            setSentList(res.data.sent);
-          }
+          setReceivedList(Array.isArray(res.data.received) ? res.data.received : []);
+          setSentList(Array.isArray(res.data.sent) ? res.data.sent : []);
         }
       } catch (err) {
-        console.warn("Could not fetch exchanges from backend, using fallback:", err);
+        setReceivedList([]);
+        setSentList([]);
       } finally {
         setIsLoading(false);
       }
@@ -216,8 +189,16 @@ export default function Exchanges() {
                     
                     {/* Your book */}
                     <div className="md:col-span-2 rounded-xl bg-gray-50 p-4 border border-gray-100 flex items-center gap-3">
-                      <div className={`h-16 w-11 shrink-0 rounded bg-gradient-to-br ${item.yourBook.coverClass} flex items-center justify-center text-[7px] font-extrabold text-white uppercase border border-black/5`}>
-                        {item.yourBook.title.split(' ').map(w => w[0]).join('')}
+                      <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200 shadow-2xs relative">
+                        <img
+                          src={getBookCover(item.yourBook)}
+                          alt={item.yourBook?.title || "Book"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_BOOK_COVER;
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[9px] text-gray-400 font-bold uppercase">Your Book</p>
@@ -235,8 +216,16 @@ export default function Exchanges() {
 
                     {/* Their Book */}
                     <div className="md:col-span-2 rounded-xl bg-[#F8F7FF] p-4 border border-[#E9E4FF] flex items-center gap-3">
-                      <div className={`h-16 w-11 shrink-0 rounded bg-gradient-to-br ${item.theirBook.coverClass} flex items-center justify-center text-[7px] font-extrabold text-white uppercase border border-black/5`}>
-                        {item.theirBook.title.split(' ').map(w => w[0]).join('')}
+                      <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200 shadow-2xs relative">
+                        <img
+                          src={getBookCover(item.theirBook)}
+                          alt={item.theirBook?.title || "Offered Book"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_BOOK_COVER;
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[9px] text-[#6C4BF4] font-bold uppercase">Their Offered Book</p>

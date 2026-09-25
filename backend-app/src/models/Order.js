@@ -27,6 +27,11 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
+  orderCode: {
+    type: String,
+    index: true,
+  },
+
   buyerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

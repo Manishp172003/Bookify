@@ -43,6 +43,29 @@ const campaignSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    dailyRate: {
+      type: Number,
+      default: 299,
+    },
+    totalCost: {
+      type: Number,
+      default: 0,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "refunded"],
+      default: "paid",
+      index: true,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["wallet", "razorpay", "free_trial"],
+      default: "wallet",
+    },
+    paymentId: {
+      type: String,
+      default: null,
+    },
     status: {
       type: String,
       enum: ["scheduled", "active", "paused", "completed", "ended"],

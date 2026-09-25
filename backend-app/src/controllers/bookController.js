@@ -245,7 +245,7 @@ export const getBookById = async (req, res) => {
     }
 
     const book = await Book.findById(id)
-      .populate("sellerId", "fullName email")
+      .populate("sellerId", "fullName email phone isAuthor authorProfile isVerified authorVerificationStatus authorBio authorAvatar address")
       .lean();
 
     if (!book) {
@@ -290,17 +290,18 @@ export const createBook = async (req, res) => {
       isPublisherListing,
     } = req.body;
 
+    const resolvedMode = transactionMode || req.body.mode || "Sell";
+
     if (
       !title?.trim() ||
       !author?.trim() ||
       !category?.trim() ||
-      !condition ||
-      !transactionMode
+      !condition
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Title, author, category, condition and transaction mode are required",
+          "Title, author, category and condition are required",
         data: null,
       });
     }
@@ -322,7 +323,7 @@ export const createBook = async (req, res) => {
       isbn: isbn?.trim(),
       category: category.trim(),
       condition,
-      transactionMode,
+      transactionMode: resolvedMode,
       price: bookPrice,
       originalPrice:
         originalPrice !== undefined
