@@ -153,7 +153,7 @@ export const adminLogin = async (req, res) => {
     const { email, password, code } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user || !user.isAdmin) {
+    if (!user || (!user.isAdmin && user.role !== "admin")) {
       return res.status(403).json({ success: false, message: "Access denied. Not an administrator account." });
     }
 
@@ -566,9 +566,9 @@ export const switchRole = async (req, res) => {
  */
 export const googleLogin = async (req, res) => {
   try {
-    let { email, fullName, avatar, googleId, credential, idToken, token } = req.body;
+    let { email, fullName, avatar, googleId, credential, idToken, token: inputToken } = req.body;
 
-    const rawJwt = credential || idToken || token;
+    const rawJwt = credential || idToken || inputToken;
     if (rawJwt && !email) {
       try {
         const decoded = jwt.decode(rawJwt);
@@ -603,12 +603,12 @@ export const googleLogin = async (req, res) => {
       });
     }
 
-    const token = signToken({ id: user._id, role: user.role });
+    const authToken = signToken({ id: user._id, role: user.role });
 
     return res.status(200).json({
       success: true,
       message: "Google login successful",
-      token,
+      token: authToken,
       user: publicUser(user),
     });
   } catch (error) {
