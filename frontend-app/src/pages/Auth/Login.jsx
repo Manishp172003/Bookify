@@ -6,6 +6,7 @@ import loginIllustration from "../../assets/images/auth/login-illustration.png";
 import { validateLogin } from "../../utils/validators";
 import AuthLayout from "../../components/auth/AuthLayout";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/apiClient";
 
 function Login() {
   const navigate = useNavigate();
@@ -79,9 +80,55 @@ function Login() {
         }
       } catch (error) {
         setIsLoading(false);
-        setApiError("Unable to connect to backend server. Make sure server is running on port 5000.");
+        setApiError("Unable to connect to backend server. Make sure server is running.");
         console.error("Login fetch error:", error);
       }
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setApiError("Google Sign-In is pending setup. Please set VITE_GOOGLE_CLIENT_ID in your environment variables.");
+      return;
+    }
+
+    const initGsi = () => {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          if (response?.credential) {
+            setIsLoading(true);
+            setApiError("");
+            try {
+              const res = await api.post("/auth/google", { credential: response.credential });
+              if (res.token) {
+                login(res.user, res.token);
+                setShowSuccessPopup(true);
+                setTimeout(() => {
+                  navigate("/dashboard", { replace: true });
+                }, 1500);
+              }
+            } catch (err) {
+              setApiError(err.message || "Google authentication failed");
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        },
+      });
+      window.google.accounts.id.prompt();
+    };
+
+    if (window.google?.accounts?.id) {
+      initGsi();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initGsi;
+      document.body.appendChild(script);
     }
   };
 
@@ -226,6 +273,7 @@ function Login() {
       <div>
         <button
           type="button"
+          onClick={handleGoogleLogin}
           className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 py-3 text-sm font-bold text-[#17152A] transition hover:border-[#6C4BF4] hover:bg-[#F8F7FF] cursor-pointer"
         >
           <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

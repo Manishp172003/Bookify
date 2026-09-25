@@ -566,10 +566,25 @@ export const switchRole = async (req, res) => {
  */
 export const googleLogin = async (req, res) => {
   try {
-    const { email, fullName, avatar, googleId } = req.body;
+    let { email, fullName, avatar, googleId, credential, idToken, token } = req.body;
+
+    const rawJwt = credential || idToken || token;
+    if (rawJwt && !email) {
+      try {
+        const decoded = jwt.decode(rawJwt);
+        if (decoded && decoded.email) {
+          email = decoded.email;
+          fullName = fullName || decoded.name;
+          avatar = avatar || decoded.picture;
+          googleId = googleId || decoded.sub;
+        }
+      } catch (decErr) {
+        console.warn("Could not decode Google credential JWT:", decErr.message);
+      }
+    }
 
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required for Google authentication" });
+      return res.status(400).json({ success: false, message: "Email or valid Google token credential is required for Google authentication" });
     }
 
     let user = await User.findOne({ email });
