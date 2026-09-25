@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'author', 'admin'],
     default: 'student',
   },
+  isAdmin: { type: Boolean, default: false },
   isAuthor: { type: Boolean, default: false },
   hasStudentProfile: { type: Boolean, default: true },
   accountCategory: {
