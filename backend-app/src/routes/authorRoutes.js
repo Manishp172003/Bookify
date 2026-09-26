@@ -24,9 +24,6 @@ import {
   getPayouts,
   getDashboardStats,
   getAnalytics,
-  updateProfile,
-  submitVerification,
-  toggleCoupon,
 } from "../controllers/authorController.js";
 
 import {
@@ -41,14 +38,18 @@ import {
 
 const router = express.Router();
 
-// ─── Public coupon validation route (used at student checkout) ───────────────
 router.post("/coupons/validate", validateCoupon);
 
-// ─── Public Storefront Campaign Promotion & Analytics Routes ─────────────────
-router.get("/campaigns/active-featured", getActiveFeaturedCampaigns);
-router.post("/campaigns/:id/track", trackCampaignEngagement);
+router.get(
+  "/campaigns/active-featured",
+  getActiveFeaturedCampaigns
+);
 
-// ─── Author Profile & Verification (Protected: Student / Author / Admin) ──────
+router.post(
+  "/campaigns/:id/track",
+  trackCampaignEngagement
+);
+
 router.put(
   "/profile",
   protect,
@@ -69,38 +70,72 @@ router.post(
   submitAuthorVerification
 );
 
-// ─── Protect all other author routes (Author & Admin only) ───────────────────
-router.use(protect, authorize("author", "admin"));
+router.use(
+  protect,
+  authorize("author", "admin")
+);
 
-// 1. Profile & Verification
 router.get("/profile", getAuthorProfile);
 
-// 2. Books & Publishing
 router.get("/my-books", getMyBooks);
-router.post("/books", uploadSingle("image", "bookify/books"), submitBook);
+
+router.post(
+  "/books",
+  uploadSingle("image", "bookify/books"),
+  submitBook
+);
+
 router.put("/books/:id", updateBook);
+
 router.delete("/books/:id", deleteBook);
 
-// 3. Coupons Management
 router.get("/coupons", getCoupons);
+
 router.post("/coupons", createCoupon);
-router.patch("/coupons/:id/toggle", toggleCouponStatus);
-router.patch("/coupons/:id", toggleCouponStatus);
-router.delete("/coupons/:id", deleteCoupon);
 
-// 4. Marketing Campaigns
+router.patch(
+  "/coupons/:id/toggle",
+  toggleCouponStatus
+);
+
+router.patch(
+  "/coupons/:id",
+  toggleCouponStatus
+);
+
+router.delete(
+  "/coupons/:id",
+  deleteCoupon
+);
+
 router.get("/campaigns", getCampaigns);
-router.post("/campaigns", createCampaign);
-router.patch("/campaigns/:id/status", updateCampaignStatus);
-router.delete("/campaigns/:id", deleteCampaign);
 
-// 5. Earnings & Payouts
+router.post("/campaigns", createCampaign);
+
+router.patch(
+  "/campaigns/:id/status",
+  updateCampaignStatus
+);
+
+router.delete(
+  "/campaigns/:id",
+  deleteCampaign
+);
+
 router.get("/earnings", getEarnings);
+
 router.post("/payouts", requestPayout);
+
 router.get("/payouts", getPayouts);
 
-// 6. Analytics & Dashboard Stats
-router.get("/dashboard-stats", getDashboardStats);
-router.get("/analytics", getAnalytics);
+router.get(
+  "/dashboard-stats",
+  getDashboardStats
+);
+
+router.get(
+  "/analytics",
+  getAnalytics
+);
 
 export default router;
