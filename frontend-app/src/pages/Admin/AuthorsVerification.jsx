@@ -36,39 +36,7 @@ function AuthorsVerification() {
           }))
         );
       } else {
-        // Fallback demo data if no authors in DB yet
-        setAuthors([
-          { 
-            id: "demo_1", 
-            name: "Rahul Verma", 
-            penName: "R. V. Writes",
-            email: "author@bookify.com", 
-            books: 1, 
-            status: "Verified", 
-            date: "12 Apr 2026",
-            documents: [{ title: "ISBN Certificate", fileName: "isbn_978_0132350884.pdf", fileType: "pdf", url: "" }]
-          },
-          { 
-            id: "demo_2", 
-            name: "Neha Patel", 
-            penName: "N. Patel",
-            email: "neha.patel@gmail.com", 
-            books: 2, 
-            status: "Pending Verification", 
-            date: "16 Apr 2026",
-            documents: [{ title: "Copyright Registration Certificate", fileName: "copyright_neha.pdf", fileType: "pdf", url: "" }]
-          },
-          { 
-            id: "demo_3", 
-            name: "Vikram Das", 
-            penName: "V. Das",
-            email: "vikram.das@gmail.com", 
-            books: 1, 
-            status: "Pending Verification", 
-            date: "14 Apr 2026",
-            documents: [{ title: "Government Photo ID", fileName: "passport_scan.jpg", fileType: "image", url: "" }]
-          }
-        ]);
+        setAuthors([]);
       }
     } catch (err) {
       console.warn("Failed to load authors:", err);

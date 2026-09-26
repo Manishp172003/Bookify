@@ -1,23 +1,34 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { IndianRupee } from "lucide-react";
+import { IndianRupee, Wallet } from "lucide-react";
+import { listingService } from "../../services/listingService";
 
 function WalletOverview() {
   const navigate = useNavigate();
+  const [stats, setStats] = useState(() => listingService.getStats());
+
+  useEffect(() => {
+    const updateStats = () => setStats(listingService.getStats());
+    window.addEventListener("bookify_user_listings_updated", updateStats);
+    return () => window.removeEventListener("bookify_user_listings_updated", updateStats);
+  }, []);
+
+  const totalEarned = stats.totalEarned || 0;
+  const availableBalance = totalEarned;
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-5">
-      <h3 className="font-semibold text-[#17152A]">
-        Wallet Overview
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-[#17152A]">Wallet Overview</h3>
+        <Wallet size={16} className="text-gray-400" />
+      </div>
 
-      <p className="mt-5 text-xs text-gray-400">
-        Available Balance
-      </p>
+      <p className="mt-5 text-xs text-gray-400">Available Balance</p>
 
       <div className="mt-1 flex items-center gap-1">
-        <IndianRupee size={20} />
+        <IndianRupee size={20} className="text-[#17152A]" />
         <span className="text-2xl font-bold text-[#17152A]">
-          1,850
+          {availableBalance.toLocaleString()}
         </span>
       </div>
 
@@ -29,14 +40,14 @@ function WalletOverview() {
         Withdraw & Payouts
       </button>
 
-      <div className="mt-5 flex justify-between border-t pt-4 text-xs">
+      <div className="mt-5 flex justify-between border-t border-gray-100 pt-4 text-xs">
         <span className="text-gray-500">Total Earned</span>
-        <span className="font-semibold">₹2,450</span>
+        <span className="font-semibold text-[#17152A]">₹{totalEarned.toLocaleString()}</span>
       </div>
 
       <div className="mt-3 flex justify-between text-xs">
         <span className="text-gray-500">This Month</span>
-        <span className="font-semibold">₹850</span>
+        <span className="font-semibold text-[#17152A]">₹{totalEarned.toLocaleString()}</span>
       </div>
     </div>
   );

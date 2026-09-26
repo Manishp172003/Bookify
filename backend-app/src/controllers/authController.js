@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendOtpEmail, sendPasswordResetEmail } from "../services/emailService.js";
+import { sendOTP } from "../utils/sendSms.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -84,29 +86,34 @@ export const register = async (req, res) => {
       phone: normalizedPhone,
       password: hashedPassword,
       role: "student",
+      otp,
+      otpExpiry: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    res.status(201).json({ success: true, message: "Account created successfully" });
-  } catch (error) {
-    console.error("REGISTER ERROR:", error);
-
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Email or phone number is already registered",
-      });
+    // Send verification OTP via email & SMS (non-blocking)
+    sendOtpEmail(email, otp, fullName).catch((err) =>
+      console.error("Register OTP email error:", err.message)
+    );
+    if (phone) {
+      sendOTP(phone, otp).catch((err) =>
+        console.error("Register OTP SMS error:", err.message)
+      );
     }
 
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Registration failed",
+    res.status(201).json({
+      success: true,
+      message: "Account created successfully. Verification OTP dispatched.",
+      user: publicUser(user),
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
 export const login = async (req, res) => {
   try {
-    const { identifier, password } = req.body;
+    const identifier = req.body.identifier || req.body.email || req.body.phone;
+    const { password } = req.body;
 
     if (!identifier || !password) {
       return res.status(400).json({ success: false, message: "Identifier and password are required" });
@@ -205,7 +212,7 @@ export const adminLogin = async (req, res) => {
     const { email, password, code } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user || !user.isAdmin) {
+    if (!user || (!user.isAdmin && user.role !== "admin")) {
       return res.status(403).json({ success: false, message: "Access denied. Not an administrator account." });
     }
 
@@ -241,7 +248,12 @@ export const adminLogin = async (req, res) => {
 // ─── Logout (stateless JWT — client discards token) ──────────────────────────
 
 export const logout = async (req, res) => {
-  res.status(200).json({ success: true, message: "Logged out successfully" });
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    revokeToken(token);
+  }
+  res.status(200).json({ success: true, message: "Logged out successfully. Token revoked." });
 };
 
 export const forgotPassword = async (req, res) => {
@@ -607,10 +619,25 @@ export const switchRole = async (req, res) => {
  */
 export const googleLogin = async (req, res) => {
   try {
-    const { email, fullName, avatar, googleId } = req.body;
+    let { email, fullName, avatar, googleId, credential, idToken, token: inputToken } = req.body;
+
+    const rawJwt = credential || idToken || inputToken;
+    if (rawJwt && !email) {
+      try {
+        const decoded = jwt.decode(rawJwt);
+        if (decoded && decoded.email) {
+          email = decoded.email;
+          fullName = fullName || decoded.name;
+          avatar = avatar || decoded.picture;
+          googleId = googleId || decoded.sub;
+        }
+      } catch (decErr) {
+        console.warn("Could not decode Google credential JWT:", decErr.message);
+      }
+    }
 
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required for Google authentication" });
+      return res.status(400).json({ success: false, message: "Email or valid Google token credential is required for Google authentication" });
     }
 
     let user = await User.findOne({ email });
@@ -629,12 +656,12 @@ export const googleLogin = async (req, res) => {
       });
     }
 
-    const token = signToken({ id: user._id, role: user.role });
+    const authToken = signToken({ id: user._id, role: user.role });
 
     return res.status(200).json({
       success: true,
       message: "Google login successful",
-      token,
+      token: authToken,
       user: publicUser(user),
     });
   } catch (error) {

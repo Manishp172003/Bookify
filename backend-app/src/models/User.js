@@ -15,8 +15,10 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'author', 'admin'],
     default: 'student',
   },
-  isAdmin: { type: Boolean, default: false },
+  isAuthor: { type: Boolean, default: false },
   adminCode: { type: String }, // 15-digit code for admin verification
+  status: { type: String, enum: ['Active', 'Banned'], default: 'Active' },
+  isBanned: { type: Boolean, default: false },
 
   // ---- OTP Verification Fields ----
   otp: { type: String, default: null },
@@ -52,6 +54,8 @@ const userSchema = new mongoose.Schema({
     accountNumber: { type: String, default: '' },
     ifscCode: { type: String, default: '' },
   },
+
+  walletBalance: { type: Number, default: 0 },
 
   // ---- Settings: Notification Preferences ----
   notifications: {

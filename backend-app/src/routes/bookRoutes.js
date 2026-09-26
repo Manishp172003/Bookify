@@ -21,6 +21,7 @@ const router = express.Router();
 router.get("/categories/list", getCategories);
 
 router.get("/my", protect, getMyListings);
+router.get("/my/listings", protect, getMyListings);
 
 // ─── ISBN Auto-Fill Proxy (public — no auth required) ────────────────────────
 // GET /api/books/isbn/:isbn

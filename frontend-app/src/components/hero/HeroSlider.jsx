@@ -10,7 +10,7 @@ const slides = [
     title: 'Give Your Books a Second Life, or Discover Your Next Great Read',
     desc: "India's ultimate campus-to-community marketplace. Buy, sell, rent, or swap pre-owned semester books securely.",
     btn1: { label: 'SHOP NOW', icon: true, path: '/explore' },
-    btn2: { label: 'EXPLORE COLLECTION', path: '/categories' },
+    btn2: { label: 'EXPLORE COLLECTION', path: '/explore' },
     stats: [
       { icon: 'truck', label: 'FREE SHIPPING', desc: 'On orders over \u20B9499' },
       { icon: 'shield', label: 'SECURE ESCROW', desc: 'Your money is safe with us' },

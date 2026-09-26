@@ -17,6 +17,7 @@ const router = express.Router();
 // Live Razorpay Webhook (public with cryptographic signature verification)
 router.post("/razorpay-webhook", razorpayWebhook);
 
+router.post("/", protect, createOrder);
 router.post("/create", protect, createOrder);
 
 router.post("/verify-payment", protect, verifyPayment);

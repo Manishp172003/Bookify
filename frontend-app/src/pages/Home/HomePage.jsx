@@ -8,7 +8,9 @@ import {
   Shield,
   UserCheck,
   RotateCcw,
-  Headphones
+  Headphones,
+  Sparkles,
+  PenLine
 } from 'lucide-react';
 import HeroSlider from '../../components/hero/HeroSlider';
 import BookCard from '../../components/book/BookCard';
@@ -16,6 +18,9 @@ import books from '../../data/books';
 import categories from '../../data/categories';
 import ScrollReveal from '../../components/ui/ScrollReveal';
 import { useAuth } from '../../context/AuthContext';
+import { authorService } from '../../services/authorService';
+import { testimonialService } from '../../services/testimonialService';
+import ReviewModal from '../../components/home/ReviewModal';
 
 function AnimateCounter({ target, suffix, speed = 30 }) {
   const [count, setCount] = useState(0);
@@ -52,15 +57,15 @@ function AnimateCounter({ target, suffix, speed = 30 }) {
 var trendingFilters = ['All Books', 'Fiction', 'Non-Fiction', 'Academic & Exams', 'Comics & Manga', 'Self-Help'];
 
 var spotlightAuthors = [
-  { name: 'Devina Kaur', book: 'The Monsoon Chronicles', desc: 'An evasive journey through changing relationships and hea...', cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop' },
-  { name: 'Aravind Sharma', book: 'Beyond Code & Karma', desc: "Unveiling the struggles of India's Silicon Valley workforce. Tech...", cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=400&fit=crop' },
-  { name: 'Preeti Rai', book: 'Spices of the Soul', desc: 'Over 50 forgotten grandmother recipes stitched together with...', cover: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=300&h=400&fit=crop' },
+  { bookId: 1011, name: 'Devina Kaur', book: 'The Monsoon Chronicles', desc: 'An evasive journey through changing relationships and hea...', cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop' },
+  { bookId: 1012, name: 'Aravind Sharma', book: 'Beyond Code & Karma', desc: "Unveiling the struggles of India's Silicon Valley workforce. Tech...", cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=400&fit=crop' },
+  { bookId: 1013, name: 'Preeti Rai', book: 'Spices of the Soul', desc: 'Over 50 forgotten grandmother recipes stitched together with...', cover: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=300&h=400&fit=crop' },
 ];
 
-var testimonials = [
-  { text: "Perfect for buying costly engineering textbooks. Picked up standard books directly on campus from seniors for half price!", name: 'Siddharth Roy', role: 'Student, IIT Bombay', avatar: 'https://i.pravatar.cc/150?img=11' },
-  { text: "I've sold over 30 romance novels that were gathering dust on my shelves. Bookify's shipping is seamless.", name: 'Aradhana Sen', role: 'Avid Reader, Kolkata', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { text: "Being able to print copies on demand and see daily analytics changed my writing career. Truly independent publishing.", name: 'Vikram G.', role: 'Self-Published Novelist', avatar: 'https://i.pravatar.cc/150?img=33' },
+const DEFAULT_TESTIMONIALS = [
+  { comment: "Perfect for buying costly engineering textbooks. Picked up standard books directly on campus from seniors for half price!", name: 'Siddharth Roy', role: 'Student, IIT Bombay', avatar: 'https://i.pravatar.cc/150?img=11', rating: 5 },
+  { comment: "I've sold over 30 romance novels that were gathering dust on my shelves. Bookify's shipping is seamless.", name: 'Aradhana Sen', role: 'Avid Reader, Kolkata', avatar: 'https://i.pravatar.cc/150?img=5', rating: 5 },
+  { comment: "Being able to print copies on demand and see daily analytics changed my writing career. Truly independent publishing.", name: 'Vikram G.', role: 'Self-Published Novelist', avatar: 'https://i.pravatar.cc/150?img=33', rating: 5 },
 ];
 
 var stats = [
@@ -85,11 +90,69 @@ export default function HomePage() {
   var activeFilter = _f[0];
   var setActiveFilter = _f[1];
 
+  const [featuredPromotions, setFeaturedPromotions] = useState([]);
+  const [liveTestimonials, setLiveTestimonials] = useState([]);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  const fetchTestimonials = () => {
+    testimonialService.getFeaturedTestimonials().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setLiveTestimonials(data);
+      }
+    });
+  };
+
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  const displayTestimonials =
+    liveTestimonials.length > 0 ? liveTestimonials : DEFAULT_TESTIMONIALS;
+
+  useEffect(() => {
+    authorService.getActiveFeaturedCampaigns().then((active) => {
+      if (Array.isArray(active) && active.length > 0) {
+        setFeaturedPromotions(active);
+        // Track impressions for all displayed active campaigns
+        active.forEach((camp) => {
+          authorService.trackCampaignEngagement(camp.id || camp.campaignId, "impression");
+        });
+      }
+    });
+  }, []);
+
   var featuredBooks = books.slice(0, 5);
   var trendingBooks = books.filter(function(b) {
     if (activeFilter === 'All Books') return true;
     return b.category && b.category.toLowerCase().includes(activeFilter.toLowerCase().split(' ')[0]);
   }).slice(0, 5);
+
+  // Blend dynamic author promotions with default spotlight showcase
+  const displaySpotlight = [
+    ...featuredPromotions.map((p) => ({
+      id: p.id,
+      bookId: p.bookId,
+      name: p.authorName,
+      book: p.bookTitle,
+      desc: p.description || p.authorBio,
+      cover: p.bookCover,
+      isSponsored: true,
+      price: p.price,
+      campaignId: p.id,
+    })),
+    ...spotlightAuthors,
+  ].slice(0, 3);
+
+  const handleSpotlightClick = (authorItem) => {
+    if (authorItem.isSponsored && authorItem.campaignId) {
+      authorService.trackCampaignEngagement(authorItem.campaignId, "click");
+    }
+    if (authorItem.bookId) {
+      navigate(`/book/${authorItem.bookId}`);
+    } else {
+      navigate(`/explore?search=${encodeURIComponent(authorItem.book)}`);
+    }
+  };
 
   const handleJoinClub = () => {
     if (isAuthenticated) {
@@ -206,19 +269,38 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            {spotlightAuthors.map(function(author, i) {
+            {displaySpotlight.map(function(author, i) {
               return (
-                <div key={i} className="bg-white rounded-xl border border-bookify-border p-4 sm:p-5 hover:shadow-md transition-shadow">
+                <div key={author.id || i} className="bg-white rounded-xl border border-bookify-border p-4 sm:p-5 hover:shadow-md transition-shadow flex flex-col justify-between">
                   <div className="flex gap-3.5 sm:gap-4">
-                    <img src={author.cover} alt={author.book} className="w-18 sm:w-20 h-26 sm:h-28 object-cover rounded-lg shrink-0 shadow-xs" />
+                    <img
+                      src={author.cover}
+                      alt={author.book}
+                      className="w-18 sm:w-20 h-26 sm:h-28 object-cover rounded-lg shrink-0 shadow-xs cursor-pointer hover:opacity-90 transition"
+                      onClick={() => handleSpotlightClick(author)}
+                    />
                     <div className="flex-1 min-w-0">
-                      <span className="inline-block px-2 py-0.5 bg-[#EEEAFE] text-[#6C4BF4] text-[9px] font-extrabold uppercase tracking-wider rounded mb-1.5">
-                        ★ SPOTLIGHT CREATOR
-                      </span>
-                      <h3 className="font-[family-name:var(--font-heading)] font-bold text-sm sm:text-base text-bookify-text truncate">{author.book}</h3>
+                      {author.isSponsored ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-[#6C4BF4] to-[#8C6DFD] text-white text-[9px] font-extrabold uppercase tracking-wider rounded shadow-xs mb-1.5">
+                          <Sparkles size={10} /> SPONSORED SPOTLIGHT
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 bg-[#EEEAFE] text-[#6C4BF4] text-[9px] font-extrabold uppercase tracking-wider rounded mb-1.5">
+                          ★ SPOTLIGHT CREATOR
+                        </span>
+                      )}
+                      <h3
+                        onClick={() => handleSpotlightClick(author)}
+                        className="font-[family-name:var(--font-heading)] font-bold text-sm sm:text-base text-bookify-text truncate cursor-pointer hover:text-bookify-purple transition-colors"
+                      >
+                        {author.book}
+                      </h3>
                       <p className="text-[11px] sm:text-xs text-bookify-text-secondary mt-0.5">By {author.name}</p>
                       <p className="text-[11px] sm:text-xs text-bookify-text-secondary mt-1 line-clamp-2">{author.desc}</p>
-                      <button className="mt-2.5 sm:mt-3 px-3.5 py-1 bg-bookify-purple text-white text-xs font-semibold rounded-lg hover:bg-bookify-purple-dark transition-colors cursor-pointer">
+                      <button
+                        onClick={() => handleSpotlightClick(author)}
+                        className="mt-2.5 sm:mt-3 px-3.5 py-1 bg-bookify-purple text-white text-xs font-semibold rounded-lg hover:bg-bookify-purple-dark transition-colors cursor-pointer"
+                      >
                         View Book
                       </button>
                     </div>
@@ -350,26 +432,88 @@ export default function HomePage() {
             <h2 className="font-[family-name:var(--font-heading)] text-xl sm:text-2xl md:text-3xl font-bold text-bookify-text mb-2">Join the Bookify Community</h2>
             <p className="text-bookify-text-secondary text-xs sm:text-sm mb-6 sm:mb-8 max-w-lg mx-auto">Share reading goals, debate plot twists, and swap paperbacks with verified members around you.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <div className="bg-white rounded-xl border border-bookify-border p-4 sm:p-6 text-left shadow-xs">
-                <div className="flex gap-0.5 mb-2.5">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
-                <p className="text-xs sm:text-sm text-bookify-text mb-3 leading-relaxed">"Perfect for buying costly engineering textbooks. Picked up standard books directly on campus from seniors for half price!"</p>
-                <div className="flex items-center gap-2.5"><img src="https://i.pravatar.cc/150?img=11" alt="Siddharth" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full" /><div><p className="text-xs sm:text-sm font-semibold text-bookify-text">Siddharth Roy</p><p className="text-[10px] sm:text-xs text-bookify-text-secondary">Student, IIT Bombay</p></div></div>
-              </div>
-              <div className="bg-white rounded-xl border border-bookify-border p-4 sm:p-6 text-left shadow-xs">
-                <div className="flex gap-0.5 mb-2.5">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
-                <p className="text-xs sm:text-sm text-bookify-text mb-3 leading-relaxed">"I have sold over 30 romance novels that were gathering dust on my shelves. Bookify shipping is seamless."</p>
-                <div className="flex items-center gap-2.5"><img src="https://i.pravatar.cc/150?img=5" alt="Aradhana" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full" /><div><p className="text-xs sm:text-sm font-semibold text-bookify-text">Aradhana Sen</p><p className="text-[10px] sm:text-xs text-bookify-text-secondary">Avid Reader, Kolkata</p></div></div>
-              </div>
-              <div className="bg-white rounded-xl border border-bookify-border p-4 sm:p-6 text-left shadow-xs">
-                <div className="flex gap-0.5 mb-2.5">{[1,2,3,4,5].map(function(n){return <Star key={n} size={14} className="text-bookify-yellow fill-bookify-yellow" />;})}</div>
-                <p className="text-xs sm:text-sm text-bookify-text mb-3 leading-relaxed">"Being able to print copies on demand and see daily analytics changed my writing career."</p>
-                <div className="flex items-center gap-2.5"><img src="https://i.pravatar.cc/150?img=33" alt="Vikram" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full" /><div><p className="text-xs sm:text-sm font-semibold text-bookify-text">Vikram G.</p><p className="text-[10px] sm:text-xs text-bookify-text-secondary">Self-Published Novelist</p></div></div>
-              </div>
+              {displayTestimonials.slice(0, 3).map((item, idx) => {
+                const ratingCount = item.rating || 5;
+                const avatarUrl = item.avatar;
+                return (
+                  <div
+                    key={item._id || idx}
+                    className="bg-white rounded-xl border border-bookify-border p-4 sm:p-6 text-left shadow-xs flex flex-col justify-between hover:shadow-md hover:border-[#6C4BF4]/30 transition-all duration-300"
+                  >
+                    <div>
+                      <div className="flex gap-0.5 mb-2.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={14}
+                            className={
+                              n <= ratingCount
+                                ? "text-bookify-yellow fill-bookify-yellow"
+                                : "text-gray-200 fill-gray-100"
+                            }
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs sm:text-sm text-bookify-text mb-4 leading-relaxed italic">
+                        "{item.comment || item.text}"
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2.5 pt-2 border-t border-gray-100">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={item.name}
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-purple-100"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[#6C4BF4] to-[#4828c2] text-white flex items-center justify-center font-bold text-xs">
+                          {item.name?.charAt(0) || "U"}
+                        </div>
+                      )}
+                      <div className="truncate">
+                        <p className="text-xs sm:text-sm font-semibold text-bookify-text truncate">
+                          {item.name}
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-bookify-text-secondary truncate">
+                          {item.role || "Campus Reader"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <button onClick={handleJoinClub} className="w-full sm:w-auto px-8 py-3 bg-[#6C4BF4] text-white text-sm font-semibold rounded-xl hover:bg-[#5B3DE0] shadow-xs shadow-[#6C4BF4]/15 transition-all hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer">Join Book Clubs Near You</button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={handleJoinClub}
+                className="w-full sm:w-auto px-8 py-3 bg-[#6C4BF4] text-white text-sm font-semibold rounded-xl hover:bg-[#5B3DE0] shadow-xs shadow-[#6C4BF4]/15 transition-all hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer"
+              >
+                Join Book Clubs Near You
+              </button>
+              <button
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    navigate("/login");
+                  } else {
+                    setIsReviewModalOpen(true);
+                  }
+                }}
+                className="w-full sm:w-auto px-6 py-3 bg-white text-[#6C4BF4] border border-[#6C4BF4]/40 hover:bg-[#6C4BF4]/5 text-sm font-semibold rounded-xl shadow-xs transition-all hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <PenLine size={16} />
+                <span>Share Your Experience</span>
+              </button>
+            </div>
           </div>
         </section>
       </ScrollReveal>
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        onSuccess={fetchTestimonials}
+      />
 
       {/* Trust Footer */}
       <ScrollReveal>

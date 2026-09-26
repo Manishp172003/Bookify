@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { listingService } from "../../services/listingService";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
-function BookCover({ title, bgClass = "from-[#2E189A] to-[#6C4BF4]" }) {
-  const words = title ? title.split(" ") : ["BK"];
-  const initials = words.length >= 2 
-    ? `${words[0].substring(0, 1)}${words[1].substring(0, 1)}` 
-    : (title ? title.substring(0, 2) : "BK");
-  
+function BookCover({ book, title }) {
+  const coverUrl = getBookCover(book || title);
   return (
-    <div className={`h-11 w-8 shrink-0 rounded bg-gradient-to-br ${bgClass} flex flex-col justify-between p-1 text-[7px] font-extrabold text-white shadow-sm border border-black/5 leading-none text-center select-none uppercase tracking-tighter`}>
-      <span className="text-[3px] opacity-75 block text-left">BOOK</span>
-      <span className="my-auto block leading-[8px] break-all">{initials}</span>
-      <span className="text-[3px] opacity-50 block text-right">ED.</span>
+    <div className="h-11 w-8 shrink-0 overflow-hidden rounded bg-gray-100 border border-gray-200 shadow-2xs relative">
+      <img
+        src={coverUrl}
+        alt={title || "Book"}
+        className="h-full w-full object-cover"
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = DEFAULT_BOOK_COVER;
+        }}
+      />
     </div>
   );
 }
@@ -53,7 +56,7 @@ function ActiveListings() {
               key={book.id}
               className="flex items-center gap-3"
             >
-              <BookCover title={book.title} bgClass={book.coverClass || "from-[#1E3A8A] to-[#3B82F6]"} />
+              <BookCover book={book} title={book.title} />
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-[#17152A]">

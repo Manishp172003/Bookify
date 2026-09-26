@@ -9,12 +9,12 @@ export default function Settings() {
   const [activeCategory, setActiveCategory] = useState("Profile Settings");
   
   // Profile Form State
-  const [profileData, setProfileData] = useState({ 
-    fullName: '', 
-    email: '', 
-    phone: '', 
-    location: '' 
-  });
+  const [profileData, setProfileData] = useState(() => ({ 
+    fullName: user?.fullName || user?.name || '', 
+    email: user?.email || '', 
+    phone: user?.phone || user?.phoneNumber || '', 
+    location: user?.location || '' 
+  }));
 
   // Password Form State
   const [passwordData, setPasswordData] = useState({
@@ -45,11 +45,11 @@ export default function Settings() {
   });
 
   // Address Form State
-  const [addressData, setAddressData] = useState({
-    campus: "Nagpur University Campus",
-    hostelBlock: "Hostel Block A, Room 204",
-    meetupSpot: "Central Library Entrance",
-  });
+  const [addressData, setAddressData] = useState(() => ({
+    campus: user?.address?.campus || user?.campus || "Nagpur University Campus",
+    hostelBlock: user?.address?.hostelBlock || "",
+    meetupSpot: user?.address?.meetupSpot || "",
+  }));
 
   // Payment Methods Form State
   const [paymentData, setPaymentData] = useState(() => {
@@ -69,6 +69,25 @@ export default function Settings() {
     "Address",
     "Payment Methods",
   ];
+
+  // Sync profile & address from user if updated
+  useEffect(() => {
+    if (user) {
+      setProfileData((prev) => ({
+        fullName: prev.fullName || user.fullName || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || user.phoneNumber || '',
+        location: prev.location || user.location || '',
+      }));
+      if (user.address) {
+        setAddressData((prev) => ({
+          campus: user.address.campus || prev.campus || 'Nagpur University Campus',
+          hostelBlock: user.address.hostelBlock || prev.hostelBlock || '',
+          meetupSpot: user.address.meetupSpot || prev.meetupSpot || '',
+        }));
+      }
+    }
+  }, [user]);
 
   // Fetch all settings on mount
   useEffect(() => {

@@ -18,9 +18,15 @@ import {
   updatePassword,
 } from "../controllers/authController.js";
 
-import { protect, authorize } from "../middleware/authMiddleware.js";
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: "Too many authentication attempts. Please wait 1 minute before retrying.",
+});
 
 // ─── Role Switch Route (Protected) ────────────────────────────────────────────
 router.post("/switch-role", verifyToken, switchRole);
@@ -28,26 +34,26 @@ router.post("/switch-role", verifyToken, switchRole);
 // ─── Public Auth Routes ───────────────────────────────────────────────────────
 router.post("/register", register);
 router.post("/login", login);
+router.post("/google", googleLogin);
+router.post("/github", githubLogin);
 router.post("/admin-login", adminLogin);
 router.post("/logout", logout);
 
 // ─── Password Reset (public — no auth token required) ────────────────────────
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", authLimiter, forgotPassword);
 router.post("/reset-password", resetPassword);
 
 // ─── OTP Verification (public) ───────────────────────────────────────────────
-router.post("/verify-otp", verifyOTP);
-router.post("/resend-otp", resendOTP);
+router.post("/verify-otp", authLimiter, verifyOTP);
+router.post("/resend-otp", authLimiter, resendOTP);
 
-router.get("/analytics", getAnalytics);
-
-router.get("/earnings", getEarnings);
-router.get("/payouts", getPayouts);
-router.post("/payouts", requestPayout);
-
-router.get("/coupons", getCoupons);
-router.post("/coupons", createCoupon);
-router.patch("/coupons/:id/toggle", toggleCoupon);
-router.delete("/coupons/:id", deleteCoupon);
+// ─── Settings Routes (Protected) ─────────────────────────────────────────────
+router.get("/settings", verifyToken, getUserSettings);
+router.put("/settings/profile", verifyToken, updateProfile);
+router.put("/settings/privacy", verifyToken, updatePrivacy);
+router.put("/settings/address", verifyToken, updateAddress);
+router.put("/settings/payment", verifyToken, updatePayment);
+router.put("/settings/notifications", verifyToken, updateNotifications);
+router.put("/settings/password", verifyToken, updatePassword);
 
 export default router;

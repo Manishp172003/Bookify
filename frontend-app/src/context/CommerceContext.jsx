@@ -11,218 +11,56 @@ const INITIAL_COUPONS = [
   { code: "FREESHIP", discount: 60, description: "Free campus delivery credit (₹60 value)" }
 ];
 
-const INITIAL_ADDRESSES = [
-  {
-    id: "addr_1",
-    name: "Manish Pawar",
-    phone: "+91 9876543210",
-    type: "Campus / Hostel",
-    campus: "Nagpur University Campus",
-    hostelBlock: "Hostel Block A, Room 204",
-    meetupSpot: "Central Library Entrance",
-    street: "Hostel Block A, Room 204, Nagpur University Campus",
-    city: "Nagpur",
-    state: "Maharashtra",
-    pincode: "440033",
-    isDefault: true
-  }
-];
+const getInitialAddresses = () => {
+  try {
+    const saved = localStorage.getItem("bookify_addresses");
+    const userStr = localStorage.getItem("bookify_user");
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const currentName = currentUser?.fullName || currentUser?.name;
 
-const INITIAL_CONVERSATIONS = [
-  {
-    id: "chat_1",
-    active: true,
-    requestStatus: "accepted",
-    requesterId: "usr_me",
-    seller: {
-      id: "usr_aarav",
-      name: "Aarav Sharma",
-      avatar: null,
-      online: true,
-      verified: true,
-      college: "IIT Bombay",
-      responseTime: "< 10 min",
-      rating: "4.9",
-      reviewsCount: 28,
-      memberSince: "Jan 2024",
-      totalSales: 22,
-      location: "Powai, Mumbai"
-    },
-    book: {
-      id: 101,
-      title: "Concepts of Physics (HC Verma Vol 1)",
-      author: "H.C. Verma",
-      price: 299,
-      originalPrice: 450,
-      condition: "Like New",
-      image: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg"
-    },
-    lastMessage: "Is ₹280 fine with you? I can hand it over at the campus library today.",
-    lastMessageTimestamp: "10:30 AM",
-    unreadCount: 2,
-    messages: [
-      {
-        id: "m1",
-        sender: "them",
-        text: "Hey! Are you still interested in HC Verma Vol 1?",
-        time: "10:25 AM",
-        status: "read"
-      },
-      {
-        id: "m2",
-        sender: "me",
-        text: "Yes! Is the condition good with no markings?",
-        time: "10:28 AM",
-        status: "read"
-      },
-      {
-        id: "m3",
-        sender: "them",
-        text: "It is in pristine condition, no pen marks.",
-        time: "10:29 AM",
-        status: "delivered"
-      },
-      {
-        id: "m4",
-        sender: "them",
-        text: "Is ₹280 fine with you? I can hand it over at the campus library today.",
-        time: "10:30 AM",
-        status: "delivered"
+    if (saved) {
+      let parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((addr) => {
+          if (addr.name === "Manish Pawar" || !addr.name) {
+            return {
+              ...addr,
+              name: currentName || "Campus Address",
+              phone: currentUser?.phone || addr.phone || "",
+            };
+          }
+          return addr;
+        });
       }
-    ]
-  },
-  {
-    id: "chat_2",
-    active: true,
-    requestStatus: "accepted",
-    requesterId: "usr_me",
-    seller: {
-      id: "usr_sneha",
-      name: "Sneha Reddy",
-      avatar: null,
-      online: true,
-      verified: true,
-      college: "BITS Pilani",
-      responseTime: "< 5 min",
-      rating: "4.8",
-      reviewsCount: 16,
-      memberSince: "Mar 2024",
-      totalSales: 14,
-      location: "Hyderabad"
-    },
-    book: {
-      id: 102,
-      title: "Introduction to Algorithms (CLRS 3rd Ed)",
-      author: "Thomas H. Cormen",
-      price: 650,
-      originalPrice: 1200,
-      condition: "Good",
-      image: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg"
-    },
-    lastMessage: "Yes, I can ship it by this evening through campus speed post.",
-    lastMessageTimestamp: "Yesterday",
-    unreadCount: 1,
-    messages: [
-      {
-        id: "m5",
-        sender: "me",
-        text: "Hi Sneha, when can you dispatch the Algorithms book?",
-        time: "Yesterday 4:15 PM",
-        status: "read"
-      },
-      {
-        id: "m6",
-        sender: "them",
-        text: "Yes, I can ship it by this evening through campus speed post.",
-        time: "Yesterday 4:20 PM",
-        status: "delivered"
-      }
-    ]
-  },
-  {
-    id: "chat_3",
-    active: true,
-    requestStatus: "pending",
-    requesterId: "usr_vikram",
-    seller: {
-      id: "usr_vikram",
-      name: "Vikram Malhotra",
-      avatar: null,
-      online: true,
-      verified: true,
-      college: "VNIT Nagpur",
-      responseTime: "< 15 min",
-      rating: "4.7",
-      reviewsCount: 9,
-      memberSince: "May 2024",
-      totalSales: 8,
-      location: "Nagpur, Maharashtra"
-    },
-    book: {
-      id: 103,
-      title: "Cracking the Coding Interview (6th Edition)",
-      author: "Gayle Laakmann McDowell",
-      price: 499,
-      originalPrice: 999,
-      condition: "Like New",
-      image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300"
-    },
-    lastMessage: "Hi! I want to purchase this book for campus meetup. Can we finalize the deal?",
-    lastMessageTimestamp: "11:15 AM",
-    unreadCount: 1,
-    messages: [
-      {
-        id: "m7",
-        sender: "them",
-        text: "Hi! I want to purchase this book for campus meetup. Can we finalize the deal?",
-        time: "11:15 AM",
-        status: "delivered"
-      }
-    ]
-  }
-];
+    }
 
-const INITIAL_ORDERS = [
-  {
-    id: "BK82901840",
-    orderDateFormatted: "28 Aug 2026",
-    expectedDelivery: "01 Sep 2026",
-    status: "shipped",
-    statusLabel: "In Transit via Campus Courier",
-    escrowStatus: "held_in_escrow",
-    paymentMethod: "Razorpay (UPI)",
-    transactionId: "pay_HP820DFKSLAD9",
-    subtotal: 450,
-    deliveryFee: 40,
-    platformFee: 15,
-    discount: 0,
-    total: 505,
-    address: INITIAL_ADDRESSES[0],
-    courier: {
-      name: "BlueDart Campus Express",
-      trackingNumber: "BD-90218390-IN"
-    },
-    items: [
-      {
-        id: 2,
-        title: "To Kill a Mockingbird",
-        author: "Harper Lee",
-        price: 450,
-        condition: "Good",
-        image: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg",
-        seller: { name: "Priya Patel" },
-        quantity: 1
-      }
-    ],
-    timeline: [
-      { stage: "placed", title: "Order Placed", date: "28 Aug", description: "Payment verified & held in escrow.", completed: true, active: false },
-      { stage: "confirmed", title: "Seller Confirmed", date: "28 Aug", description: "Seller accepted and packaged the book.", completed: true, active: false },
-      { stage: "shipped", title: "Shipped", date: "29 Aug", description: "Handed over to college logistics.", completed: true, active: true },
-      { stage: "out_for_delivery", title: "Out for Delivery", date: "31 Aug", description: "Campus courier is on their way.", completed: false, active: false },
-      { stage: "delivered", title: "Delivered", date: "01 Sep", description: "Verify package contents within 48h.", completed: false, active: false }
-    ]
-  }
-];
+    if (currentUser && (currentName || currentUser?.address?.campus)) {
+      return [
+        {
+          id: "addr_1",
+          name: currentName || "Student User",
+          phone: currentUser.phone || "",
+          type: "Campus / Hostel",
+          campus: currentUser.address?.campus || "Campus",
+          hostelBlock: currentUser.address?.hostelBlock || "",
+          meetupSpot: currentUser.address?.meetupSpot || "Central Library Entrance",
+          street: `${currentUser.address?.hostelBlock || ""}, ${currentUser.address?.campus || ""}`.trim(),
+          city: "Campus City",
+          state: "State",
+          pincode: "110001",
+          isDefault: true,
+        },
+      ];
+    }
+  } catch {}
+  return [];
+};
+
+
+const MOCK_ORDER_IDS = new Set(["BK77109230", "BK82901840"]);
+const MOCK_CHAT_IDS = new Set(["chat_1", "chat_2", "chat_3"]);
+const INITIAL_CONVERSATIONS = [];
+const INITIAL_ORDERS = [];
 
 export function CommerceProvider({ children }) {
   // Toast notifications
@@ -243,10 +81,7 @@ export function CommerceProvider({ children }) {
   }, [cartItems]);
 
   // Addresses State
-  const [addresses, setAddresses] = useState(() => {
-    const saved = localStorage.getItem("bookify_addresses");
-    return saved ? JSON.parse(saved) : INITIAL_ADDRESSES;
-  });
+  const [addresses, setAddresses] = useState(getInitialAddresses);
 
   useEffect(() => {
     localStorage.setItem("bookify_addresses", JSON.stringify(addresses));
@@ -268,7 +103,33 @@ export function CommerceProvider({ children }) {
   // Orders State
   const [orders, setOrders] = useState(() => {
     const saved = localStorage.getItem("bookify_orders");
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleanOrders = parsed.filter((o) => !MOCK_ORDER_IDS.has(o.id));
+          if (cleanOrders.length !== parsed.length) {
+            localStorage.setItem("bookify_orders", JSON.stringify(cleanOrders));
+          }
+          return cleanOrders.map((o) => {
+            if (o.address?.name === "Manish Pawar") {
+              const userStr = localStorage.getItem("bookify_user");
+              const currentUser = userStr ? JSON.parse(userStr) : null;
+              return {
+                ...o,
+                address: {
+                  ...o.address,
+                  name: currentUser?.fullName || currentUser?.name || "Student Buyer",
+                  phone: currentUser?.phone || o.address?.phone || "",
+                },
+              };
+            }
+            return o;
+          });
+        }
+      } catch {}
+    }
+    return INITIAL_ORDERS;
   });
 
   useEffect(() => {
@@ -281,8 +142,12 @@ export function CommerceProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((c) => ({
+        if (Array.isArray(parsed)) {
+          const cleanChats = parsed.filter((c) => !MOCK_CHAT_IDS.has(c.id));
+          if (cleanChats.length !== parsed.length) {
+            localStorage.setItem("bookify_conversations", JSON.stringify(cleanChats));
+          }
+          return cleanChats.map((c) => ({
             ...c,
             seller: {
               ...c.seller,
@@ -294,7 +159,7 @@ export function CommerceProvider({ children }) {
     }
     return INITIAL_CONVERSATIONS;
   });
-  const [activeConversationId, setActiveConversationId] = useState("chat_1");
+  const [activeConversationId, setActiveConversationId] = useState(null);
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
@@ -309,7 +174,9 @@ export function CommerceProvider({ children }) {
     } catch {}
     const token = localStorage.getItem("token");
 
-    const newSocket = io("http://localhost:5000", {
+    const rawApiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    const socketBase = import.meta.env.VITE_SOCKET_URL || rawApiBase.replace(/\/api\/?$/, "");
+    const newSocket = io(socketBase, {
       auth: {
         token: token || "",
         user: savedUser || null,
@@ -435,6 +302,69 @@ export function CommerceProvider({ children }) {
       showToast("Chat request was declined.", "info");
     });
 
+    // Real-Time Dynamic Order Tracking & Seller Status Socket Listener
+    newSocket.on("orderStatusUpdated", (data) => {
+      if (!data) return;
+      const targetId = data._id || data.id || data.razorpayOrderId;
+      console.log("[Bookify Socket] Received live orderStatusUpdated:", targetId, data.status);
+
+      const rawStatus = (data.status || "").toLowerCase();
+      const mappedStatus =
+        rawStatus === "confirmed" || rawStatus === "processing"
+          ? "confirmed"
+          : rawStatus === "out for delivery"
+          ? "out_for_delivery"
+          : rawStatus;
+
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === targetId || o._id === targetId || o.id === data._id || o._id === data.id) {
+            return {
+              ...o,
+              status: mappedStatus,
+              statusLabel:
+                mappedStatus === "confirmed"
+                  ? "Seller Confirmed & Packaging"
+                  : mappedStatus === "shipped"
+                  ? "In Transit via Campus Courier"
+                  : mappedStatus === "out_for_delivery"
+                  ? "Out for Delivery"
+                  : mappedStatus === "delivered"
+                  ? "Delivered & Escrow Released"
+                  : data.status,
+              courier: data.courier || o.courier,
+              escrowStatus: data.escrowStatus === "Released" ? "released_to_seller" : o.escrowStatus,
+              timeline: data.timeline
+                ? data.timeline.map((t) => ({
+                    stage: t.stage.toLowerCase().replace(/ /g, "_"),
+                    title: t.title,
+                    date: t.date
+                      ? new Date(t.date).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                        })
+                      : "Today",
+                    description: t.description,
+                    completed: t.completed,
+                    active: t.active,
+                  }))
+                : o.timeline,
+            };
+          }
+          return o;
+        })
+      );
+
+      // Dispatch global window event so any open tracking or dashboard views update instantly
+      window.dispatchEvent(
+        new CustomEvent("bookify_order_updated", {
+          detail: { ...data, mappedStatus },
+        })
+      );
+
+      showToast(`Order status updated: ${data.status} 🚀`, "info");
+    });
+
     return () => {
       newSocket.disconnect();
     };
@@ -506,27 +436,19 @@ export function CommerceProvider({ children }) {
   // Wishlist State
   const [wishlistItems, setWishlistItems] = useState(() => {
     const saved = localStorage.getItem("bookify_wishlist");
-    const INITIAL_WISHLIST = [
-      {
-        id: 1,
-        title: "Introduction to Algorithms, 3rd Edition",
-        author: "Thomas H. Cormen",
-        price: "₹650",
-        condition: "Very Good",
-        alertActive: true,
-        coverImage: "https://covers.openlibrary.org/b/isbn/9780062315007-L.jpg"
-      },
-      {
-        id: 2,
-        title: "Concepts of Physics Vol 1",
-        author: "H.C. Verma",
-        price: "₹350",
-        condition: "Good",
-        alertActive: false,
-        coverImage: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg"
-      }
-    ];
-    return saved ? JSON.parse(saved) : INITIAL_WISHLIST;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((item) => item.id !== 1 && item.id !== 2);
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem("bookify_wishlist", JSON.stringify(cleaned));
+          }
+          return cleaned;
+        }
+      } catch {}
+    }
+    return [];
   });
 
   useEffect(() => {
@@ -638,16 +560,61 @@ export function CommerceProvider({ children }) {
   };
 
   // Coupons
-  const applyCoupon = (code) => {
-    const coupon = availableCoupons.find(
-      (c) => c.code.toUpperCase() === code.toUpperCase()
-    );
-    if (!coupon) {
-      showToast("Invalid coupon code.", "error");
-      return;
+  const applyCoupon = async (code) => {
+    if (!code || !code.trim()) return;
+    const cleanCode = code.trim().toUpperCase();
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiUrl}/author/coupons/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: cleanCode }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        const c = data.data;
+        if (c.minPurchase > 0 && subtotal < c.minPurchase) {
+          showToast(`Minimum order of ₹${c.minPurchase} required for this coupon.`, "error");
+          return;
+        }
+
+        const isPercentage = (c.discountType || "").toLowerCase() === "percentage";
+        const calculatedDiscount = isPercentage
+          ? Math.round((subtotal * c.discountValue) / 100)
+          : Math.min(subtotal, c.discountValue);
+
+        setAppliedCoupon({
+          code: c.code,
+          discount: calculatedDiscount,
+          discountType: isPercentage ? "percentage" : "flat",
+          discountValue: c.discountValue,
+          minPurchase: c.minPurchase || 0,
+        });
+        showToast(`Coupon "${c.code}" applied! Saved ₹${calculatedDiscount}`);
+        return;
+      } else {
+        const fallback = availableCoupons.find(
+          (c) => c.code.toUpperCase() === cleanCode
+        );
+        if (fallback) {
+          setAppliedCoupon(fallback);
+          showToast(`Coupon "${fallback.code}" applied!`);
+          return;
+        }
+        showToast(data.message || "Invalid coupon code.", "error");
+      }
+    } catch (err) {
+      const fallback = availableCoupons.find(
+        (c) => c.code.toUpperCase() === cleanCode
+      );
+      if (fallback) {
+        setAppliedCoupon(fallback);
+        showToast(`Coupon "${fallback.code}" applied!`);
+        return;
+      }
+      showToast("Could not validate coupon.", "error");
     }
-    setAppliedCoupon(coupon);
-    showToast(`Coupon "${coupon.code}" applied!`);
   };
 
   const removeCoupon = () => {
@@ -705,6 +672,14 @@ export function CommerceProvider({ children }) {
       discount,
       total,
       address: selectedAddress,
+      isSellerOrder: true,
+      seller: cartItems[0]?.seller || { name: "Aarav Sharma", id: "usr_aarav" },
+      buyer: {
+        name: selectedAddress?.name || "Student Buyer",
+        phone: selectedAddress?.phone || "+91 98765 43210",
+        meetupSpot: selectedAddress?.meetupSpot || selectedAddress?.campus || "Campus Central Library Entrance",
+        hostelBlock: selectedAddress?.hostelBlock || selectedAddress?.street || "Campus Hostel"
+      },
       courier: {
         name: isExpress ? "Campus Express Air / Courier" : "Campus Delivery Network",
         trackingNumber: `CN-${Math.floor(100000 + Math.random() * 900000)}-IN`,
@@ -749,6 +724,122 @@ export function CommerceProvider({ children }) {
       })
     );
     showToast("Payment released to seller! Transaction closed.");
+  };
+
+  const updateOrderStatus = async (orderId, newStatus, courierData = null) => {
+    // 1. Send update to backend API if reachable
+    try {
+      let token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token");
+      if (!token) {
+        try {
+          const user = JSON.parse(localStorage.getItem("bookify_user") || "{}");
+          token = user.token;
+        } catch {}
+      }
+
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      await fetch(`${apiUrl}/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          courier: courierData
+        })
+      });
+    } catch (apiErr) {
+      // Non-blocking for mock seed orders
+    }
+
+    // 2. Synchronize local state optimistically
+    const rawStatus = (newStatus || "").toLowerCase();
+    const mappedStatus =
+      rawStatus === "confirmed" || rawStatus === "processing"
+        ? "confirmed"
+        : rawStatus === "out for delivery"
+        ? "out_for_delivery"
+        : rawStatus;
+
+    const isDeliv = mappedStatus === "delivered";
+    const isShipped = mappedStatus === "shipped";
+    const isConfirmed = mappedStatus === "confirmed";
+    const isOutForDelivery = mappedStatus === "out_for_delivery";
+
+    const stageOrder = ["placed", "confirmed", "shipped", "out_for_delivery", "delivered"];
+    const targetIdx = stageOrder.indexOf(mappedStatus);
+
+    let updatedTargetOrder = null;
+
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id === orderId || order._id === orderId) {
+          const updatedTimeline = (order.timeline || []).map((step) => {
+            const stepIdx = stageOrder.indexOf(step.stage);
+            if (stepIdx < targetIdx) {
+              return { ...step, completed: true, active: false };
+            } else if (stepIdx === targetIdx) {
+              return { ...step, completed: true, active: !isDeliv, date: "Today" };
+            } else {
+              return { ...step, completed: false, active: false };
+            }
+          });
+
+          const courierObj = courierData
+            ? {
+                name: courierData.name || order.courier?.name || "Campus Express Delivery",
+                trackingNumber:
+                  courierData.trackingNumber ||
+                  order.courier?.trackingNumber ||
+                  `AWB-${Math.floor(100000 + Math.random() * 900000)}`,
+                supportPhone: order.courier?.supportPhone || "+91 9876543210"
+              }
+            : order.courier;
+
+          const updated = {
+            ...order,
+            status: mappedStatus,
+            statusLabel:
+              isConfirmed
+                ? "Seller Confirmed & Packaging"
+                : isShipped
+                ? "In Transit via Campus Courier"
+                : isOutForDelivery
+                ? "Out for Delivery"
+                : isDeliv
+                ? "Delivered & Escrow Released"
+                : newStatus,
+            escrowStatus: isDeliv ? "released_to_seller" : order.escrowStatus,
+            courier: courierObj,
+            timeline: updatedTimeline
+          };
+          updatedTargetOrder = updated;
+          return updated;
+        }
+        return order;
+      })
+    );
+
+    // 3. Emit via socket and window event so tracking and active screens refresh instantly
+    if (socket && socket.connected) {
+      socket.emit("sendMessage", {
+        orderId,
+        message: `Status updated to ${newStatus}`
+      });
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("bookify_order_updated", {
+        detail: updatedTargetOrder || { id: orderId, status: newStatus, courier: courierData }
+      })
+    );
+
+    showToast(`Order status updated to: ${newStatus}`, "success");
+    return updatedTargetOrder;
   };
 
   // Chats direct messaging
@@ -1017,7 +1108,11 @@ export function CommerceProvider({ children }) {
       ? 0
       : 60;
   const platformFee = cartItems.length > 0 ? 15 : 0;
-  const discount = appliedCoupon ? appliedCoupon.discount : 0;
+  const discount = appliedCoupon
+    ? appliedCoupon.discountType === "percentage"
+      ? Math.round((subtotal * appliedCoupon.discountValue) / 100)
+      : (appliedCoupon.discount !== undefined ? appliedCoupon.discount : appliedCoupon.discountValue || 0)
+    : 0;
   const total = Math.max(0, subtotal + deliveryFee + platformFee - discount);
 
   return (
@@ -1048,7 +1143,9 @@ export function CommerceProvider({ children }) {
         setShippingMethod,
         createOrder,
         orders,
+        setOrders,
         getOrderById,
+        updateOrderStatus,
         releaseEscrowPayment,
         conversations,
         activeConversation,

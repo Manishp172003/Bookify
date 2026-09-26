@@ -149,11 +149,14 @@ function DashboardSidebar() {
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-9 w-9 rounded-full overflow-hidden border border-white/20 bg-white/10 flex items-center justify-center shrink-0">
-              {user?.avatar && user.avatar !== "/images/profile-avatar.png" ? (
+              {user?.avatar && typeof user.avatar === "string" && user.avatar.trim() !== "" && user.avatar !== "/images/profile-avatar.png" ? (
                 <img
                   src={user.avatar}
                   alt={user?.fullName || "User Avatar"}
                   className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
                 />
               ) : (
                 <span className="font-bold text-xs text-white uppercase">

@@ -7,12 +7,18 @@ import {
   ChevronRight,
   Star,
   ChevronDown,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import SearchBar from "../../components/search/SearchBar";
 import FilterSidebar from "../../components/search/FilterSidebar";
 import BookCard from "../../components/book/BookCard";
 import books from "../../data/books";
+import categories from "../../data/categories";
 import ScrollReveal from "../../components/ui/ScrollReveal";
+import { adminService } from "../../services/adminService";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -38,6 +44,8 @@ export default function ExplorePage() {
   const [sortBy, setSortBy] = useState("newest");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [email, setEmail] = useState("");
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeStatus, setSubscribeStatus] = useState(null);
 
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || null;
@@ -108,7 +116,11 @@ export default function ExplorePage() {
     }
 
     if (filters.conditions.length > 0) {
-      result = result.filter((b) => filters.conditions.includes(b.condition));
+      result = result.filter((b) => {
+        if (!b.condition) return false;
+        const normB = b.condition.toUpperCase().replace(/\s+/g, "_");
+        return filters.conditions.some((c) => c.toUpperCase().replace(/\s+/g, "_") === normB);
+      });
     }
 
     if (filters.priceRange) {
@@ -127,14 +139,19 @@ export default function ExplorePage() {
       const catMap = {
         fiction: "Fiction",
         nonfiction: "Non-Fiction",
-        academic: "Academic & Textbooks",
-        comics: "Comics & Manga",
+        academic: "Academic",
+        comics: "Comics",
         selfhelp: "Self-Help",
-        competitive: "Competitive Exams",
-        children: "Children's Books",
-        regional: "Regional Languages",
+        competitive: "Competitive",
+        children: "Children",
+        regional: "Regional",
       };
-      result = result.filter((b) => b.category === catMap[filters.category]);
+      const catTarget = (catMap[filters.category] || filters.category).toLowerCase();
+      result = result.filter((b) => {
+        if (!b.category) return false;
+        const bCat = b.category.toLowerCase();
+        return bCat.includes(catTarget) || catTarget.includes(bCat);
+      });
     }
 
     if (filters.subCategories && filters.subCategories.length > 0) {
@@ -234,6 +251,25 @@ export default function ExplorePage() {
     setTimeTab("month");
     setSortBy("newest");
     setCurrentPage(1);
+  };
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) {
+      setSubscribeStatus({ type: "error", message: "Please enter a valid email address." });
+      return;
+    }
+    setSubscribing(true);
+    setSubscribeStatus(null);
+    try {
+      const res = await adminService.subscribeNewsletter(email, "explore_page");
+      setSubscribeStatus({ type: "success", message: res.message || "🎉 Subscribed successfully!" });
+      setEmail("");
+    } catch (err) {
+      setSubscribeStatus({ type: "error", message: err.message || "Failed to subscribe. Please try again." });
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   const activeFilterCount = [
@@ -372,6 +408,36 @@ export default function ExplorePage() {
                       onClick={() =>
                         setFilters({ ...filters, priceRange: null })
                       }
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filters.category && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-bookify-light-purple text-bookify-purple text-xs font-medium rounded-full">
+                    {categories.find((cat) => cat.id === filters.category)?.name || filters.category}
+                    <button
+                      onClick={() => setFilters({ ...filters, category: null })}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filters.deliveryAvailable && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium rounded-full">
+                    Courier Delivery
+                    <button
+                      onClick={() => setFilters({ ...filters, deliveryAvailable: false })}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filters.negotiable && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium rounded-full">
+                    Negotiable
+                    <button
+                      onClick={() => setFilters({ ...filters, negotiable: false })}
                     >
                       <X size={12} />
                     </button>
@@ -617,24 +683,59 @@ export default function ExplorePage() {
 
         {/* Newsletter Section */}
         <ScrollReveal>
-          <section className="mt-16 bg-bookify-purple rounded-2xl p-10 md:p-14 text-center text-white">
-            <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold mb-2">
-              Subscribe our newsletter for newest
-            </h2>
-            <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold mb-8">
-              books updates
-            </h2>
-            <div className="max-w-md mx-auto flex gap-2">
-              <input
-                type="email"
-                placeholder="Type your email here"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-xl text-bookify-text text-sm border-2 border-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-white/60 text-white bg-white/10"
-              />
-              <button className="px-6 py-3 bg-white text-bookify-purple font-semibold rounded-xl hover:bg-gray-100 transition-colors text-sm">
-                SUBSCRIBE
-              </button>
+          <section className="mt-16 bg-gradient-to-br from-[#6C4BF4] via-[#5B3DE0] to-[#4828C2] rounded-2xl p-8 md:p-14 text-center text-white shadow-xl shadow-[#6C4BF4]/15 relative overflow-hidden">
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="relative z-10 max-w-2xl mx-auto">
+              <h2 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-extrabold mb-3">
+                Subscribe for Newest Books & Campus Updates
+              </h2>
+              <p className="text-white/80 text-xs sm:text-sm mb-7 max-w-lg mx-auto">
+                Get notified when students drop textbooks at your college, spotlight author launches, and flash swap events.
+              </p>
+
+              <form onSubmit={handleSubscribe} className="max-w-md mx-auto flex flex-col sm:flex-row gap-2.5">
+                <input
+                  type="email"
+                  placeholder="Enter your student or personal email..."
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (subscribeStatus) setSubscribeStatus(null);
+                  }}
+                  disabled={subscribing}
+                  className="flex-1 px-4 py-3 rounded-xl text-white placeholder-white/60 bg-white/15 border border-white/30 focus:outline-none focus:border-white focus:bg-white/20 transition text-sm backdrop-blur-sm"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={subscribing}
+                  className="px-7 py-3 bg-white text-[#6C4BF4] font-bold rounded-xl hover:bg-gray-100 active:scale-95 transition text-sm cursor-pointer shadow-md shadow-black/10 flex items-center justify-center gap-2 shrink-0 disabled:opacity-70"
+                >
+                  {subscribing ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Subscribing...
+                    </>
+                  ) : (
+                    "SUBSCRIBE"
+                  )}
+                </button>
+              </form>
+
+              {subscribeStatus && (
+                <div
+                  className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold animate-fade-in ${
+                    subscribeStatus.type === "success"
+                      ? "bg-emerald-500/25 text-emerald-100 border border-emerald-400/40"
+                      : "bg-rose-500/25 text-rose-100 border border-rose-400/40"
+                  }`}
+                >
+                  {subscribeStatus.type === "success" ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
+                  <span>{subscribeStatus.message}</span>
+                </div>
+              )}
             </div>
           </section>
         </ScrollReveal>

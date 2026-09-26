@@ -163,11 +163,14 @@ export default function Navbar() {
                   className="flex h-9.5 w-9.5 items-center justify-center rounded-full overflow-hidden border border-gray-150 bg-[#EDE7FF] cursor-pointer hover:ring-2 hover:ring-[#6C4BF4]/30 hover:opacity-90 transition shrink-0 ml-1"
                   title={user?.fullName || "Profile"}
                 >
-                  {user?.authorAvatar || (user?.avatar && user.avatar !== "/images/profile-avatar.png") ? (
+                  {(user?.authorAvatar && user.authorAvatar.trim()) || (user?.avatar && typeof user.avatar === "string" && user.avatar.trim() !== "" && user.avatar !== "/images/profile-avatar.png") ? (
                     <img
-                      src={user.authorAvatar || user.avatar}
+                      src={(user?.authorAvatar && user.authorAvatar.trim()) || user.avatar}
                       alt={user?.fullName || "Profile"}
                       className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
                     />
                   ) : (
                     <span className="font-bold text-xs text-[#6C4BF4] uppercase">
@@ -308,7 +311,14 @@ export default function Navbar() {
               >
                 <span className="text-xs font-bold text-[#17152A]">{user?.name || "My Profile"}</span>
                 <div className="h-8 w-8 rounded-full overflow-hidden border border-gray-100 bg-[#EDE7FF]">
-                  <img src={user?.authorAvatar || user?.avatar || "/images/profile-avatar.png"} alt="Avatar" className="h-full w-full object-cover" />
+                  <img
+                    src={(user?.authorAvatar && user.authorAvatar.trim()) || (user?.avatar && user.avatar.trim()) || "/images/profile-avatar.png"}
+                    alt="Avatar"
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.target.src = "/images/profile-avatar.png";
+                    }}
+                  />
                 </div>
               </Link>
             </div>

@@ -32,6 +32,105 @@ const books = [
     "deliveryAvailable": true
   },
   {
+    "id": 1011,
+    "title": "The Monsoon Chronicles",
+    "author": "Devina Kaur",
+    "isbn": "9780143452011",
+    "publisher": "Penguin India",
+    "category": "Fiction",
+    "subCategory": "Contemporary Fiction",
+    "coverImage": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop",
+    "condition": "LIKE_NEW",
+    "askingPrice": 349,
+    "originalPrice": 499,
+    "mode": "sell",
+    "seller": {
+      "id": "seller1@bookify.com",
+      "name": "Arnav (Aarav Seller)",
+      "avatar": "https://i.pravatar.cc/150?img=33",
+      "college": "IIT Delhi (Hostel 4)",
+      "isVerified": true,
+      "rating": 5.0,
+      "totalSales": 12,
+      "location": "Delhi Campus"
+    },
+    "language": "English",
+    "description": "An evasive journey through changing relationships and heartbreak during Delhi monsoons. Pristine copy signed by the author, preserved in protective jacket.",
+    "photos": [
+      "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop"
+    ],
+    "postedDaysAgo": 1,
+    "isNegotiable": true,
+    "deliveryAvailable": true,
+    "isVerifiedAuthor": true
+  },
+  {
+    "id": 1012,
+    "title": "Beyond Code & Karma",
+    "author": "Aravind Sharma",
+    "isbn": "9789353027815",
+    "publisher": "HarperCollins India",
+    "category": "Non-Fiction",
+    "subCategory": "Technology & Society",
+    "coverImage": "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=400&fit=crop",
+    "condition": "LIKE_NEW",
+    "askingPrice": 399,
+    "originalPrice": 599,
+    "mode": "sell",
+    "seller": {
+      "id": "seller1@bookify.com",
+      "name": "Arnav (Aarav Seller)",
+      "avatar": "https://i.pravatar.cc/150?img=33",
+      "college": "IIT Delhi (Hostel 4)",
+      "isVerified": true,
+      "rating": 5.0,
+      "totalSales": 12,
+      "location": "Delhi Campus"
+    },
+    "language": "English",
+    "description": "Unveiling the struggles of India's Silicon Valley workforce. Tech dreams meet ancient philosophy in this thought-provoking deep dive into Bengaluru's startup ecosystem.",
+    "photos": [
+      "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300&h=400&fit=crop"
+    ],
+    "postedDaysAgo": 2,
+    "isNegotiable": false,
+    "deliveryAvailable": true,
+    "isVerifiedAuthor": true
+  },
+  {
+    "id": 1013,
+    "title": "Spices of the Soul",
+    "author": "Preeti Rai",
+    "isbn": "9788184005834",
+    "publisher": "Rupa Publications",
+    "category": "Non-Fiction",
+    "subCategory": "Culinary & Culture",
+    "coverImage": "https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=300&h=400&fit=crop",
+    "condition": "LIKE_NEW",
+    "askingPrice": 299,
+    "originalPrice": 450,
+    "mode": "sell",
+    "seller": {
+      "id": "seller1@bookify.com",
+      "name": "Arnav (Aarav Seller)",
+      "avatar": "https://i.pravatar.cc/150?img=33",
+      "college": "IIT Delhi (Hostel 4)",
+      "isVerified": true,
+      "rating": 5.0,
+      "totalSales": 12,
+      "location": "Delhi Campus"
+    },
+    "language": "English",
+    "description": "Over 50 forgotten grandmother recipes stitched together with heartfelt memories from across provincial India. Beautifully bound with vivid food photography.",
+    "photos": [
+      "https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=300&h=400&fit=crop"
+    ],
+    "postedDaysAgo": 3,
+    "isNegotiable": true,
+    "deliveryAvailable": true,
+    "isVerifiedAuthor": true
+  },
+  {
     "id": 1,
     "title": "The Alchemist",
     "author": "Paulo Coelho",

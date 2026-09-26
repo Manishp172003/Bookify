@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const orderTimelineSchema = new mongoose.Schema({
   stage: {
     type: String,
-    enum: ["Placed", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"],
+    enum: ["Placed", "Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned"],
     required: true,
   },
   title: { type: String, required: true },
@@ -27,6 +27,11 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
+  orderCode: {
+    type: String,
+    index: true,
+  },
+
   buyerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -60,8 +65,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: [
       "Placed",
+      "Confirmed",
       "Processing",
       "Shipped",
+      "Out for Delivery",
       "Delivered",
       "Cancelled",
       "Returned",
@@ -96,7 +103,7 @@ const orderSchema = new mongoose.Schema({
 
   escrowStatus: {
     type: String,
-    enum: ["Held", "Released", "Refunded"],
+    enum: ["Held", "Released", "Refunded", "Disputed"],
     default: "Held",
   },
 

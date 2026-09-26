@@ -8,8 +8,8 @@ let io;
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:5173",
-      methods: ["GET", "POST"],
+      origin: (origin, callback) => callback(null, true),
+      methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
       credentials: true,
     },
   });

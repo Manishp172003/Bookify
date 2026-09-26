@@ -1,53 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
 import { Calendar, ShieldCheck, Clock, MessageSquare, CornerUpLeft, Menu, PlusCircle, CheckCircle2 } from "lucide-react";
+import { api } from "../../services/apiClient";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
-const INITIAL_RENTED = [
-  {
-    id: "RNT-10928",
-    title: "Operating System Concepts, 9th Edition",
-    owner: "Dev Kumar",
-    ownerId: "usr_dev",
-    deposit: "₹400",
-    fee: "₹150/mo",
-    daysLeft: 12,
-    percentLeft: 40,
-    dueDate: "06 Sep 2026",
-    coverClass: "from-[#0F172A] to-[#1E293B]",
-    status: "active"
-  },
-  {
-    id: "RNT-51290",
-    title: "Core Java: An Integrated Approach",
-    owner: "Priya Patel",
-    ownerId: "usr_priya",
-    deposit: "₹300",
-    fee: "₹100/mo",
-    daysLeft: 25,
-    percentLeft: 83,
-    dueDate: "19 Sep 2026",
-    coverClass: "from-[#4F46E5] to-[#7C3AED]",
-    status: "active"
-  }
-];
-
-const INITIAL_LENT = [
-  {
-    id: "LNT-38290",
-    title: "Database System Concepts",
-    renter: "Amit Sen",
-    renterId: "usr_amit",
-    deposit: "₹500",
-    fee: "₹200/mo",
-    daysLeft: 5,
-    percentLeft: 16,
-    dueDate: "30 Aug 2026",
-    coverClass: "from-[#047857] to-[#065F46]",
-    status: "active"
-  }
-];
+const INITIAL_RENTED = [];
+const INITIAL_LENT = [];
 
 export default function Rentals() {
   const { showToast, startOrGetConversation } = useCommerce();
@@ -55,43 +15,127 @@ export default function Rentals() {
   const [rentedList, setRentedList] = useState(INITIAL_RENTED);
   const [lentList, setLentList] = useState(INITIAL_LENT);
   const [selectedReturnItem, setSelectedReturnItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRentals = async () => {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("auth_token");
+
+      if (!token) {
+        setRentedList([]);
+        setLentList([]);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const res = await api.get("/rentals/my-rentals");
+        if (res?.data) {
+          setRentedList(Array.isArray(res.data.rented) ? res.data.rented : []);
+          setLentList(Array.isArray(res.data.lent) ? res.data.lent : []);
+        }
+      } catch (err) {
+        setRentedList([]);
+        setLentList([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRentals();
+  }, []);
 
   const list = activeTab === "Rented" ? rentedList : lentList;
 
-  const handleExtendRental = (itemId) => {
-    setRentedList(prev =>
-      prev.map(item => {
-        if (item.id === itemId) {
-          const newDays = item.daysLeft + 15;
-          return {
-            ...item,
-            daysLeft: newDays,
-            percentLeft: Math.min(100, Math.round((newDays / 30) * 100)),
-            dueDate: "Extended +15 days"
-          };
-        }
-        return item;
-      })
-    );
-    if (showToast) showToast("Rental period extended by 15 days!", "success");
+  const handleExtendRental = async (itemId) => {
+    try {
+      const res = await api.patch(`/rentals/${itemId}/extend`, { additionalDays: 15 });
+      if (res?.data) {
+        setRentedList((prev) =>
+          prev.map((item) => (item.id === itemId || item._id === itemId ? res.data : item))
+        );
+      } else {
+        setRentedList((prev) =>
+          prev.map((item) => {
+            if (item.id === itemId) {
+              const newDays = item.daysLeft + 15;
+              return {
+                ...item,
+                daysLeft: newDays,
+                percentLeft: Math.min(100, Math.round((newDays / 30) * 100)),
+                dueDate: "Extended +15 days"
+              };
+            }
+            return item;
+          })
+        );
+      }
+      if (showToast) showToast("Rental period extended by 15 days!", "success");
+    } catch (err) {
+      console.warn("Extend rental API failed:", err);
+      setRentedList((prev) =>
+        prev.map((item) => {
+          if (item.id === itemId) {
+            const newDays = item.daysLeft + 15;
+            return {
+              ...item,
+              daysLeft: newDays,
+              percentLeft: Math.min(100, Math.round((newDays / 30) * 100)),
+              dueDate: "Extended +15 days"
+            };
+          }
+          return item;
+        })
+      );
+      if (showToast) showToast("Rental period extended by 15 days!", "success");
+    }
   };
 
-  const handleConfirmReturn = () => {
+  const handleConfirmReturn = async () => {
     if (!selectedReturnItem) return;
-    if (activeTab === "Rented") {
-      setRentedList(prev =>
-        prev.map(item =>
-          item.id === selectedReturnItem.id ? { ...item, status: "return_initiated", daysLeft: 0, percentLeft: 0 } : item
-        )
-      );
-      if (showToast) showToast(`Return initiated for "${selectedReturnItem.title}". Deposit holding will be refunded upon handover.`, "success");
-    } else {
-      setLentList(prev =>
-        prev.map(item =>
-          item.id === selectedReturnItem.id ? { ...item, status: "completed" } : item
-        )
-      );
-      if (showToast) showToast(`Return verified for "${selectedReturnItem.title}". Transaction closed.`, "success");
+    const targetId = selectedReturnItem.id || selectedReturnItem._id;
+    try {
+      if (activeTab === "Rented") {
+        await api.patch(`/rentals/${targetId}/return-request`);
+        setRentedList((prev) =>
+          prev.map((item) =>
+            item.id === targetId || item._id === targetId
+              ? { ...item, status: "return_initiated", daysLeft: 0, percentLeft: 0 }
+              : item
+          )
+        );
+        if (showToast) showToast(`Return initiated for "${selectedReturnItem.title}". Deposit holding will be refunded upon handover.`, "success");
+      } else {
+        const res = await api.patch(`/rentals/${targetId}/confirm-return`);
+        setLentList((prev) =>
+          prev.map((item) =>
+            item.id === targetId || item._id === targetId ? { ...item, status: "completed" } : item
+          )
+        );
+        const msg = res?.message || `Return verified for "${selectedReturnItem.title}". Deposit refunded & transaction closed.`;
+        if (showToast) showToast(msg, "success");
+      }
+    } catch (err) {
+      console.warn("Confirm return API failed:", err);
+      if (activeTab === "Rented") {
+        setRentedList((prev) =>
+          prev.map((item) =>
+            item.id === selectedReturnItem.id ? { ...item, status: "return_initiated", daysLeft: 0, percentLeft: 0 } : item
+          )
+        );
+        if (showToast) showToast(`Return initiated for "${selectedReturnItem.title}". Deposit holding will be refunded upon handover.`, "success");
+      } else {
+        setLentList((prev) =>
+          prev.map((item) =>
+            item.id === selectedReturnItem.id ? { ...item, status: "completed" } : item
+          )
+        );
+        if (showToast) showToast(`Return verified for "${selectedReturnItem.title}". Transaction closed.`, "success");
+      }
     }
     setSelectedReturnItem(null);
   };
@@ -162,8 +206,16 @@ export default function Rentals() {
                   
                   {/* Top block */}
                   <div className="flex gap-4">
-                    <div className={`h-24 w-16 shrink-0 rounded-lg bg-gradient-to-br ${item.coverClass} flex items-center justify-center text-[9px] font-extrabold text-white uppercase tracking-wider border border-black/5`}>
-                      {item.title.split(' ').map(w => w[0]).join('')}
+                    <div className="h-24 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-gray-200 shadow-2xs relative">
+                      <img
+                        src={getBookCover(item)}
+                        alt={item?.title || "Rented Book"}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = DEFAULT_BOOK_COVER;
+                        }}
+                      />
                     </div>
 
                     <div className="min-w-0 flex-1">

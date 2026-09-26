@@ -1,48 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { useCommerce } from "../../context/CommerceContext";
-import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck } from "lucide-react";
+import { ArrowLeftRight, MessageSquare, Check, X, MapPin, Menu, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { api } from "../../services/apiClient";
+import { getBookCover, DEFAULT_BOOK_COVER } from "../../utils/bookCoverUtils";
 
-const INITIAL_RECEIVED = [
-  {
-    id: "SWP-9021",
-    partner: "Sneha Reddy",
-    partnerId: "usr_sneha",
-    status: "Pending Decision",
-    statusColor: "text-amber-600 bg-amber-50 border-amber-100",
-    yourBook: {
-      title: "Introduction to Algorithms",
-      condition: "Very Good",
-      coverClass: "from-[#111827] to-[#374151]"
-    },
-    theirBook: {
-      title: "Compiler Design: Principles",
-      condition: "Like New",
-      coverClass: "from-[#065F46] to-[#047857]"
-    }
-  }
-];
-
-const INITIAL_SENT = [
-  {
-    id: "SWP-3820",
-    partner: "Aarav Sharma",
-    partnerId: "usr_aarav",
-    status: "Accepted - Meetup Pending",
-    statusColor: "text-green-600 bg-green-50 border-green-100",
-    yourBook: {
-      title: "Organic Chemistry, 8th Edition",
-      condition: "Good",
-      coverClass: "from-[#0F172A] to-[#1E293B]"
-    },
-    theirBook: {
-      title: "Concepts of Physics Vol 1",
-      condition: "Very Good",
-      coverClass: "from-[#E11D48] to-[#F43F5E]"
-    }
-  }
-];
+const INITIAL_RECEIVED = [];
+const INITIAL_SENT = [];
 
 export default function Exchanges() {
   const { showToast, startOrGetConversation } = useCommerce();
@@ -50,14 +15,53 @@ export default function Exchanges() {
   const [receivedList, setReceivedList] = useState(INITIAL_RECEIVED);
   const [sentList, setSentList] = useState(INITIAL_SENT);
   const [selectedMeetup, setSelectedMeetup] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchExchanges = async () => {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("auth_token");
+
+      if (!token) {
+        setReceivedList([]);
+        setSentList([]);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const res = await api.get("/exchanges/my-exchanges");
+        if (res?.data) {
+          setReceivedList(Array.isArray(res.data.received) ? res.data.received : []);
+          setSentList(Array.isArray(res.data.sent) ? res.data.sent : []);
+        }
+      } catch (err) {
+        setReceivedList([]);
+        setSentList([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchExchanges();
+  }, []);
 
   const list = activeTab === "Received" ? receivedList : sentList;
 
-  const handleAction = (id, type) => {
+  const handleAction = async (id, type) => {
+    try {
+      await api.patch(`/exchanges/${id}/respond`, { action: type });
+    } catch (err) {
+      console.warn("API respond exchange failed:", err);
+    }
+
     if (type === "Accepted") {
       setReceivedList(prev =>
         prev.map(item =>
-          item.id === id
+          item.id === id || item._id === id
             ? {
                 ...item,
                 status: "Accepted - Meetup Pending",
@@ -70,7 +74,7 @@ export default function Exchanges() {
     } else {
       setReceivedList(prev =>
         prev.map(item =>
-          item.id === id
+          item.id === id || item._id === id
             ? {
                 ...item,
                 status: "Declined",
@@ -81,6 +85,29 @@ export default function Exchanges() {
       );
       if (showToast) showToast(`Swap proposal ${id} declined.`, "info");
     }
+  };
+
+  const handleComplete = async (id) => {
+    try {
+      await api.patch(`/exchanges/${id}/complete`);
+    } catch (err) {
+      console.warn("API complete exchange failed:", err);
+    }
+
+    const updater = prev =>
+      prev.map(item =>
+        item.id === id || item._id === id
+          ? {
+              ...item,
+              status: "Completed",
+              statusColor: "text-blue-600 bg-blue-50 border-blue-100"
+            }
+          : item
+      );
+
+    setReceivedList(updater);
+    setSentList(updater);
+    if (showToast) showToast("Exchange confirmed! Handover successfully completed. 🎉", "success");
   };
 
   const handleOpenChat = (item) => {
@@ -162,8 +189,16 @@ export default function Exchanges() {
                     
                     {/* Your book */}
                     <div className="md:col-span-2 rounded-xl bg-gray-50 p-4 border border-gray-100 flex items-center gap-3">
-                      <div className={`h-16 w-11 shrink-0 rounded bg-gradient-to-br ${item.yourBook.coverClass} flex items-center justify-center text-[7px] font-extrabold text-white uppercase border border-black/5`}>
-                        {item.yourBook.title.split(' ').map(w => w[0]).join('')}
+                      <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200 shadow-2xs relative">
+                        <img
+                          src={getBookCover(item.yourBook)}
+                          alt={item.yourBook?.title || "Book"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_BOOK_COVER;
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[9px] text-gray-400 font-bold uppercase">Your Book</p>
@@ -181,8 +216,16 @@ export default function Exchanges() {
 
                     {/* Their Book */}
                     <div className="md:col-span-2 rounded-xl bg-[#F8F7FF] p-4 border border-[#E9E4FF] flex items-center gap-3">
-                      <div className={`h-16 w-11 shrink-0 rounded bg-gradient-to-br ${item.theirBook.coverClass} flex items-center justify-center text-[7px] font-extrabold text-white uppercase border border-black/5`}>
-                        {item.theirBook.title.split(' ').map(w => w[0]).join('')}
+                      <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200 shadow-2xs relative">
+                        <img
+                          src={getBookCover(item.theirBook)}
+                          alt={item.theirBook?.title || "Offered Book"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_BOOK_COVER;
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[9px] text-[#6C4BF4] font-bold uppercase">Their Offered Book</p>
@@ -212,14 +255,27 @@ export default function Exchanges() {
                           Decline
                         </button>
                       </>
+                    ) : item.status === "Completed" ? (
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl">
+                        <CheckCircle2 size={14} /> Handover Completed
+                      </span>
                     ) : (
-                      <button
-                        onClick={() => setSelectedMeetup(item)}
-                        className="flex items-center gap-1.5 border border-[#6C4BF4] text-[#6C4BF4] hover:bg-[#6C4BF4]/5 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
-                      >
-                        <MapPin size={13} />
-                        View Meetup Details
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setSelectedMeetup(item)}
+                          className="flex items-center gap-1.5 border border-[#6C4BF4] text-[#6C4BF4] hover:bg-[#6C4BF4]/5 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                        >
+                          <MapPin size={13} />
+                          View Meetup Details
+                        </button>
+                        <button
+                          onClick={() => handleComplete(item.id)}
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                        >
+                          <CheckCircle2 size={13} />
+                          Mark Completed
+                        </button>
+                      </>
                     )}
                     <Link
                       to="/chat"

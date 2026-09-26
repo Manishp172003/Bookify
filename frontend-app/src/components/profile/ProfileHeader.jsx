@@ -167,12 +167,14 @@ function ProfileHeader() {
           <div className="space-y-3 text-sm text-gray-500 font-medium">
             <div className="flex items-center gap-2.5">
               <MapPin size={16} className="text-[#6C4BF4]" />
-              <span>{user?.location || "Campus Community, India"}</span>
+              <span>{user?.campus || user?.location || "Campus not specified"}</span>
             </div>
             
             <div className="flex items-center gap-2.5">
               <Calendar size={16} className="text-[#6C4BF4]" />
-              <span>Member since 2025</span>
+              <span>
+                Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : (user?.memberSince || new Date().getFullYear())}
+              </span>
             </div>
           </div>
 
@@ -185,7 +187,7 @@ function ProfileHeader() {
 
             <div className="flex items-center gap-2.5">
               <Phone size={16} className="text-[#6C4BF4]" />
-              <span>{user?.phone || "+91 9876543210"}</span>
+              <span>{user?.phone || "Not provided"}</span>
             </div>
           </div>
 
