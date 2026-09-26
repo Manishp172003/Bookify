@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import cors from "cors";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -23,15 +23,6 @@ const app = express();
 // Global Middlewares
 // ==========================================
 
-const allowedOrigins = (process.env.CLIENT_URL || "")
-  .split(",")
-  .map((u) => u.trim())
-  .filter(Boolean);
-
-["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"].forEach((origin) => {
-  if (!allowedOrigins.includes(origin)) allowedOrigins.push(origin);
-});
-
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -54,10 +45,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ==========================================
-// Root Route
-// ==========================================
-
 app.get("/", (req, res) => {
   res.json({
     name: "Bookify Backend API",
@@ -67,10 +54,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// ==========================================
-// Health Check
-// ==========================================
-
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
@@ -78,10 +61,6 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
-
-// ==========================================
-// API Routes
-// ==========================================
 
 app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
@@ -92,13 +71,6 @@ app.use("/api/want-board", wantBoardRoutes);
 app.use("/api/author", authorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", chatRoutes);
-app.use("/api/rentals", rentalRoutes);
-app.use("/api/exchanges", exchangeRoutes);
-app.use("/api/disputes", disputeRoutes);
-app.use("/api/payouts", payoutRoutes);
-app.use("/api/testimonials", testimonialRoutes);
-app.use("/api/newsletter", newsletterRoutes);
-app.get("/api/settings/public", getPublicSettings);
 
 // ==========================================
 // 404 Handler
@@ -111,10 +83,6 @@ app.use((req, res) => {
     data: null,
   });
 });
-
-// ==========================================
-// Global Error Handler
-// ==========================================
 
 app.use((err, req, res, next) => {
   console.error("[Error]", err);

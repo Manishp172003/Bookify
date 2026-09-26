@@ -25,16 +25,18 @@
     "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
-    "express": "^4.22.2",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.0",
+    "google-auth-library": "^11.1.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.9.5",
+    "mongoose": "^9.10.2",
     "multer": "^2.4.0",
     "node-cron": "^4.6.0",
     "razorpay": "^2.9.8",
-    "socket.io": "^4.7.5",
-    "twilio": "^6.1.0"
+    "socket.io": "^4.8.4",
+    "twilio": "^6.1.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.14"
   }
 }

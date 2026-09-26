@@ -54,27 +54,6 @@ const orderSchema = new mongoose.Schema({
   orderType: {
     type: String,
     enum: ["Buy", "Rent", "Exchange", "Donate"],
-    default: "Buy",
-  },
-
-  subtotal: {
-    type: Number,
-    default: 0,
-  },
-
-  deliveryFee: {
-    type: Number,
-    default: 0,
-  },
-
-  platformFee: {
-    type: Number,
-    default: 0,
-  },
-
-  discount: {
-    type: Number,
-    default: 0,
   },
 
   amount: {
@@ -100,6 +79,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     enum: ["Razorpay", "COD", "Wallet"],
+    required: true,
   },
 
   paymentStatus: {
@@ -110,10 +90,15 @@ const orderSchema = new mongoose.Schema({
 
   razorpayOrderId: {
     type: String,
+    index: true,
   },
 
   razorpayPaymentId: {
     type: String,
+  },
+
+  paidAt: {
+    type: Date,
   },
 
   escrowStatus: {
