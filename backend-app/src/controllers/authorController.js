@@ -81,8 +81,10 @@ export const updateAuthorProfile = async (req, res) => {
     if (payment) user.payment = { ...user.payment, ...payment };
 
     // Ensure user is marked as an author
-    if (!user.isAuthor && user.role !== "admin") {
+    if (user.role !== "admin") {
       user.isAuthor = true;
+      user.hasAuthorProfile = true;
+      user.accountCategory = "student_author";
     }
 
     await user.save();
@@ -126,8 +128,10 @@ export const submitAuthorVerification = async (req, res) => {
       reviewNote: "",
     };
 
-    if (!user.isAuthor && user.role !== "admin") {
+    if (user.role !== "admin") {
       user.isAuthor = true;
+      user.hasAuthorProfile = true;
+      user.accountCategory = "student_author";
     }
 
     await user.save();
@@ -215,6 +219,14 @@ export const submitBook = async (req, res) => {
       isPublisherListing: true,
       status: status || "Active",
     });
+
+    if (req.user && req.user.role !== "admin") {
+      await User.findByIdAndUpdate(req.user._id, {
+        isAuthor: true,
+        hasAuthorProfile: true,
+        accountCategory: "student_author",
+      });
+    }
 
     return res.status(201).json({ success: true, message: "Book published successfully", data: book });
   } catch (error) {
@@ -690,6 +702,15 @@ export const getPayouts = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
+    // Automatically register/sync student author role if authenticated non-admin accesses author hub
+    if (req.user && req.user.role !== "admin" && (!req.user.isAuthor || req.user.accountCategory !== "student_author")) {
+      await User.findByIdAndUpdate(req.user._id, {
+        isAuthor: true,
+        hasAuthorProfile: true,
+        accountCategory: "student_author",
+      });
+    }
+
     const myBooks = await Book.find({ sellerId: req.user._id });
     const bookIds = myBooks.map((b) => b._id);
 
@@ -814,6 +835,45 @@ export const getAnalytics = async (req, res) => {
     });
   } catch (error) {
     console.error("Get analytics error:", error);
+    return res.status(500).json({ success: false, message: error.message, data: null });
+  }
+};
+
+// Direct Author Profile Activation
+export const activateAuthorProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Author not found", data: null });
+    }
+
+    user.isAuthor = true;
+    user.hasAuthorProfile = true;
+    if (user.role !== "admin") {
+      user.accountCategory = "student_author";
+    }
+    if (!user.authorProfile) {
+      user.authorProfile = {};
+    }
+    if (!user.penName && !user.authorProfile.penName) {
+      const pen = req.body.penName || user.fullName || "Author";
+      user.penName = pen;
+      user.authorProfile.penName = pen;
+    }
+    if (req.body.authorBio) {
+      user.authorBio = req.body.authorBio;
+      user.authorProfile.bio = req.body.authorBio;
+    }
+
+    await user.save();
+    const sanitized = await User.findById(user._id).select("-password -otp -resetToken");
+    return res.status(200).json({
+      success: true,
+      message: "Author profile activated successfully",
+      data: sanitized,
+    });
+  } catch (error) {
+    console.error("Activate author profile error:", error);
     return res.status(500).json({ success: false, message: error.message, data: null });
   }
 };

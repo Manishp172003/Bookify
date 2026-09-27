@@ -11,8 +11,10 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { authorService } from "../../services/authorService";
+import { useAuth } from "../../context/AuthContext";
 
 function AuthorDashboard() {
+  const { user, activateAuthorProfile, hasAuthorProfile } = useAuth();
   const [statsData, setStatsData] = useState({
     totalBooks: 0,
     totalReaders: "0",
@@ -23,6 +25,17 @@ function AuthorDashboard() {
 
   const [books, setBooks] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+
+  useEffect(() => {
+    if (user && !hasAuthorProfile && user.role !== "admin") {
+      activateAuthorProfile({
+        penName: user.fullName || "Student Author",
+      });
+      authorService.activateAuthorProfile({
+        penName: user.fullName || "Student Author",
+      });
+    }
+  }, [user, hasAuthorProfile]);
 
   useEffect(() => {
     let isMounted = true;

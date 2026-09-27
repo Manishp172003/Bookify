@@ -84,7 +84,7 @@ const getAuthHeaders = () => {
   let token = null;
   try {
     const user = getCurrentAuthor();
-    token = user?.token || localStorage.getItem("bookify_token");
+    token = user?.token || localStorage.getItem("token") || localStorage.getItem("bookify_token") || localStorage.getItem("bookify_admin_token");
   } catch {}
 
   return {
@@ -97,6 +97,21 @@ export const authorService = {
   // ==========================================
   // Profile & Verification
   // ==========================================
+  async activateAuthorProfile(data = {}) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/activate`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch {}
+    return null;
+  },
+
   async getProfile() {
     const user = getCurrentAuthor();
     try {

@@ -482,6 +482,23 @@ export const updateProfile = async (req, res) => {
       updateFields.socialLinks = socialLinks;
       updateFields["authorProfile.socialLinks"] = socialLinks;
     }
+    if (req.body.isAuthor !== undefined) {
+      updateFields.isAuthor = Boolean(req.body.isAuthor);
+      updateFields.hasAuthorProfile = Boolean(req.body.isAuthor);
+      if (req.body.isAuthor && req.user.role !== "admin") {
+        updateFields.accountCategory = "student_author";
+      }
+    }
+    if (req.body.hasAuthorProfile !== undefined) {
+      updateFields.hasAuthorProfile = Boolean(req.body.hasAuthorProfile);
+      if (req.body.hasAuthorProfile && req.user.role !== "admin") {
+        updateFields.isAuthor = true;
+        updateFields.accountCategory = "student_author";
+      }
+    }
+    if (req.body.accountCategory !== undefined && req.user.role !== "admin") {
+      updateFields.accountCategory = req.body.accountCategory;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,

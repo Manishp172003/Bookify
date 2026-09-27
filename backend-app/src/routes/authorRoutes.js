@@ -27,6 +27,7 @@ import {
   updateProfile,
   submitVerification,
   toggleCoupon,
+  activateAuthorProfile,
 } from "../controllers/authorController.js";
 
 import {
@@ -49,6 +50,7 @@ router.get("/campaigns/active-featured", getActiveFeaturedCampaigns);
 router.post("/campaigns/:id/track", trackCampaignEngagement);
 
 // ─── Author Profile & Verification (Protected: Student / Author / Admin) ──────
+router.post("/activate", protect, activateAuthorProfile);
 router.put(
   "/profile",
   protect,
