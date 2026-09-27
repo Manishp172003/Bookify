@@ -93,41 +93,82 @@ function Login() {
       return;
     }
 
-    const initGsi = () => {
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (response) => {
-          if (response?.credential) {
-            setIsLoading(true);
-            setApiError("");
-            try {
-              const res = await api.post("/auth/google", { credential: response.credential });
-              if (res.token) {
-                login(res.user, res.token);
-                setShowSuccessPopup(true);
-                setTimeout(() => {
-                  navigate("/dashboard", { replace: true });
-                }, 1500);
-              }
-            } catch (err) {
-              setApiError(err.message || "Google authentication failed");
-            } finally {
+    const startOAuth = () => {
+      try {
+        if (!window.google?.accounts?.oauth2) {
+          throw new Error("Google Identity Services not loaded");
+        }
+
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "openid email profile",
+          callback: async (tokenResponse) => {
+            if (tokenResponse?.error) {
               setIsLoading(false);
+              if (tokenResponse.error !== "popup_closed_by_user") {
+                setApiError(tokenResponse.error_description || tokenResponse.error);
+              }
+              return;
             }
-          }
-        },
-      });
-      window.google.accounts.id.prompt();
+
+            if (tokenResponse?.access_token) {
+              setIsLoading(true);
+              setApiError("");
+              try {
+                const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const googleUser = await userInfoRes.json();
+
+                if (!googleUser?.email) {
+                  throw new Error("Unable to retrieve email from Google account");
+                }
+
+                const res = await api.post("/auth/google", {
+                  email: googleUser.email,
+                  fullName: googleUser.name || googleUser.given_name || "Google User",
+                  avatar: googleUser.picture || null,
+                  googleId: googleUser.sub,
+                });
+
+                if (res?.token) {
+                  login(res.user, res.token);
+                  setShowSuccessPopup(true);
+                  setTimeout(() => {
+                    navigate("/dashboard", { replace: true });
+                  }, 1500);
+                } else {
+                  throw new Error(res?.message || "Failed to authenticate with Bookify server");
+                }
+              } catch (err) {
+                console.error("Google authentication error:", err);
+                setApiError(err.message || "Google authentication failed");
+              } finally {
+                setIsLoading(false);
+              }
+            }
+          },
+        });
+
+        client.requestAccessToken();
+      } catch (err) {
+        console.error("Failed to start Google OAuth:", err);
+        setApiError(err.message || "Google Sign-In initialization failed");
+        setIsLoading(false);
+      }
     };
 
-    if (window.google?.accounts?.id) {
-      initGsi();
+    if (window.google?.accounts?.oauth2) {
+      startOAuth();
     } else {
       const script = document.createElement("script");
       script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
       script.defer = true;
-      script.onload = initGsi;
+      script.onload = startOAuth;
+      script.onerror = () => {
+        setApiError("Failed to load Google Identity Services library. Please check your internet connection.");
+      };
       document.body.appendChild(script);
     }
   };
