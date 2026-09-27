@@ -3,6 +3,8 @@ import DashboardSidebar from "../../components/dashboard/DashboardSidebar";
 import { Eye, EyeOff, Camera, Trash2, Menu } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 export default function Settings() {
   const { user, updateUser } = useAuth();
   const fileInputRef = useRef(null);
@@ -100,7 +102,7 @@ export default function Settings() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/auth/settings', {
+        const response = await fetch(`${API_BASE_URL}/auth/settings`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -151,7 +153,7 @@ export default function Settings() {
 
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await fetch('http://localhost:5000/api/auth/settings/profile', {
+        const response = await fetch(`${API_BASE_URL}/auth/settings/profile`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -160,7 +162,9 @@ export default function Settings() {
           body: JSON.stringify({
             fullName: profileData.fullName,
             phone: profileData.phone,
-            location: profileData.location
+            location: profileData.location,
+            avatar: user?.avatar,
+            coverImage: user?.coverImage,
           }),
         });
 
@@ -191,7 +195,7 @@ export default function Settings() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/settings/password', {
+      const response = await fetch(`${API_BASE_URL}/auth/settings/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -218,7 +222,7 @@ export default function Settings() {
   const handleNotificationsSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/auth/settings/notifications', {
+      const response = await fetch(`${API_BASE_URL}/auth/settings/notifications`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -243,7 +247,7 @@ export default function Settings() {
       localStorage.setItem('bookify_user_privacy', JSON.stringify(privacy));
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await fetch('http://localhost:5000/api/auth/settings/privacy', {
+        const response = await fetch(`${API_BASE_URL}/auth/settings/privacy`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -267,7 +271,7 @@ export default function Settings() {
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/auth/settings/address', {
+      const response = await fetch(`${API_BASE_URL}/auth/settings/address`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -292,7 +296,7 @@ export default function Settings() {
       localStorage.setItem('bookify_user_payment', JSON.stringify(paymentData));
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await fetch('http://localhost:5000/api/auth/settings/payment', {
+        const response = await fetch(`${API_BASE_URL}/auth/settings/payment`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

@@ -5,6 +5,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  avatar: { type: String, default: null },
+  coverImage: { type: String, default: null },
+  location: { type: String, default: '' },
 
   // ─── Role-Based Access Control ────────────────────────────────────────────
   role: {

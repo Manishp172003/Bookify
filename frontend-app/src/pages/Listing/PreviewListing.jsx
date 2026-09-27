@@ -51,7 +51,8 @@ export default function PreviewListing() {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await fetch('http://localhost:5000/api/books', {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        await fetch(`${apiBase}/books`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -25,17 +25,22 @@ const publicUser = (user) => {
       user.authorProfile?.verificationStatus === "verified"
     );
 
+  const effectiveAvatar = user.avatar || user.authorAvatar || user.authorProfile?.avatar || null;
+  const effectiveCover = user.coverImage || null;
+
   return {
     id: user._id,
     fullName: user.fullName,
     email: user.email,
     phone: user.phone,
+    avatar: effectiveAvatar,
+    authorAvatar: effectiveAvatar,
+    coverImage: effectiveCover,
     location: user.location || "",
     role: user.role || (user.isAdmin ? "admin" : "student"),
     isAdmin: user.isAdmin,
     isVerified: user.isVerified || user.authorProfile?.verificationStatus === "verified",
     isAuthor: isAuth,
-    authorAvatar: user.authorAvatar || user.authorProfile?.avatar || null,
     penName: user.penName || user.authorProfile?.penName || "",
     authorBio: user.authorBio || user.authorProfile?.bio || "",
     authorVerificationStatus:
@@ -372,14 +377,21 @@ export const getUserSettings = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const effectiveAvatar = user.avatar || user.authorAvatar || user.authorProfile?.avatar || null;
+    const effectiveCover = user.coverImage || null;
+
     res.status(200).json({
       success: true,
+      user: publicUser(user),
       profile: {
         fullName: user.fullName || "",
         email: user.email || "",
         phone: user.phone || "",
         location: user.location || "",
         role: user.role || "student",
+        avatar: effectiveAvatar,
+        authorAvatar: effectiveAvatar,
+        coverImage: effectiveCover,
       },
       address: user.address || { campus: "", hostelBlock: "", meetupSpot: "" },
       payment: user.payment || { mode: "UPI", upiId: "", accountName: "", accountNumber: "", ifscCode: "" },
@@ -400,11 +412,58 @@ export const getUserSettings = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, phone, location } = req.body;
+    const {
+      fullName,
+      phone,
+      location,
+      avatar,
+      coverImage,
+      authorAvatar,
+      bio,
+      authorBio,
+      penName,
+      website,
+      socialLinks,
+    } = req.body;
+
+    const updateFields = {};
+    if (fullName !== undefined) updateFields.fullName = fullName;
+    if (phone !== undefined) updateFields.phone = phone;
+    if (location !== undefined) updateFields.location = location;
+
+    if (avatar !== undefined) {
+      updateFields.avatar = avatar;
+      updateFields.authorAvatar = avatar;
+      updateFields["authorProfile.avatar"] = avatar;
+    }
+    if (authorAvatar !== undefined) {
+      updateFields.authorAvatar = authorAvatar;
+      updateFields.avatar = authorAvatar;
+      updateFields["authorProfile.avatar"] = authorAvatar;
+    }
+    if (coverImage !== undefined) updateFields.coverImage = coverImage;
+
+    if (authorBio !== undefined || bio !== undefined) {
+      const b = authorBio !== undefined ? authorBio : bio;
+      updateFields.authorBio = b;
+      updateFields["authorProfile.bio"] = b;
+    }
+    if (penName !== undefined) {
+      updateFields.penName = penName;
+      updateFields["authorProfile.penName"] = penName;
+    }
+    if (website !== undefined) {
+      updateFields.website = website;
+      updateFields["authorProfile.website"] = website;
+    }
+    if (socialLinks !== undefined) {
+      updateFields.socialLinks = socialLinks;
+      updateFields["authorProfile.socialLinks"] = socialLinks;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $set: { fullName, phone, location } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     ).select("-password");
 
@@ -412,15 +471,23 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const effectiveAvatar =
+      updatedUser.avatar || updatedUser.authorAvatar || updatedUser.authorProfile?.avatar || null;
+    const effectiveCover = updatedUser.coverImage || null;
+
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
+      user: publicUser(updatedUser),
       profile: {
         fullName: updatedUser.fullName,
         email: updatedUser.email,
         phone: updatedUser.phone,
         location: updatedUser.location || "",
         role: updatedUser.role,
+        avatar: effectiveAvatar,
+        authorAvatar: effectiveAvatar,
+        coverImage: effectiveCover,
       },
     });
   } catch (error) {
@@ -598,9 +665,13 @@ export const googleLogin = async (req, res) => {
         phone: `+91${Date.now().toString().slice(-10)}`,
         password: hashedPassword,
         role: "student",
+        avatar: avatar || null,
         isPhoneVerified: true,
         authorProfile: { avatar: avatar || null },
       });
+    } else if (avatar && !user.avatar) {
+      user.avatar = avatar;
+      await user.save();
     }
 
     const authToken = signToken({ id: user._id, role: user.role });
@@ -639,9 +710,13 @@ export const githubLogin = async (req, res) => {
         phone: `+91${Date.now().toString().slice(-10)}`,
         password: hashedPassword,
         role: "student",
+        avatar: avatar || null,
         isPhoneVerified: true,
         authorProfile: { avatar: avatar || null },
       });
+    } else if (avatar && !user.avatar) {
+      user.avatar = avatar;
+      await user.save();
     }
 
     const token = signToken({ id: user._id, role: user.role });

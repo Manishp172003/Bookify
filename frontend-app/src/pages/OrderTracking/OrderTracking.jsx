@@ -184,7 +184,8 @@ function OrderTracking() {
     const fetchBackendOrder = async () => {
       try {
         const token = localStorage.getItem("token") || localStorage.getItem("bookify_token");
-        const res = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        const res = await fetch(`${apiBase}/orders/${orderId}`, {
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {})

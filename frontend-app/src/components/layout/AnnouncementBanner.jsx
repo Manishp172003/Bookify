@@ -12,7 +12,8 @@ export default function AnnouncementBanner() {
       setDismissed(true);
     }
 
-    fetch("http://localhost:5000/api/settings/public")
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+    fetch(`${apiBase}/settings/public`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.data?.announcementEnabled && data?.data?.announcementText?.trim()) {
