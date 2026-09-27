@@ -64,7 +64,8 @@ export default function ISBNLookup() {
 
     try {
       // Try backend Google Books / Open Library lookup first
-      const res = await fetch(`http://localhost:5000/api/books/isbn/${clean}`);
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/books/isbn/${clean}`);
       const data = await res.json();
       if (res.ok && data.success && data.data) {
         const book = data.data;

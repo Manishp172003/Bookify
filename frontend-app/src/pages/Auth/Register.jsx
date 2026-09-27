@@ -37,7 +37,8 @@ function Register() {
     if (Object.keys(validationErrors).length === 0) {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:5000/api/auth/register", {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        const response = await fetch(`${apiBase}/auth/register`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

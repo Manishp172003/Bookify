@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Lock, Mail, Feather, BookOpen, Sparkles, TrendingUp, DollarSign } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Feather, BookOpen, TrendingUp, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -36,15 +36,6 @@ function AuthorLogin() {
     return errs;
   };
 
-  const handleFillDemo = () => {
-    setFormData({
-      email: "author@bookify.com",
-      password: "Author@123",
-    });
-    setErrors({});
-    setApiError("");
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -55,20 +46,9 @@ function AuthorLogin() {
     if (Object.keys(validationErrors).length === 0) {
       setIsLoading(true);
 
-      // Fast-track demo account for testing
-      if (formData.email.toLowerCase() === "author@bookify.com") {
-        setTimeout(() => {
-          setIsLoading(false);
-          if (login) {
-            login(formData.email);
-          }
-          navigate("/author");
-        }, 600);
-        return;
-      }
-
       try {
-        const response = await fetch("http://localhost:5000/api/auth/login", {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        const response = await fetch(`${apiBase}/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -95,14 +75,8 @@ function AuthorLogin() {
           setApiError(data.message || "Login failed. Invalid credentials.");
         }
       } catch (error) {
-        // Fallback for offline/local state
         setIsLoading(false);
-        if (login) {
-          login(formData.email);
-          navigate("/author");
-        } else {
-          setApiError("Unable to connect to backend server.");
-        }
+        setApiError("Unable to connect to backend server.");
       }
     }
   };
@@ -132,21 +106,6 @@ function AuthorLogin() {
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C4BF4] to-[#8B6FF5] text-white shadow-md shadow-[#6C4BF4]/20">
           <BookOpen size={20} />
         </div>
-      </div>
-
-      {/* Demo Autofill Banner */}
-      <div className="mb-6 flex items-center justify-between rounded-xl border border-[#6C4BF4]/20 bg-[#F8F7FF] p-3 text-xs">
-        <div className="flex items-center gap-2 text-gray-700">
-          <Sparkles size={16} className="text-[#6C4BF4] shrink-0" />
-          <span>Need quick demo access?</span>
-        </div>
-        <button
-          type="button"
-          onClick={handleFillDemo}
-          className="rounded-lg bg-[#6C4BF4] px-3 py-1.5 font-bold text-white shadow-sm transition hover:bg-[#5B3DE0] cursor-pointer"
-        >
-          ⚡ Fill Demo Author
-        </button>
       </div>
 
       {/* Form */}
