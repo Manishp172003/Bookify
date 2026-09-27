@@ -37,14 +37,14 @@ const getInitialAddresses = () => {
       }
     }
 
-    if (currentUser && (currentName || currentUser?.address?.campus)) {
+    if (currentUser?.address?.campus && currentUser.address.campus.trim()) {
       return [
         {
           id: "addr_1",
           name: currentName || "Student User",
           phone: currentUser.phone || "",
           type: "Campus / Hostel",
-          campus: currentUser.address?.campus || "Campus",
+          campus: currentUser.address.campus,
           hostelBlock: currentUser.address?.hostelBlock || "",
           meetupSpot: currentUser.address?.meetupSpot || "Central Library Entrance",
           street: `${currentUser.address?.hostelBlock || ""}, ${currentUser.address?.campus || ""}`.trim(),
@@ -138,7 +138,11 @@ export function CommerceProvider({ children }) {
   });
 
   useEffect(() => {
-    localStorage.setItem("bookify_orders", JSON.stringify(orders));
+    if (orders && orders.length > 0) {
+      localStorage.setItem("bookify_orders", JSON.stringify(orders));
+    } else {
+      localStorage.removeItem("bookify_orders");
+    }
   }, [orders]);
 
   // Conversations State
@@ -168,8 +172,82 @@ export function CommerceProvider({ children }) {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem("bookify_conversations", JSON.stringify(conversations));
+    if (conversations && conversations.length > 0) {
+      localStorage.setItem("bookify_conversations", JSON.stringify(conversations));
+    } else {
+      localStorage.removeItem("bookify_conversations");
+    }
   }, [conversations]);
+
+  // Sync state cleanly with user authentication lifecycle
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setOrders([]);
+      setConversations([]);
+      setCartItems([]);
+      return;
+    }
+
+    // Fetch user's real orders from MongoDB backend
+    const fetchUserOrders = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/orders/my-orders`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && Array.isArray(json.data)) {
+            const mappedOrders = json.data.map((bo) => {
+              const bookItem = bo.bookId || bo.items?.[0]?.bookId || {};
+              const title = bookItem.title || bo.items?.[0]?.title || `Order #${bo._id?.slice(-8)}`;
+              const cover = bookItem.images?.[0] || bo.items?.[0]?.image || "";
+              return {
+                id: bo._id,
+                orderId: bo.orderId || bo._id,
+                title,
+                items: bo.items?.length > 0 ? bo.items : [{
+                  id: bookItem._id || bo._id,
+                  title,
+                  price: bo.amount || 0,
+                  image: cover,
+                }],
+                total: bo.amount || 0,
+                price: bo.amount ? `₹${bo.amount}` : "₹0",
+                status: (bo.status || "Placed").toLowerCase(),
+                statusLabel: bo.status || "Placed",
+                paymentStatus: bo.paymentStatus || "Pending",
+                isSellerOrder: bo.sellerId?._id === (user?.id || user?._id) || bo.sellerId === (user?.id || user?._id),
+                createdAt: bo.createdAt,
+                sellerName: bo.sellerId?.fullName || "Campus Seller",
+                seller: bo.sellerId,
+                address: bo.shippingAddress || bo.deliveryAddress || {},
+              };
+            });
+            setOrders(mappedOrders);
+          }
+        }
+      } catch (err) {
+        console.warn("[CommerceContext] Failed to fetch orders from backend:", err);
+      }
+    };
+
+    fetchUserOrders();
+
+    const handleOrdersReset = () => setOrders([]);
+    const handleConversationsReset = () => setConversations([]);
+
+    window.addEventListener("bookify_orders_updated", handleOrdersReset);
+    window.addEventListener("bookify_conversations_updated", handleConversationsReset);
+    return () => {
+      window.removeEventListener("bookify_orders_updated", handleOrdersReset);
+      window.removeEventListener("bookify_conversations_updated", handleConversationsReset);
+    };
+  }, [user?.id || user?._id, isAuthenticated]);
 
   // Connect to live Socket.io Backend
   useEffect(() => {

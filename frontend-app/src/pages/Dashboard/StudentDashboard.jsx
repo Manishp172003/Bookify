@@ -37,7 +37,7 @@ function StudentDashboard() {
   }, []);
 
   const buyerOrders = (orders || []).filter((o) => !o.isSellerOrder);
-  const purchasedCount = backendStats?.orders?.total ?? buyerOrders.length;
+  const purchasedCount = backendStats ? (backendStats.orders?.total ?? 0) : buyerOrders.length;
 
   const totalSaved = buyerOrders.reduce((acc, o) => {
     const originalPrice = o.originalPrice || o.items?.[0]?.originalPrice || 0;
@@ -45,8 +45,8 @@ function StudentDashboard() {
     return acc + Math.max(0, originalPrice - paidPrice);
   }, 0);
 
-  const booksSold = backendStats?.listings?.sold ?? (listingStats.soldCount || 0);
-  const totalEarned = backendStats?.earnings?.net ?? (listingStats.totalEarned || 0);
+  const booksSold = backendStats ? (backendStats.listings?.sold ?? 0) : (listingStats.soldCount || 0);
+  const totalEarned = backendStats ? (backendStats.earnings?.net ?? 0) : (listingStats.totalEarned || 0);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">

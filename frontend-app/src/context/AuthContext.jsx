@@ -88,14 +88,17 @@ export function AuthProvider({ children }) {
       };
     }
 
-    // If switching between different user accounts, clear previous user's cached data
-    if (prevUser && (prevUser.id !== userObj.id || prevUser.email !== userObj.email)) {
+    // Always clear previous user or stale cached data when logging into a fresh session
+    if (!prevUser || prevUser.id !== userObj.id || prevUser.email !== userObj.email) {
       localStorage.removeItem("bookify_orders");
       localStorage.removeItem("bookify_conversations");
       localStorage.removeItem("bookify_user_listings_v1");
       localStorage.removeItem("bookify_user_payment");
       localStorage.removeItem("bookify_wishlist");
       localStorage.removeItem("bookify_want_board_v1");
+      localStorage.removeItem("bookify_cart");
+      localStorage.removeItem("bookify_addresses");
+      window.dispatchEvent(new CustomEvent("bookify_user_listings_updated", { detail: [] }));
     }
 
     localStorage.setItem("bookify_user", JSON.stringify(userObj));
@@ -159,8 +162,13 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("bookify_user_payment");
     localStorage.removeItem("bookify_wishlist");
     localStorage.removeItem("bookify_want_board_v1");
+    localStorage.removeItem("bookify_cart");
+    localStorage.removeItem("bookify_addresses");
     setIsAuthenticated(false);
     setUser(null);
+    window.dispatchEvent(new CustomEvent("bookify_user_listings_updated", { detail: [] }));
+    window.dispatchEvent(new CustomEvent("bookify_orders_updated", { detail: [] }));
+    window.dispatchEvent(new CustomEvent("bookify_conversations_updated", { detail: [] }));
   };
 
   const isDemoUser = Boolean(

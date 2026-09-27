@@ -7,16 +7,38 @@ const LISTINGS_STORAGE_KEY = "bookify_user_listings_v1";
 
 const MOCK_LISTING_IDS = new Set(["BKFY-518290", "BKFY-982741", "BKFY-304910", "BKFY-298301"]);
 
+function getCurrentUserId() {
+  try {
+    const userStr = localStorage.getItem("bookify_user");
+    if (!userStr) return "guest";
+    const u = JSON.parse(userStr);
+    return u?.id || u?._id || u?.email || "guest";
+  } catch {
+    return "guest";
+  }
+}
+
+function getUserStorageKey() {
+  const uid = getCurrentUserId();
+  return `${LISTINGS_STORAGE_KEY}_${uid}`;
+}
+
 function getStoredListings() {
   try {
-    const raw = localStorage.getItem(LISTINGS_STORAGE_KEY);
+    // Purge any legacy unscoped mock listings
+    try {
+      localStorage.removeItem(LISTINGS_STORAGE_KEY);
+    } catch {}
+
+    const key = getUserStorageKey();
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     let listings = JSON.parse(raw);
     if (Array.isArray(listings)) {
       // Filter out any legacy dummy mock listings
       const cleanListings = listings.filter((item) => !MOCK_LISTING_IDS.has(item.id));
       if (cleanListings.length !== listings.length) {
-        localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(cleanListings));
+        localStorage.setItem(key, JSON.stringify(cleanListings));
       }
       return cleanListings.map((item) => {
         const coverUrl = getBookCover(item);
@@ -36,7 +58,8 @@ function getStoredListings() {
 
 function saveAndNotify(listings) {
   try {
-    localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(listings));
+    const key = getUserStorageKey();
+    localStorage.setItem(key, JSON.stringify(listings));
     window.dispatchEvent(new CustomEvent("bookify_user_listings_updated", { detail: listings }));
   } catch (err) {
     console.error("Failed saving listings", err);

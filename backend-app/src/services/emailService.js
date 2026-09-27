@@ -81,8 +81,12 @@ export const sendOtpEmail = async (email, otp, name = "Bookify Member") => {
 /**
  * 2. Password Reset Email Template
  */
-export const sendPasswordResetEmail = async (email, resetToken, name = "Bookify Member") => {
-  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+export const sendPasswordResetEmail = async (email, resetToken, name = "Bookify Member", customClientUrl = null) => {
+  const clientUrl =
+    customClientUrl ||
+    (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes("localhost")
+      ? process.env.CLIENT_URL
+      : "https://bookify-lemon-seven.vercel.app");
   const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
   const htmlContent = `
