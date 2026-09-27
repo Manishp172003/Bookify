@@ -1,4 +1,4 @@
- import { Eye, EyeOff, Lock, Mail, Feather, CheckCircle2 } from "lucide-react";
+ import { Eye, EyeOff, Lock, Mail, Feather, CheckCircle2, X, AlertCircle, ExternalLink, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
@@ -20,12 +20,60 @@ function Login() {
   // New state for success popup modal
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
+  // Forgot Password modal state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+  const [forgotSuccess, setForgotSuccess] = useState(null);
+
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
   });
 
   const [errors, setErrors] = useState({});
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    const cleanEmail = forgotEmail.trim();
+    if (!cleanEmail) {
+      setForgotError("Please enter your registered email address");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(cleanEmail)) {
+      setForgotError("Please enter a valid email address");
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError("");
+
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+      const response = await fetch(`${apiBase}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setForgotSuccess({
+          email: cleanEmail,
+          message: data.message || "Password reset link sent to your email",
+          resetToken: data.resetToken || null,
+          resetLink: data.resetLink || null,
+        });
+      } else {
+        setForgotError(data.message || "Failed to dispatch reset link");
+      }
+    } catch (err) {
+      setForgotError("Unable to connect to the server. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
  const handleSubmit = async (e) => {
     e.preventDefault();
@@ -282,7 +330,13 @@ function Login() {
 
           <button
             type="button"
-            className="text-xs font-bold text-[#6C4BF4] hover:text-[#5B3DE0]"
+            onClick={() => {
+              setForgotEmail(formData.identifier && formData.identifier.includes("@") ? formData.identifier : "");
+              setForgotError("");
+              setForgotSuccess(null);
+              setShowForgotModal(true);
+            }}
+            className="text-xs font-bold text-[#6C4BF4] hover:text-[#5B3DE0] cursor-pointer"
           >
             Forgot Password?
           </button>
@@ -352,6 +406,147 @@ function Login() {
           </Link>
         </div>
       </div>
+
+      {/* Forgot Password Modal Overlay */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-gray-100 animate-scale-in">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setShowForgotModal(false)}
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            {forgotSuccess ? (
+              <div className="py-2 text-center">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-purple-50 text-[#6C4BF4] shadow-sm">
+                  <Mail size={28} />
+                </div>
+                <h3 className="text-xl font-bold text-[#17152A]">Check Your Inbox</h3>
+                <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                  If an account exists for <span className="font-semibold text-gray-900">{forgotSuccess.email}</span>, a password reset link has been dispatched to your email.
+                </p>
+
+                {forgotSuccess.resetToken && (
+                  <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-left">
+                    <span className="inline-block px-1.5 py-0.5 rounded bg-amber-200 text-[10px] font-bold text-amber-800 uppercase mb-1">
+                      Dev Helper
+                    </span>
+                    <p className="text-[11px] text-amber-800">
+                      Direct link for instant local testing:
+                    </p>
+                    <Link
+                      to={`/reset-password?token=${forgotSuccess.resetToken}&email=${encodeURIComponent(forgotSuccess.email)}`}
+                      onClick={() => setShowForgotModal(false)}
+                      className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-[#6C4BF4] hover:underline"
+                    >
+                      <span>Proceed to Reset Password</span>
+                      <ExternalLink size={12} />
+                    </Link>
+                  </div>
+                )}
+
+                <div className="mt-6 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotSuccess(null);
+                      setForgotEmail("");
+                    }}
+                    className="text-xs font-bold text-[#6C4BF4] hover:underline cursor-pointer"
+                  >
+                    Try another email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="w-full rounded-xl bg-gray-100 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-200 transition cursor-pointer"
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-4">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#6C4BF4] uppercase tracking-wider mb-1">
+                    <KeyRound size={14} />
+                    <span>Password Recovery</span>
+                  </div>
+                  <h3 className="text-xl font-bold tracking-tight text-[#17152A]">
+                    Forgot Your Password?
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter the email registered with your Bookify account and we'll send you a password reset link.
+                  </p>
+                </div>
+
+                {forgotError && (
+                  <div className="mb-3.5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-600">
+                    <AlertCircle size={15} className="shrink-0" />
+                    <span>{forgotError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-gray-700">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail
+                        size={16}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+                      <input
+                        type="email"
+                        placeholder="you@university.edu"
+                        value={forgotEmail}
+                        onChange={(e) => {
+                          setForgotEmail(e.target.value);
+                          if (forgotError) setForgotError("");
+                        }}
+                        autoFocus
+                        className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-xs sm:text-sm text-[#17152A] outline-none transition placeholder:text-gray-400 focus:border-[#6C4BF4] focus:ring-4 focus:ring-[#6C4BF4]/10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(false)}
+                      className="flex-1 rounded-xl border border-gray-200 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="flex-1 rounded-xl bg-[#6C4BF4] py-3 text-xs font-bold text-white shadow-md shadow-[#6C4BF4]/20 hover:bg-[#5B3DE0] disabled:opacity-50 transition cursor-pointer"
+                    >
+                      {forgotLoading ? "Sending..." : "Send Reset Link"}
+                    </button>
+                  </div>
+                </form>
+
+                <div className="mt-4 pt-3 border-t border-gray-100 text-center">
+                  <Link
+                    to="/forgot-password"
+                    onClick={() => setShowForgotModal(false)}
+                    className="text-[11px] font-semibold text-gray-400 hover:text-[#6C4BF4] transition"
+                  >
+                    Open dedicated reset page &rarr;
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AuthLayout>
   );
 }

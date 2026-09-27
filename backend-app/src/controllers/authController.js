@@ -202,20 +202,20 @@ export const logout = async (req, res) => {
 
 export const forgotPassword = async (req, res) => {
   try {
-    const { emailOrPhone } = req.body;
+    const emailOrPhone = (req.body.emailOrPhone || req.body.email || req.body.identifier || "").trim();
 
     if (!emailOrPhone) {
       return res.status(400).json({ success: false, message: "Email or phone is required" });
     }
 
     const user = await User.findOne({
-      $or: [{ email: emailOrPhone }, { phone: emailOrPhone }],
+      $or: [{ email: emailOrPhone.toLowerCase() }, { phone: emailOrPhone }],
     });
 
     if (!user) {
       return res.status(200).json({
         success: true,
-        message: "If an account exists, a reset link has been sent",
+        message: "If an account exists, a reset link has been sent to your email",
       });
     }
 
@@ -230,12 +230,14 @@ export const forgotPassword = async (req, res) => {
       console.error("Password reset email error:", err.message)
     );
 
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
     const isDev = process.env.NODE_ENV !== "production";
 
     res.status(200).json({
       success: true,
       message: "If an account exists, a reset link has been sent to your email",
-      ...(isDev && { resetToken, note: "Token returned in dev mode only" }),
+      ...(isDev && { resetToken, resetLink, note: "Reset token & link provided in dev mode for quick testing" }),
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
