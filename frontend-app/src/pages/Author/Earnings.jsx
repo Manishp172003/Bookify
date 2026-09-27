@@ -14,6 +14,32 @@ function Earnings() {
   const [escrowPending, setEscrowPending] = useState(isDemo ? 1980 : 0);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [payoutMethod, setPayoutMethod] = useState("UPI");
+
+  const getInitialMonthlyData = (isDemoAccount) => {
+    if (isDemoAccount) {
+      return [
+        { month: "Jan", royalties: 3500, height: 35 },
+        { month: "Feb", royalties: 5500, height: 55 },
+        { month: "Mar", royalties: 8000, height: 80 },
+        { month: "Apr", royalties: 5000, height: 50 },
+        { month: "May", royalties: 9000, height: 90 },
+        { month: "Jun (Live)", royalties: 7000, height: 70, isCurrent: true },
+      ];
+    }
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const arr = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = i === 0 ? `${monthNames[d.getMonth()]} (Live)` : monthNames[d.getMonth()];
+      arr.push({ month: label, royalties: 0, height: 0, isCurrent: i === 0 });
+    }
+    return arr;
+  };
+
+  const [monthlyGrowth, setMonthlyGrowth] = useState(() => getInitialMonthlyData(isDemo));
+  const [growthRate, setGrowthRate] = useState(isDemo ? 24 : 0);
+
   const [payoutDetails, setPayoutDetails] = useState({
     upiId: isDemo ? "rahul.author@oksbi" : "",
     accountName: isDemo ? "Rahul Verma" : "",
@@ -40,6 +66,12 @@ function Earnings() {
       if (data.totalRevenue !== undefined) setTotalEarnings(data.totalRevenue);
       if (data.lifetimePaidOut !== undefined) setTotalWithdrawn(data.lifetimePaidOut);
       if (data.pendingPayout !== undefined) setEscrowPending(data.pendingPayout);
+      if (data.monthlyGrowth && data.monthlyGrowth.length > 0) {
+        setMonthlyGrowth(data.monthlyGrowth);
+      }
+      if (data.growthRate !== undefined) {
+        setGrowthRate(data.growthRate);
+      }
     });
 
     return () => {
@@ -127,28 +159,69 @@ function Earnings() {
               <h2 className="text-lg font-bold text-[#17152A] font-poppins">Monthly Royalty Growth</h2>
               <p className="text-xs text-[#6B6880]">Cumulative payout curve for published manuscripts</p>
             </div>
-            <span className="flex items-center gap-1 text-xs font-bold text-[#22C55E] bg-[#E8F8EE] px-2.5 py-1 rounded-full">
-              +24% vs last month
-            </span>
+            {totalEarnings > 0 || (isDemo && totalEarnings > 0) ? (
+              <span className="flex items-center gap-1 text-xs font-bold text-[#22C55E] bg-[#E8F8EE] px-2.5 py-1 rounded-full">
+                {growthRate >= 0 ? `+${growthRate}% vs last month` : `${growthRate}% vs last month`}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+                ₹0 this month
+              </span>
+            )}
           </div>
           
           {/* Bar chart visualization */}
-          <div className="h-64 bg-[#F8F7FF] rounded-xl p-6 flex flex-col justify-between">
+          <div className="h-64 bg-[#F8F7FF] rounded-xl p-6 flex flex-col justify-between relative overflow-hidden">
             <svg className="w-full h-40 overflow-visible" viewBox="0 0 500 100" preserveAspectRatio="none">
-              <rect x="20" y="65" width="35" height="35" rx="6" fill="#6C4BF4" />
-              <rect x="100" y="45" width="35" height="55" rx="6" fill="#6C4BF4" />
-              <rect x="180" y="20" width="35" height="80" rx="6" fill="#6C4BF4" />
-              <rect x="260" y="50" width="35" height="50" rx="6" fill="#6C4BF4" />
-              <rect x="340" y="10" width="35" height="90" rx="6" fill="#6C4BF4" />
-              <rect x="420" y="30" width="35" height="70" rx="6" fill="#22C55E" />
+              {/* Horizontal guide lines */}
+              <line x1="15" y1="20" x2="485" y2="20" stroke="#E7E4F2" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+              <line x1="15" y1="50" x2="485" y2="50" stroke="#E7E4F2" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+              <line x1="15" y1="80" x2="485" y2="80" stroke="#E7E4F2" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+              <line x1="15" y1="99" x2="485" y2="99" stroke="#E7E4F2" strokeWidth="1.5" />
+
+              {/* Dynamic or zero-state bars */}
+              {monthlyGrowth.map((item, idx) => {
+                const x = 20 + idx * 80;
+                const maxVal = Math.max(...monthlyGrowth.map((m) => m.royalties || 0), 1);
+                const hasAnyRoyalties = totalEarnings > 0 || (isDemo && totalEarnings > 0);
+                const isZero = !hasAnyRoyalties || !item.royalties || item.royalties === 0;
+                const h = isZero ? 2 : Math.max(8, Math.round(((item.royalties || 0) / maxVal) * 85));
+                const y = 100 - h;
+                const fill = isZero ? "#D5CFFA" : item.isCurrent ? "#22C55E" : "#6C4BF4";
+
+                return (
+                  <g key={idx}>
+                    <rect 
+                      x={x} 
+                      y={y} 
+                      width="35" 
+                      height={h} 
+                      rx={isZero ? "1" : "6"} 
+                      fill={fill} 
+                      opacity={isZero ? 0.45 : 1}
+                    />
+                  </g>
+                );
+              })}
             </svg>
-            <div className="flex justify-between text-xs font-bold text-[#6B6880] px-3">
-              <span>Jan</span>
-              <span>Feb</span>
-              <span>Mar</span>
-              <span>Apr</span>
-              <span>May</span>
-              <span className="text-[#22C55E]">Jun (Live)</span>
+
+            {!(totalEarnings > 0 || (isDemo && totalEarnings > 0)) && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-6">
+                <div className="bg-white/95 backdrop-blur-xs border border-[#E7E4F2] px-4 py-2.5 rounded-2xl text-center shadow-xs max-w-xs">
+                  <p className="text-xs font-bold text-[#17152A] font-poppins">₹0 Royalties Accumulated</p>
+                  <p className="text-[11px] text-[#6B6880] mt-0.5">
+                    Monthly bars will rise as your published books generate sales and payouts.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between text-xs font-bold text-[#6B6880] px-3 relative z-10">
+              {monthlyGrowth.map((m, idx) => (
+                <span key={idx} className={m.isCurrent ? "text-[#22C55E]" : ""}>
+                  {m.month}
+                </span>
+              ))}
             </div>
           </div>
         </div>

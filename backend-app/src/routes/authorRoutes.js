@@ -102,6 +102,7 @@ router.post("/payouts", requestPayout);
 router.get("/payouts", getPayouts);
 
 // 6. Analytics & Dashboard Stats
+router.get("/dashboard", getDashboardStats);
 router.get("/dashboard-stats", getDashboardStats);
 router.get("/analytics", getAnalytics);
 
