@@ -33,7 +33,10 @@ export default function ForgotPassword() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: cleanEmail }),
+        body: JSON.stringify({
+          email: cleanEmail,
+          clientUrl: window.location.origin,
+        }),
       });
 
       const data = await response.json();

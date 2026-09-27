@@ -226,11 +226,31 @@ export const forgotPassword = async (req, res) => {
     user.resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await user.save();
 
-    sendPasswordResetEmail(user.email, resetToken, user.fullName).catch((err) =>
+    // Dynamically determine the client URL so links work on mobile, laptop, and production
+    let requestOrigin = null;
+    if (req.body?.clientUrl && !req.body.clientUrl.includes("localhost")) {
+      requestOrigin = req.body.clientUrl;
+    } else if (req.headers.origin && !req.headers.origin.includes("localhost")) {
+      requestOrigin = req.headers.origin;
+    } else if (req.headers.referer) {
+      try {
+        const ref = new URL(req.headers.referer);
+        if (!ref.origin.includes("localhost")) {
+          requestOrigin = ref.origin;
+        }
+      } catch {}
+    }
+
+    const clientUrl =
+      requestOrigin ||
+      (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes("localhost")
+        ? process.env.CLIENT_URL
+        : req.headers.origin || "https://bookify-lemon-seven.vercel.app");
+
+    sendPasswordResetEmail(user.email, resetToken, user.fullName, clientUrl).catch((err) =>
       console.error("Password reset email error:", err.message)
     );
 
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
     const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
     const isDev = process.env.NODE_ENV !== "production";
 
