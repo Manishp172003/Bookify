@@ -535,11 +535,29 @@ export const authorService = {
         return sum + (isNaN(num) ? 0 : num);
       }, 0);
 
+      let backendData = null;
+      try {
+        const res = await fetch(`${API_BASE_URL}/earnings`, { headers: getAuthHeaders() });
+        if (res.ok) {
+          const json = await res.json();
+          backendData = json.data;
+        }
+      } catch {}
+
+      const totalRevenue = backendData?.totalRevenue !== undefined ? backendData.totalRevenue : totalRev;
+      const availableBalance = backendData?.availableBalance !== undefined ? backendData.availableBalance : totalRev;
+      const pendingPayout = backendData?.pendingPayout || 0;
+      const lifetimePaidOut = backendData?.lifetimePaidOut || 0;
+      const monthlyGrowth = backendData?.monthlyGrowth || [];
+      const growthRate = backendData?.growthRate || 0;
+
       return {
-        totalRevenue: totalRev,
-        availableBalance: totalRev,
-        pendingPayout: 0,
-        lifetimePaidOut: 0,
+        totalRevenue,
+        availableBalance,
+        pendingPayout,
+        lifetimePaidOut,
+        monthlyGrowth,
+        growthRate,
       };
     }
 
@@ -549,6 +567,15 @@ export const authorService = {
       availableBalance: 32680,
       pendingPayout: 1980,
       lifetimePaidOut: 14090,
+      monthlyGrowth: [
+        { month: "Jan", royalties: 3500, height: 35 },
+        { month: "Feb", royalties: 5500, height: 55 },
+        { month: "Mar", royalties: 8000, height: 80 },
+        { month: "Apr", royalties: 5000, height: 50 },
+        { month: "May", royalties: 9000, height: 90 },
+        { month: "Jun (Live)", royalties: 7000, height: 70, isCurrent: true },
+      ],
+      growthRate: 24,
     };
   },
 
@@ -580,14 +607,28 @@ export const authorService = {
         return sum + (isNaN(num) ? 0 : num);
       }, 0);
 
+      let backendStats = null;
+      try {
+        const res = await fetch(`${API_BASE_URL}/dashboard-stats`, { headers: getAuthHeaders() });
+        if (res.ok) {
+          const json = await res.json();
+          backendStats = json.data;
+        }
+      } catch {}
+
+      const totalRev = backendStats?.totalRevenue !== undefined ? backendStats.totalRevenue : totalRevenue;
+      const salesCount = backendStats?.totalSales !== undefined ? backendStats.totalSales : totalSales;
+      const readersCount = backendStats?.totalReaders !== undefined ? backendStats.totalReaders : totalSales;
+
       return {
         isDemo: false,
-        totalBooks: books.length,
-        totalReaders: totalSales,
-        totalSales: `₹${totalRevenue.toLocaleString()}`,
-        totalEarnings: `₹${Math.round(totalRevenue * 0.75).toLocaleString()}`,
-        activeCampaigns: campaigns.filter((c) => c.status === "Running").length,
-        recentOrders: [],
+        totalBooks: backendStats?.totalBooks !== undefined ? backendStats.totalBooks : books.length,
+        totalReaders: readersCount,
+        totalSales: totalRev > 0 ? `₹${totalRev.toLocaleString()}` : (salesCount > 0 ? `${salesCount}` : "₹0"),
+        totalEarnings: totalRev > 0 ? `₹${Math.round(totalRev * 0.75).toLocaleString()}` : "₹0",
+        activeCampaigns: backendStats?.activeCampaigns !== undefined ? backendStats.activeCampaigns : campaigns.filter((c) => c.status === "Running").length,
+        recentOrders: backendStats?.recentOrders || [],
+        timeSeries: backendStats?.timeSeries || [],
       };
     }
 
@@ -600,6 +641,14 @@ export const authorService = {
       totalEarnings: books.length > 0 ? "₹32,680" : "₹0",
       activeCampaigns: campaigns.filter((c) => c.status === "Running").length,
       recentOrders: [],
+      timeSeries: [
+        { label: "05 May", sales: 20 },
+        { label: "10 May", sales: 40 },
+        { label: "15 May", sales: 60 },
+        { label: "20 May", sales: 120 },
+        { label: "25 May", sales: 180 },
+        { label: "30 May", sales: 150 },
+      ],
     };
   },
 };

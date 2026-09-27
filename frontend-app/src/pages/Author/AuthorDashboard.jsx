@@ -74,11 +74,33 @@ function AuthorDashboard() {
 
   const topBook = books.length > 0 ? books[0] : null;
 
+  const milestoneLabels = React.useMemo(() => {
+    if (statsData.timeSeries && statsData.timeSeries.length === 6) {
+      return statsData.timeSeries.map((t) => t.label);
+    }
+    const now = new Date();
+    const labels = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i * 5);
+      labels.push(d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }));
+    }
+    return labels;
+  }, [statsData.timeSeries]);
+
+  const hasSales = Boolean(
+    statsData.isDemo ||
+    (books.length > 0 &&
+      ((typeof statsData.totalReaders === "number" && statsData.totalReaders > 0) ||
+       (parseInt((statsData.totalReaders || "0").toString().replace(/[^0-9]/g, ""), 10) > 0) ||
+       (parseInt((statsData.totalSales || "0").toString().replace(/[^0-9]/g, ""), 10) > 0)))
+  );
+
   const stats = [
-    { label: "Total Books", value: statsData.totalBooks.toString(), change: statsData.totalBooks > 0 ? "+Active" : "New", icon: BookOpen, color: "text-[#6C4BF4]", bg: "bg-[#EEEAFE]" },
-    { label: "Total Readers", value: statsData.totalReaders, change: statsData.totalBooks > 0 ? "+Active" : "0", icon: Users, color: "text-[#38BDF8]", bg: "bg-sky-50" },
-    { label: "Total Sales", value: statsData.totalSales, change: statsData.totalBooks > 0 ? "+Live" : "₹0", icon: TrendingUp, color: "text-[#FF8A3D]", bg: "bg-[#FFF0E6]" },
-    { label: "Author Royalties", value: statsData.totalEarnings, change: statsData.totalBooks > 0 ? "+Live" : "₹0", icon: CircleDollarSign, color: "text-[#22C55E]", bg: "bg-[#E8F8EE]" }
+    { label: "Total Books", value: statsData.totalBooks.toString(), change: statsData.totalBooks > 0 ? "+Active" : "0", icon: BookOpen, color: "text-[#6C4BF4]", bg: "bg-[#EEEAFE]" },
+    { label: "Total Readers", value: statsData.totalReaders, change: hasSales ? "+Active" : "0", icon: Users, color: "text-[#38BDF8]", bg: "bg-sky-50" },
+    { label: "Total Sales", value: statsData.totalSales, change: hasSales ? "+Live" : "₹0", icon: TrendingUp, color: "text-[#FF8A3D]", bg: "bg-[#FFF0E6]" },
+    { label: "Author Royalties", value: statsData.totalEarnings, change: hasSales ? "+Live" : "₹0", icon: CircleDollarSign, color: "text-[#22C55E]", bg: "bg-[#E8F8EE]" }
   ];
 
   return (
@@ -140,12 +162,12 @@ function AuthorDashboard() {
               <p className="text-xs text-[#6B6880]">Monthly performance curve across campus colleges</p>
             </div>
             <span className="text-xs font-bold text-[#6C4BF4] bg-[#EEEAFE] px-3 py-1 rounded-full">
-              {books.length} Books Active
+              {books.length} {books.length === 1 ? "Book" : "Books"} Active
             </span>
           </div>
 
           {/* Custom SVG Line Chart */}
-          <div className="relative h-64 w-full bg-[#F8F7FF] rounded-xl p-6 flex flex-col justify-between">
+          <div className="relative h-64 w-full bg-[#F8F7FF] rounded-xl p-6 flex flex-col justify-between overflow-hidden">
             <div className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none opacity-40">
               <div className="border-b border-[#E7E4F2] w-full h-0"></div>
               <div className="border-b border-[#E7E4F2] w-full h-0"></div>
@@ -153,36 +175,62 @@ function AuthorDashboard() {
               <div className="border-b border-[#E7E4F2] w-full h-0"></div>
             </div>
             
-            {/* The SVG curve */}
-            <svg className="w-full h-48 mt-4 overflow-visible" viewBox="0 0 500 100" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6C4BF4" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#6C4BF4" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path 
-                d="M 20 80 Q 80 40 160 60 T 320 20 T 460 30 L 460 100 L 20 100 Z" 
-                fill="url(#chartGrad)" 
-              />
-              <path 
-                d="M 20 80 Q 80 40 160 60 T 320 20 T 460 30" 
-                fill="none" 
-                stroke="#6C4BF4" 
-                strokeWidth="3.5" 
-                strokeLinecap="round" 
-              />
-              <circle cx="160" cy="60" r="5" fill="#6C4BF4" stroke="#ffffff" strokeWidth="2" />
-              <circle cx="320" cy="20" r="5" fill="#FF4F81" stroke="#ffffff" strokeWidth="2" />
-            </svg>
+            {hasSales ? (
+              /* The SVG curve for active sales */
+              <svg className="w-full h-48 mt-4 overflow-visible" viewBox="0 0 500 100" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6C4BF4" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#6C4BF4" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path 
+                  d="M 20 80 Q 80 40 160 60 T 320 20 T 460 30 L 460 100 L 20 100 Z" 
+                  fill="url(#chartGrad)" 
+                />
+                <path 
+                  d="M 20 80 Q 80 40 160 60 T 320 20 T 460 30" 
+                  fill="none" 
+                  stroke="#6C4BF4" 
+                  strokeWidth="3.5" 
+                  strokeLinecap="round" 
+                />
+                <circle cx="160" cy="60" r="5" fill="#6C4BF4" stroke="#ffffff" strokeWidth="2" />
+                <circle cx="320" cy="20" r="5" fill="#FF4F81" stroke="#ffffff" strokeWidth="2" />
+              </svg>
+            ) : (
+              /* Zero baseline state for new users */
+              <>
+                <svg className="w-full h-48 mt-4 overflow-visible" viewBox="0 0 500 100" preserveAspectRatio="none">
+                  <line 
+                    x1="20" 
+                    y1="95" 
+                    x2="480" 
+                    y2="95" 
+                    stroke="#6C4BF4" 
+                    strokeWidth="2.5" 
+                    strokeDasharray="5 5" 
+                    strokeOpacity="0.4" 
+                  />
+                  <circle cx="480" cy="95" r="4.5" fill="#6C4BF4" stroke="#ffffff" strokeWidth="2" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-6">
+                  <div className="bg-white/95 backdrop-blur-xs border border-[#E7E4F2] px-4 py-2.5 rounded-2xl text-center shadow-xs max-w-xs">
+                    <p className="text-xs font-bold text-[#17152A] font-poppins">0 Sales & Readers Recorded</p>
+                    <p className="text-[11px] text-[#6B6880] mt-0.5">
+                      Performance curves will dynamically plot as readers buy or rent your books.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
-            <div className="flex justify-between text-xs font-semibold text-[#6B6880] px-2">
-              <span>05 May</span>
-              <span>10 May</span>
-              <span>15 May</span>
-              <span>20 May</span>
-              <span>25 May</span>
-              <span className="text-[#6C4BF4] font-bold">30 May</span>
+            <div className="flex justify-between text-xs font-semibold text-[#6B6880] px-2 relative z-10">
+              {milestoneLabels.map((lbl, idx) => (
+                <span key={idx} className={idx === milestoneLabels.length - 1 ? "text-[#6C4BF4] font-bold" : ""}>
+                  {lbl}
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -218,7 +266,7 @@ function AuthorDashboard() {
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-[#6B6880]">Royalties:</span>
-                    <span className="font-bold text-[#22C55E]">{topBook.earnings || `₹${topBook.price || 0}`}</span>
+                    <span className="font-bold text-[#22C55E]">{topBook.earnings || "₹0"}</span>
                   </div>
                 </div>
               </div>
@@ -243,7 +291,7 @@ function AuthorDashboard() {
               {books.slice(1, 3).map((b) => (
                 <div key={b.id} className="flex items-center justify-between text-xs p-2.5 rounded-lg hover:bg-[#F8F7FF] transition">
                   <span className="text-[#6B6880] font-medium truncate max-w-[150px]">{b.title}</span>
-                  <span className="font-bold text-[#17152A]">{b.earnings || `₹${b.price || 0}`}</span>
+                  <span className="font-bold text-[#17152A]">{b.earnings || "₹0"}</span>
                 </div>
               ))}
             </div>

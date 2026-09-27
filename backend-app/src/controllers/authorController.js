@@ -638,6 +638,45 @@ export const getEarnings = async (req, res) => {
 
     const netAvailable = Math.max(0, totalRevenue - paidOut - pendingPayout);
 
+    // Generate 6-month monthly royalty breakdown
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const monthlyGrowth = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mIdx = d.getMonth();
+      const yr = d.getFullYear();
+      const mLabel = monthNames[mIdx];
+
+      const mStart = new Date(yr, mIdx, 1);
+      const mEnd = new Date(yr, mIdx + 1, 0, 23, 59, 59, 999);
+
+      const periodOrders = orders.filter((o) => {
+        const od = new Date(o.createdAt);
+        return od >= mStart && od <= mEnd;
+      });
+
+      const monthRevenue = periodOrders.reduce((sum, o) => sum + (o.amount || 0), 0);
+      const monthRoyalties = Math.round(monthRevenue * 0.75);
+
+      monthlyGrowth.push({
+        month: i === 0 ? `${mLabel} (Live)` : mLabel,
+        revenue: monthRevenue,
+        royalties: monthRoyalties,
+        isCurrent: i === 0,
+      });
+    }
+
+    const currentMonthRoyalty = monthlyGrowth[5]?.royalties || 0;
+    const lastMonthRoyalty = monthlyGrowth[4]?.royalties || 0;
+    let growthRate = 0;
+    if (lastMonthRoyalty > 0) {
+      growthRate = Math.round(((currentMonthRoyalty - lastMonthRoyalty) / lastMonthRoyalty) * 100);
+    } else if (currentMonthRoyalty > 0) {
+      growthRate = 100;
+    }
+
     return res.status(200).json({
       success: true,
       message: "Author earnings fetched",
@@ -646,6 +685,8 @@ export const getEarnings = async (req, res) => {
         availableBalance: netAvailable,
         pendingPayout,
         lifetimePaidOut: paidOut,
+        monthlyGrowth,
+        growthRate,
         orders,
         payouts,
       },
@@ -729,6 +770,33 @@ export const getDashboardStats = async (req, res) => {
     const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
     const totalReaders = new Set(orders.map((o) => (o.buyerId ? o.buyerId.toString() : "anon"))).size;
 
+    // Generate 6 milestone intervals for reader/sales demand
+    const now = new Date();
+    const timeSeries = [];
+    for (let step = 5; step >= 0; step--) {
+      const targetDate = new Date(now);
+      targetDate.setDate(now.getDate() - step * 5);
+      const dayLabel = targetDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+
+      const windowStart = new Date(targetDate);
+      windowStart.setHours(0, 0, 0, 0);
+      const windowEnd = new Date(targetDate);
+      windowEnd.setDate(windowEnd.getDate() + 5);
+      windowEnd.setHours(23, 59, 59, 999);
+
+      const periodOrders = orders.filter((o) => {
+        const od = new Date(o.createdAt);
+        return od >= windowStart && od <= windowEnd;
+      });
+
+      timeSeries.push({
+        label: dayLabel,
+        sales: periodOrders.length,
+        revenue: periodOrders.reduce((sum, o) => sum + (o.amount || 0), 0),
+        isCurrent: step === 0,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: "Author dashboard stats fetched",
@@ -739,6 +807,7 @@ export const getDashboardStats = async (req, res) => {
         totalRevenue,
         activeCampaigns,
         recentOrders: orders.slice(0, 5),
+        timeSeries,
       },
     });
   } catch (error) {
