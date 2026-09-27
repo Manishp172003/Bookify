@@ -27,6 +27,8 @@ const Register = lazy(() => import("../pages/Auth/Register"));
 const OTPVerification = lazy(() => import("../pages/Auth/OTPVerification"));
 const AdminLogin = lazy(() => import("../pages/Auth/AdminLogin"));
 const AuthorLogin = lazy(() => import("../pages/Auth/AuthorLogin"));
+const ForgotPassword = lazy(() => import("../pages/Auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("../pages/Auth/ResetPassword"));
 
 // Student Dashboard / Profile
 const Profile = lazy(() => import("../pages/Profile/Profile"));
@@ -205,6 +207,8 @@ function AppRoutes() {
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/author/login" element={<AuthorLogin />} />
         <Route path="/author-login" element={<AuthorLogin />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* ================= STUDENT ================= */}
 
