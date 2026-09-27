@@ -18,6 +18,22 @@ export default function Earnings() {
   const [availableToWithdraw, setAvailableToWithdraw] = useState(() => listingStats.totalEarned || 0);
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
 
+  const getInitialWeeklyData = () => {
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const now = new Date();
+    const arr = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const label = i === 0 ? "Today" : dayNames[d.getDay()];
+      arr.push({ label, amount: 0, isToday: i === 0 });
+    }
+    return arr;
+  };
+
+  const [weeklyAnalytics, setWeeklyAnalytics] = useState(getInitialWeeklyData);
+  const [weeklyGrowth, setWeeklyGrowth] = useState(0);
+
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [payoutMethod, setPayoutMethod] = useState("upi"); // 'upi' or 'bank'
   const [upiId, setUpiId] = useState(() => {
@@ -79,19 +95,40 @@ export default function Earnings() {
 
     const fetchWallet = async () => {
       try {
-        const res = await api.get("/payouts/my-payouts");
-        if (res?.data) {
-          if (res.data.availableBalance !== undefined && res.data.availableBalance > 0) {
-            setAvailableToWithdraw(res.data.availableBalance);
+        const [payoutsRes, statsRes] = await Promise.allSettled([
+          api.get("/payouts/my-payouts"),
+          api.get("/dashboard/stats"),
+        ]);
+
+        if (statsRes.status === "fulfilled" && statsRes.value?.data?.data) {
+          const earnings = statsRes.value.data.data.earnings;
+          if (earnings) {
+            if (earnings.net !== undefined) {
+              setTotalEarned(earnings.net);
+              setAvailableToWithdraw(earnings.net);
+            }
+            if (earnings.weeklyAnalytics && earnings.weeklyAnalytics.length > 0) {
+              setWeeklyAnalytics(earnings.weeklyAnalytics);
+            }
+            if (earnings.weeklyGrowth !== undefined) {
+              setWeeklyGrowth(earnings.weeklyGrowth);
+            }
           }
-          if (res.data.totalWithdrawn !== undefined && res.data.totalWithdrawn > 0) {
-            setWithdrawn(res.data.totalWithdrawn);
+        }
+
+        if (payoutsRes.status === "fulfilled" && payoutsRes.value?.data) {
+          const pData = payoutsRes.value.data;
+          if (pData.availableBalance !== undefined && pData.availableBalance > 0) {
+            setAvailableToWithdraw(pData.availableBalance);
           }
-          if (res.data.escrowPending !== undefined) {
-            setEscrowPending(res.data.escrowPending);
+          if (pData.totalWithdrawn !== undefined && pData.totalWithdrawn > 0) {
+            setWithdrawn(pData.totalWithdrawn);
           }
-          if (res.data.payouts && res.data.payouts.length > 0) {
-            const formatted = res.data.payouts.map((p) => ({
+          if (pData.escrowPending !== undefined) {
+            setEscrowPending(pData.escrowPending);
+          }
+          if (pData.payouts && pData.payouts.length > 0) {
+            const formatted = pData.payouts.map((p) => ({
               id: p.id,
               date: p.date,
               desc: `Payout to ${p.payoutMethod}`,
@@ -103,7 +140,7 @@ export default function Earnings() {
           }
         }
       } catch (err) {
-        console.warn("Could not load backend payouts, keeping defaults:", err);
+        console.warn("Could not load backend wallet or stats, keeping defaults:", err);
       }
     };
 
@@ -155,16 +192,8 @@ export default function Earnings() {
     }
   };
 
-  // Simple pure CSS charts definition
-  const CHART_DATA = [
-    { label: "Mon", height: "h-12", amount: "₹120" },
-    { label: "Tue", height: "h-20", amount: "₹200" },
-    { label: "Wed", height: "h-36", amount: "₹360" },
-    { label: "Thu", height: "h-8", amount: "₹80" },
-    { label: "Fri", height: "h-24", amount: "₹240" },
-    { label: "Sat", height: "h-14", amount: "₹140" },
-    { label: "Sun", height: "h-6", amount: "₹50" }
-  ];
+  const hasWeeklyIncome = totalEarned > 0 && weeklyAnalytics.some((d) => d.amount > 0);
+  const maxDayAmount = Math.max(...weeklyAnalytics.map((d) => d.amount || 0), 1);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#F4F2FF] via-[#F8F7FF] to-[#F0F5FF]">
@@ -239,30 +268,64 @@ export default function Earnings() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             
             {/* Chart Column (2/3 width) */}
-            <div className="lg:col-span-2 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm flex flex-col justify-between">
+            <div className="lg:col-span-2 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-sm text-[#17152A]">Weekly Income Analytics</h3>
                   <p className="text-[10px] text-gray-400 mt-0.5">Summary of book sales and rentals from last 7 days</p>
                 </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                  +24% this week
-                </span>
+                {hasWeeklyIncome ? (
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                    {weeklyGrowth >= 0 ? `+${weeklyGrowth}% this week` : `${weeklyGrowth}% this week`}
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full border border-gray-200">
+                    ₹0 this week
+                  </span>
+                )}
               </div>
 
               {/* Chart Graphics */}
-              <div className="mt-8 flex justify-between items-end h-40 px-4">
-                {CHART_DATA.map((col, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-2 group relative">
-                    {/* Tooltip */}
-                    <span className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition bg-gray-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm select-none z-10">
-                      {col.amount}
-                    </span>
-                    {/* Bar */}
-                    <div className={`w-8 rounded-t bg-gradient-to-t from-[#6C4BF4] to-[#8B3FD9] ${col.height} transition-all duration-500 hover:brightness-110`} />
-                    <span className="text-[10px] font-bold text-gray-400">{col.label}</span>
+              <div className="mt-8 flex justify-between items-end h-40 px-4 relative">
+                {weeklyAnalytics.map((col, idx) => {
+                  const isZero = !hasWeeklyIncome || !col.amount || col.amount === 0;
+                  const heightPercent = isZero ? 3 : Math.max(10, Math.round(((col.amount || 0) / maxDayAmount) * 100));
+
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-2 group relative z-10">
+                      {/* Tooltip */}
+                      <span className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition bg-gray-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm select-none z-20 pointer-events-none whitespace-nowrap">
+                        ₹{(col.amount || 0).toLocaleString()}
+                      </span>
+                      {/* Bar */}
+                      <div
+                        className={`w-8 rounded-t transition-all duration-500 ${
+                          isZero
+                            ? "bg-[#E9E4FF] opacity-50"
+                            : col.isToday
+                            ? "bg-gradient-to-t from-emerald-600 to-teal-400 hover:brightness-110"
+                            : "bg-gradient-to-t from-[#6C4BF4] to-[#8B3FD9] hover:brightness-110"
+                        }`}
+                        style={{ height: `${heightPercent}%`, minHeight: "3px" }}
+                      />
+                      <span className={`text-[10px] font-bold ${col.isToday ? "text-[#6C4BF4]" : "text-gray-400"}`}>
+                        {col.label}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Zero-state overlay for new students */}
+                {!hasWeeklyIncome && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-6">
+                    <div className="bg-white/95 backdrop-blur-xs border border-gray-100 px-4 py-2.5 rounded-2xl text-center shadow-xs max-w-xs">
+                      <p className="text-xs font-bold text-[#17152A] font-poppins">₹0 Weekly Income</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        Daily sales analytics will track automatically as students purchase or rent your listed textbooks.
+                      </p>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
