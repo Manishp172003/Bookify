@@ -138,6 +138,13 @@ const bookSchema = new mongoose.Schema({
   },
 });
 
+// Performance Indexes for marketplace search, categories, and seller listings
+bookSchema.index({ sellerId: 1, status: 1 });
+bookSchema.index({ category: 1, status: 1 });
+bookSchema.index({ status: 1, createdAt: -1 });
+bookSchema.index({ title: "text", author: "text" });
+bookSchema.index({ price: 1 });
+
 const Book = mongoose.model("Book", bookSchema);
 
 export default Book;

@@ -44,7 +44,6 @@ const StudentEarnings = lazy(() => import("../pages/Dashboard/Earnings"));
 const StudentWantBoard = lazy(() => import("../pages/Dashboard/WantBoardPage"));
 
 // Seller Hub
-const MyListings = lazy(() => import("../pages/Listing/MyListings"));
 const WantBoard = lazy(() => import("../pages/Listing/WantBoard"));
 const SellBook = lazy(() => import("../pages/Listing/SellBook"));
 const ISBNLookup = lazy(() => import("../pages/Listing/ISBNLookup"));
@@ -315,13 +314,7 @@ function AppRoutes() {
 
         <Route
           path="/listings"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <MyListings />
-              </MainLayout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/dashboard/listings" replace />}
         />
 
         <Route

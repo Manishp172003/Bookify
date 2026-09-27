@@ -155,6 +155,12 @@ const orderSchema = new mongoose.Schema({
   },
 });
 
+// Performance Indexes for buyer/seller order queries and escrow lookups
+orderSchema.index({ buyerId: 1, createdAt: -1 });
+orderSchema.index({ sellerId: 1, createdAt: -1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ orderId: 1 });
+
 const Order = mongoose.model("Order", orderSchema);
 
 export default Order;

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ListingWizardLayout from '../../components/listing/ListingWizardLayout';
-import BarcodeScannerModal from '../../components/listing/BarcodeScannerModal';
+const BarcodeScannerModal = lazy(() => import('../../components/listing/BarcodeScannerModal'));
 import { useListing } from '../../context/ListingContext';
 import { Search, Barcode, BookOpen, Sparkles, ArrowRight, Check, AlertCircle, Camera } from 'lucide-react';
 import { getBookCover, DEFAULT_BOOK_COVER } from '../../utils/bookCoverUtils';
@@ -396,12 +396,16 @@ export default function ISBNLookup() {
 
       </div>
 
-      {/* Real-Time HTML5 Webcam Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        onScanSuccess={handleScanSuccess}
-      />
+      {/* Real-Time HTML5 Webcam Barcode Scanner Modal (On-demand Chunk) */}
+      {isScannerOpen && (
+        <Suspense fallback={null}>
+          <BarcodeScannerModal
+            isOpen={isScannerOpen}
+            onClose={() => setIsScannerOpen(false)}
+            onScanSuccess={handleScanSuccess}
+          />
+        </Suspense>
+      )}
     </ListingWizardLayout>
   );
 }
