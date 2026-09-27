@@ -205,20 +205,26 @@ export const getUsers = async (req, res) => {
 
     const enriched = rawUsers.map((u) => {
       const obj = u.toObject();
-      const isVerifiedAuthor = Boolean(
+      const isAuthorActive = Boolean(
         obj.role === "author" ||
         obj.isAuthor === true ||
+        obj.hasAuthorProfile === true ||
+        obj.accountCategory === "student_author" ||
+        Boolean(obj.penName) ||
+        Boolean(obj.authorProfile?.penName) ||
         obj.authorVerificationStatus === "verified" ||
-        obj.authorProfile?.verificationStatus === "verified"
+        obj.authorProfile?.verificationStatus === "verified" ||
+        obj.authorVerificationStatus === "pending" ||
+        obj.authorProfile?.verificationStatus === "pending"
       );
       const hasStudent = obj.hasStudentProfile !== false && obj.role !== "author_only";
 
       let calculatedCategory = "student_only";
       if (obj.role === "admin" || obj.isAdmin) {
         calculatedCategory = "admin";
-      } else if (isVerifiedAuthor && hasStudent) {
+      } else if (isAuthorActive && hasStudent) {
         calculatedCategory = "student_author";
-      } else if (isVerifiedAuthor && !hasStudent) {
+      } else if (isAuthorActive && !hasStudent) {
         calculatedCategory = "author_only";
       } else {
         calculatedCategory = "student_only";
@@ -227,7 +233,8 @@ export const getUsers = async (req, res) => {
       return {
         ...obj,
         accountCategory: calculatedCategory,
-        isVerifiedAuthor,
+        isVerifiedAuthor: Boolean(obj.authorVerificationStatus === "verified" || obj.authorProfile?.verificationStatus === "verified"),
+        isAuthor: isAuthorActive,
         hasStudentProfile: hasStudent,
       };
     });
@@ -299,10 +306,14 @@ export const toggleAuthorStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found", data: null });
     }
 
-    const currentAuthor = Boolean(user.isAuthor || user.role === "author" || user.authorVerificationStatus === "verified");
+    const currentAuthor = Boolean(user.isAuthor || user.role === "author" || user.authorVerificationStatus === "verified" || user.accountCategory === "student_author");
     const nextAuthor = !currentAuthor;
 
     user.isAuthor = nextAuthor;
+    user.hasAuthorProfile = nextAuthor;
+    if (user.role !== "admin") {
+      user.accountCategory = nextAuthor ? "student_author" : "student_only";
+    }
     user.authorVerificationStatus = nextAuthor ? "verified" : "unverified";
     if (user.authorProfile) {
       user.authorProfile.verificationStatus = nextAuthor ? "verified" : "unverified";

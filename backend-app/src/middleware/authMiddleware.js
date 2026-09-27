@@ -86,7 +86,10 @@ export const authorize = (...roles) => {
     const isAuthorAllowed =
       roles.includes("author") &&
       (req.user.role === "author" ||
+        req.user.role === "student" ||
         req.user.isAuthor === true ||
+        req.user.hasAuthorProfile === true ||
+        req.user.accountCategory === "student_author" ||
         Boolean(req.user.penName || req.user.authorBio || req.user.authorVerificationStatus === "verified"));
 
     if (!roles.includes(req.user.role) && !isAuthorAllowed) {
