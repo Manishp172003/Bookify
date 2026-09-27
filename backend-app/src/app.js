@@ -15,6 +15,7 @@ import disputeRoutes from "./routes/disputeRoutes.js";
 import payoutRoutes from "./routes/payoutRoutes.js";
 import testimonialRoutes from "./routes/testimonialRoutes.js";
 import newsletterRoutes from "./routes/newsletterRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
 import { getPublicSettings } from "./controllers/adminController.js";
 
 const app = express();
@@ -98,6 +99,7 @@ app.use("/api/disputes", disputeRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/newsletter", newsletterRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 app.get("/api/settings/public", getPublicSettings);
 
 // ==========================================

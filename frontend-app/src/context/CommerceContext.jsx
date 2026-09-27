@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { chatService } from "../services/chatService";
 import { isRealUserAvatar } from "../utils/avatarUtils";
+import { useAuth } from "./AuthContext";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const CommerceContext = createContext(null);
 
@@ -63,6 +66,8 @@ const INITIAL_CONVERSATIONS = [];
 const INITIAL_ORDERS = [];
 
 export function CommerceProvider({ children }) {
+  const { user, isAuthenticated } = useAuth();
+
   // Toast notifications
   const [toast, setToast] = useState(null);
   const showToast = (message, type = "success") => {
@@ -433,7 +438,7 @@ export function CommerceProvider({ children }) {
     (c) => c.id === activeConversationId
   );
 
-  // Wishlist State
+  // Wishlist State (Database-backed for logged-in users + localStorage cache)
   const [wishlistItems, setWishlistItems] = useState(() => {
     const saved = localStorage.getItem("bookify_wishlist");
     if (saved) {
@@ -451,40 +456,130 @@ export function CommerceProvider({ children }) {
     return [];
   });
 
+  // Keep localStorage updated with current wishlist items
   useEffect(() => {
     localStorage.setItem("bookify_wishlist", JSON.stringify(wishlistItems));
   }, [wishlistItems]);
 
-  const toggleWishlist = (book) => {
-    const isWish = wishlistItems.some((item) => item.id === book.id);
+  // Synchronize and fetch wishlist from MongoDB when user logs in
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+    if (!token) return;
+
+    const syncAndFetchWishlist = async () => {
+      try {
+        // 1. If guest had local items, sync / merge with DB
+        const saved = localStorage.getItem("bookify_wishlist");
+        let localItems = [];
+        try {
+          localItems = saved ? JSON.parse(saved) : [];
+        } catch {}
+
+        if (Array.isArray(localItems) && localItems.length > 0) {
+          const syncRes = await fetch(`${API_BASE}/wishlist/sync`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ items: localItems }),
+          });
+          if (syncRes.ok) {
+            const syncJson = await syncRes.json();
+            if (Array.isArray(syncJson.data)) {
+              setWishlistItems(syncJson.data);
+              return;
+            }
+          }
+        }
+
+        // 2. Fetch fresh wishlist from MongoDB
+        const res = await fetch(`${API_BASE}/wishlist`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.data)) {
+            setWishlistItems(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn("[Bookify] Wishlist backend load error:", err);
+      }
+    };
+
+    syncAndFetchWishlist();
+  }, [isAuthenticated, user?.id, user?.email]);
+
+  const toggleWishlist = async (book) => {
+    const isWish = wishlistItems.some((item) => String(item.id) === String(book.id));
+    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+
+    const itemPayload = {
+      id: String(book.id),
+      title: book.title || "Untitled Book",
+      author: book.author || "Unknown Author",
+      price: book.mode === "donate" ? "Free" : `₹${book.askingPrice || book.price || 0}`,
+      condition: book.condition?.replace(/_/g, " ") || "Good",
+      alertActive: false,
+      coverImage: book.coverImage || (book.photos && book.photos[0]) || "",
+      mode: book.mode || "buy",
+    };
+
     if (isWish) {
-      setWishlistItems((prev) => prev.filter((item) => item.id !== book.id));
+      setWishlistItems((prev) => prev.filter((item) => String(item.id) !== String(book.id)));
       showToast("Removed from wishlist.", "info");
     } else {
-      const newItem = {
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        price: book.mode === "donate" ? "Free" : `₹${book.askingPrice || book.price}`,
-        condition: book.condition?.replace(/_/g, " ") || "Good",
-        alertActive: false,
-        coverImage: book.coverImage || (book.photos && book.photos[0]) || ""
-      };
-      setWishlistItems((prev) => [...prev, newItem]);
+      setWishlistItems((prev) => [...prev, itemPayload]);
       showToast("Added to wishlist!");
+    }
+
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/wishlist/toggle`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(itemPayload),
+        });
+      } catch (err) {
+        console.warn("[Bookify] Failed to sync wishlist toggle to DB:", err);
+      }
     }
   };
 
-  const toggleWishlistAlert = (id) => {
+  const toggleWishlistAlert = async (id) => {
     setWishlistItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, alertActive: !item.alertActive } : item
+        String(item.id) === String(id) ? { ...item, alertActive: !item.alertActive } : item
       )
     );
+
+    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/wishlist/${id}/alert`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (err) {
+        console.warn("[Bookify] Failed to sync wishlist alert to DB:", err);
+      }
+    }
   };
 
   const isBookWishlisted = (id) => {
-    return wishlistItems.some((item) => item.id === id);
+    return wishlistItems.some((item) => String(item.id) === String(id));
   };
 
   // Cart operations
@@ -530,28 +625,45 @@ export function CommerceProvider({ children }) {
     );
   };
 
-  const moveToWishlist = (id) => {
-    const item = cartItems.find((i) => i.id === id);
+  const moveToWishlist = async (id) => {
+    const item = cartItems.find((i) => String(i.id) === String(id));
     if (!item) return;
 
-    // Add to localStorage wishlist
-    const currentList = JSON.parse(localStorage.getItem("bookify_wishlist") || "[]");
-    if (!currentList.some((w) => w.id === id)) {
-      const wishItem = {
-        id: item.id,
-        title: item.title,
-        author: item.author,
-        price: `₹${item.price}`,
-        condition: item.condition,
-        alertActive: false,
-        coverImage: item.image
-      };
-      localStorage.setItem("bookify_wishlist", JSON.stringify([...currentList, wishItem]));
-    }
-    
+    const wishItem = {
+      id: String(item.id),
+      title: item.title || "Untitled Book",
+      author: item.author || "Unknown Author",
+      price: `₹${item.price || 0}`,
+      condition: item.condition || "Good",
+      alertActive: false,
+      coverImage: item.image || item.coverImage || "",
+      mode: "buy",
+    };
+
+    setWishlistItems((prev) => {
+      if (prev.some((w) => String(w.id) === String(id))) return prev;
+      return [...prev, wishItem];
+    });
+
     // Remove from cart
     removeFromCart(id);
     showToast("Moved item to wishlist.", "success");
+
+    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/wishlist/toggle`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(wishItem),
+        });
+      } catch (err) {
+        console.warn("[Bookify] Failed to sync moveToWishlist to DB:", err);
+      }
+    }
   };
 
   const clearCart = () => {

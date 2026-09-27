@@ -123,6 +123,21 @@ const userSchema = new mongoose.Schema({
     chatNotifications: { type: Boolean, default: true },
     meetupReminders: { type: Boolean, default: true },
   },
+
+  // ─── Wishlist Items ───────────────────────────────────────────────────────
+  wishlist: [
+    {
+      id: { type: String, required: true },
+      title: { type: String, required: true },
+      author: { type: String, default: "" },
+      price: { type: String, default: "" },
+      condition: { type: String, default: "" },
+      coverImage: { type: String, default: "" },
+      alertActive: { type: Boolean, default: false },
+      mode: { type: String, default: "" },
+      addedAt: { type: Date, default: Date.now },
+    },
+  ],
 }, { timestamps: true });
 
 // Pre-save hook: keep isAdmin and role in sync

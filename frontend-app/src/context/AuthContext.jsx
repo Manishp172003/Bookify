@@ -88,8 +88,8 @@ export function AuthProvider({ children }) {
       };
     }
 
-    // If new user session or switching user, clear stale cache
-    if (!prevUser || prevUser.id !== userObj.id || prevUser.email !== userObj.email) {
+    // If switching between different user accounts, clear previous user's cached data
+    if (prevUser && (prevUser.id !== userObj.id || prevUser.email !== userObj.email)) {
       localStorage.removeItem("bookify_orders");
       localStorage.removeItem("bookify_conversations");
       localStorage.removeItem("bookify_user_listings_v1");
