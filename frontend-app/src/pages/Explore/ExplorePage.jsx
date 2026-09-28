@@ -65,7 +65,16 @@ export default function ExplorePage() {
     subCategories: [],
   });
 
-  const filteredBooks = useMemo(() => {
+  const getDaysAgo = (book) => {
+    if (typeof book.postedDaysAgo === "number") return book.postedDaysAgo;
+    if (book.createdAt) {
+      const diff = Math.floor((Date.now() - new Date(book.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+      return Math.max(0, diff);
+    }
+    return 0;
+  };
+
+  const baseFilteredBooks = useMemo(() => {
     let result = [...books];
 
     if (initialSeller) {
@@ -168,12 +177,26 @@ export default function ExplorePage() {
       result = result.filter((b) => b.deliveryAvailable);
     }
 
+    return result;
+  }, [searchQuery, filters, initialSeller]);
+
+  const timeCounts = useMemo(() => {
+    return {
+      today: baseFilteredBooks.filter((b) => getDaysAgo(b) === 0).length,
+      week: baseFilteredBooks.filter((b) => getDaysAgo(b) <= 7).length,
+      month: baseFilteredBooks.filter((b) => getDaysAgo(b) <= 30).length,
+    };
+  }, [baseFilteredBooks]);
+
+  const filteredBooks = useMemo(() => {
+    let result = [...baseFilteredBooks];
+
     if (timeTab === "today") {
-      result = result.filter((b) => b.postedDaysAgo === 0);
+      result = result.filter((b) => getDaysAgo(b) === 0);
     } else if (timeTab === "week") {
-      result = result.filter((b) => b.postedDaysAgo <= 7);
+      result = result.filter((b) => getDaysAgo(b) <= 7);
     } else if (timeTab === "month") {
-      result = result.filter((b) => b.postedDaysAgo <= 30);
+      result = result.filter((b) => getDaysAgo(b) <= 30);
     }
 
     switch (sortBy) {
@@ -184,10 +207,10 @@ export default function ExplorePage() {
         result.sort((a, b) => b.askingPrice - a.askingPrice);
         break;
       case "newest":
-        result.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
+        result.sort((a, b) => getDaysAgo(a) - getDaysAgo(b));
         break;
       case "rating":
-        result.sort((a, b) => b.seller.rating - a.seller.rating);
+        result.sort((a, b) => (b.seller?.rating || 0) - (a.seller?.rating || 0));
         break;
       case "discount":
         result.sort((a, b) => {
@@ -205,7 +228,7 @@ export default function ExplorePage() {
     }
 
     return result;
-  }, [searchQuery, filters, sortBy, timeTab]);
+  }, [baseFilteredBooks, timeTab, sortBy]);
 
   const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
   const paginatedBooks = filteredBooks.slice(
@@ -452,23 +475,37 @@ export default function ExplorePage() {
                 <h1 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-bookify-text">
                   Books
                 </h1>
-                <div className="flex gap-4 mt-3">
-                  {timeTabs.map((tab) => (
-                    <button
-                      key={tab.value}
-                      onClick={() => {
-                        setTimeTab(tab.value);
-                        setCurrentPage(1);
-                      }}
-                      className={`text-sm font-medium pb-1 border-b-2 transition-colors ${
-                        timeTab === tab.value
-                          ? "text-bookify-text border-bookify-purple font-semibold"
-                          : "text-bookify-text-secondary border-transparent hover:text-bookify-text"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2 sm:gap-3 mt-3 overflow-x-auto pb-1">
+                  {timeTabs.map((tab) => {
+                    const isActive = timeTab === tab.value;
+                    const count = timeCounts[tab.value];
+                    return (
+                      <button
+                        key={tab.value}
+                        type="button"
+                        onClick={() => {
+                          setTimeTab(tab.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none ${
+                          isActive
+                            ? "bg-[#6C4BF4] text-white shadow-sm shadow-[#6C4BF4]/30"
+                            : "bg-white border border-[#E7E4F2] text-[#6B6880] hover:text-[#17152A] hover:border-[#6C4BF4]/40"
+                        }`}
+                      >
+                        <span>{tab.label}</span>
+                        <span
+                          className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
+                            isActive
+                              ? "bg-white/25 text-white"
+                              : "bg-[#F8F7FF] text-[#6C4BF4]"
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
