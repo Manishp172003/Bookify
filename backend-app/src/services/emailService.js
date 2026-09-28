@@ -236,10 +236,63 @@ export const sendVerificationStatusEmail = async (email, status, name = "Author"
   });
 };
 
+/**
+ * 5. Welcome Email Template (Sent upon registration)
+ */
+export const sendWelcomeEmail = async (email, name = "Bookify Member", customClientUrl = null) => {
+  const clientUrl =
+    customClientUrl ||
+    (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes("localhost")
+      ? process.env.CLIENT_URL
+      : "https://bookify-lemon-seven.vercel.app");
+  const exploreLink = `${clientUrl}/explore`;
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 30px; background-color: #F8F7FF; border-radius: 16px; border: 1px solid #E7E4F2;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #6C4BF4; margin: 0; font-size: 28px; font-weight: 800;">Bookify</h1>
+        <p style="color: #6B6880; font-size: 14px; margin-top: 4px;">Smart Campus Book Marketplace & Author Studio</p>
+      </div>
+      <div style="background-color: #FFFFFF; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(108, 75, 244, 0.05);">
+        <h2 style="color: #17152A; font-size: 22px; margin-top: 0; font-weight: 800;">Welcome to Bookify, ${name}! 🎉</h2>
+        <p style="color: #4A4668; font-size: 15px; line-height: 1.6;">
+          Your account has been successfully created. We're thrilled to welcome you to India's smartest campus community for buying, renting, and peer-swapping books.
+        </p>
+        
+        <div style="background-color: #F8F7FF; border: 1px solid #EEEAFE; border-radius: 10px; padding: 18px; margin: 24px 0;">
+          <h3 style="margin: 0 0 12px 0; color: #17152A; font-size: 15px; font-weight: 700;">Here is what you can do right away:</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #4A4668; font-size: 14px; line-height: 1.8;">
+            <li><strong>Discover Deals:</strong> Browse thousands of standard textbooks and novels at up to 70% off.</li>
+            <li><strong>Sell & Declutter:</strong> List old coursebooks in 60 seconds with instant ISBN barcode lookup.</li>
+            <li><strong>100% Escrow Protection:</strong> Payments are held safely until you receive and verify your book in person or via delivery.</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin: 28px 0 16px 0;">
+          <a href="${exploreLink}" style="background-color: #6C4BF4; color: #FFFFFF; text-decoration: none; padding: 14px 32px; font-size: 15px; font-weight: 700; border-radius: 10px; display: inline-block;">
+            Start Exploring Books
+          </a>
+        </div>
+        <p style="color: #8C89A0; font-size: 13px; text-align: center; margin: 0;">
+          Need any assistance? Reply directly to this email or visit our Help Center anytime.
+        </p>
+      </div>
+      <p style="text-align: center; color: #A09DB5; font-size: 12px; margin-top: 24px;">&copy; ${new Date().getFullYear()} Bookify. All rights reserved.</p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `Welcome to Bookify, ${name}! 🎉`,
+    htmlContent,
+  });
+};
+
 export default {
   sendEmail,
   sendOtpEmail,
   sendPasswordResetEmail,
   sendOrderReceiptEmail,
   sendVerificationStatusEmail,
+  sendWelcomeEmail,
 };

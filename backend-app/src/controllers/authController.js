@@ -2,7 +2,7 @@ import crypto from "crypto";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { sendOtpEmail, sendPasswordResetEmail } from "../services/emailService.js";
+import { sendOtpEmail, sendPasswordResetEmail, sendWelcomeEmail } from "../services/emailService.js";
 import { sendOTP } from "../utils/sendSms.js";
 import { revokeToken } from "../utils/tokenBlacklist.js";
 
@@ -75,32 +75,25 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const otp = generateOtp();
     const user = await User.create({
       fullName,
       email,
       phone,
       password: hashedPassword,
       role: "student",
-      otp,
-      otpExpiry: new Date(Date.now() + 10 * 60 * 1000),
+      isPhoneVerified: false,
     });
 
-    // Send verification OTP via email & SMS (non-blocking)
-    sendOtpEmail(email, otp, fullName).catch((err) =>
-      console.error("Register OTP email error:", err.message)
+    // Send Welcome Email (non-blocking)
+    sendWelcomeEmail(email, fullName).catch((err) =>
+      console.error("Register Welcome email error:", err.message)
     );
-    if (phone) {
-      sendOTP(phone, otp).catch((err) =>
-        console.error("Register OTP SMS error:", err.message)
-      );
-    }
 
     const token = signToken({ id: user._id, role: user.role });
 
     res.status(201).json({
       success: true,
-      message: "Account created successfully. Verification OTP dispatched.",
+      message: "Account created successfully. Welcome to Bookify!",
       token,
       user: publicUser(user),
     });
