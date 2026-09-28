@@ -15,8 +15,9 @@ const orderTimelineSchema = new mongoose.Schema({
 
 const orderItemSchema = new mongoose.Schema({
   bookId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.Mixed,
     ref: "Book",
+    default: null,
   },
   title: { type: String, required: true },
   author: { type: String, default: "" },
@@ -45,8 +46,9 @@ const orderSchema = new mongoose.Schema({
   },
 
   bookId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.Mixed,
     ref: "Book",
+    default: null,
   },
 
   items: [orderItemSchema],

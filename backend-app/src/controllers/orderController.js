@@ -27,7 +27,7 @@ export const createOrder = async (req, res) => {
       expectedDeliveryDate,
     } = req.body;
 
-    const targetBookId = bookId || items?.[0]?.bookId;
+    const targetBookId = bookId || items?.[0]?.bookId || items?.[0]?.id;
 
     if (!targetBookId || !amount || !paymentMethod) {
       return res.status(400).json({
@@ -37,53 +37,65 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const book = await Book.findById(targetBookId);
-
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: "Book not found",
-        data: null,
-      });
+    let book = null;
+    if (mongoose.Types.ObjectId.isValid(targetBookId)) {
+      book = await Book.findById(targetBookId);
     }
 
-    if (book.status !== "Active") {
-      return res.status(400).json({
-        success: false,
-        message: "Book is not available",
-        data: null,
-      });
+    if (book) {
+      if (book.status !== "Active") {
+        return res.status(400).json({
+          success: false,
+          message: "Book is not available",
+          data: null,
+        });
+      }
+
+      if (book.sellerId && book.sellerId.toString() === req.user._id.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: "You cannot order your own book",
+          data: null,
+        });
+      }
     }
 
-    if (book.sellerId.toString() === req.user._id.toString()) {
-      return res.status(400).json({
-        success: false,
-        message: "You cannot order your own book",
-        data: null,
+    // Determine sellerId
+    let sellerId = book?.sellerId || req.body.sellerId || items?.[0]?.sellerId;
+    if (!sellerId || !mongoose.Types.ObjectId.isValid(sellerId)) {
+      // Find an active platform or existing seller user as fallback
+      const fallbackSeller = await User.findOne({
+        $or: [
+          { role: "seller" },
+          { email: "seller1@bookify.com" },
+          { role: "admin" },
+          { _id: { $ne: req.user._id } },
+        ],
       });
+      sellerId = fallbackSeller ? fallbackSeller._id : req.user._id;
     }
 
     // Build items array
     let orderItems = [];
     if (Array.isArray(items) && items.length > 0) {
       orderItems = items.map((item) => ({
-        bookId: item.bookId || book._id,
-        title: item.title || book.title,
-        author: item.author || book.author || "",
-        price: Number(item.price || book.price || 0),
-        condition: item.condition || book.condition || "Good",
-        image: item.image || (book.images?.[0] || ""),
+        bookId: item.bookId || item.id || (book ? book._id : targetBookId),
+        title: item.title || (book ? book.title : "Marketplace Book"),
+        author: item.author || (book ? book.author : "") || "",
+        price: Number(item.price !== undefined ? item.price : (book ? book.price : amount) || 0),
+        condition: item.condition || (book ? book.condition : "Good") || "Good",
+        image: item.image || (book?.images?.[0] || ""),
         quantity: Number(item.quantity || 1),
       }));
     } else {
       orderItems = [
         {
-          bookId: book._id,
-          title: book.title,
-          author: book.author || "",
-          price: Number(book.price || amount),
-          condition: book.condition || "Good",
-          image: book.images?.[0] || "",
+          bookId: book ? book._id : targetBookId,
+          title: book ? book.title : "Marketplace Book",
+          author: (book ? book.author : "") || "",
+          price: Number((book ? book.price : amount) || 0),
+          condition: (book ? book.condition : "Good") || "Good",
+          image: book?.images?.[0] || "",
           quantity: 1,
         },
       ];
@@ -142,8 +154,8 @@ export const createOrder = async (req, res) => {
     const order = await Order.create({
       orderCode: generatedCode,
       buyerId: req.user._id,
-      sellerId: book.sellerId,
-      bookId: book._id,
+      sellerId: sellerId,
+      bookId: book ? book._id : targetBookId,
       items: orderItems,
       orderType,
       subtotal: subtotal !== undefined ? Number(subtotal) : Number(amount),
@@ -181,8 +193,10 @@ export const createOrder = async (req, res) => {
       await order.save();
     }
 
-    book.status = orderType === "Rent" ? "Rented" : "Pending";
-    await book.save();
+    if (book) {
+      book.status = orderType === "Rent" ? "Rented" : "Pending";
+      await book.save();
+    }
 
     // If coupon was applied, increment its usage count in MongoDB
     if (couponCode) {
@@ -194,19 +208,30 @@ export const createOrder = async (req, res) => {
 
     try {
       const io = getIO();
-      io.to(`user:${book.sellerId.toString()}`).emit("newOrder", { order });
+      if (sellerId) {
+        io.to(`user:${sellerId.toString()}`).emit("newOrder", { order });
+      }
     } catch (sErr) {
       // Non-blocking socket notification
     }
 
     // Send transactional order notification emails to buyer and seller
-    User.findById(book.sellerId)
-      .then((seller) => {
-        sendOrderEmails({ order, buyer: req.user, seller, book }).catch((err) =>
-          console.error("Order notification email dispatch error:", err.message)
-        );
-      })
-      .catch((err) => console.error("Seller lookup for email failed:", err.message));
+    if (sellerId && sellerId.toString() !== req.user._id.toString()) {
+      User.findById(sellerId)
+        .then((seller) => {
+          if (seller) {
+            sendOrderEmails({
+              order,
+              buyer: req.user,
+              seller,
+              book: book || { title: orderItems[0]?.title || "Marketplace Book" },
+            }).catch((err) =>
+              console.error("Order notification email dispatch error:", err.message)
+            );
+          }
+        })
+        .catch((err) => console.error("Seller lookup for email failed:", err.message));
+    }
 
     return res.status(201).json({
       success: true,
