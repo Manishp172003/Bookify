@@ -51,8 +51,12 @@ export function AuthProvider({ children }) {
       .catch((err) => console.warn("Failed to fetch fresh user profile:", err));
   }, [isAuthenticated]);
 
-  const login = (userData) => {
+  const login = (userData, token = null) => {
     localStorage.setItem("bookify_auth", "true");
+    if (token) {
+      localStorage.setItem("token", token);
+      localStorage.setItem("bookify_auth_token", token);
+    }
     const prevUserRaw = localStorage.getItem("bookify_user");
     let prevUser = null;
     try { prevUser = prevUserRaw ? JSON.parse(prevUserRaw) : null; } catch {}

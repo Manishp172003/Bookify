@@ -184,6 +184,8 @@ function Login() {
                 });
 
                 if (res?.token) {
+                  localStorage.setItem("token", res.token);
+                  localStorage.setItem("bookify_auth_token", res.token);
                   login(res.user, res.token);
                   setShowSuccessPopup(true);
                   setTimeout(() => {
