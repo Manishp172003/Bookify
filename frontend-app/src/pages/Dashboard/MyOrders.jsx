@@ -31,7 +31,7 @@ const SEED_BUYER_ORDERS = [];
 export default function MyOrders() {
   const { orders: contextOrders, updateOrderStatus, startOrGetConversation, showToast } = useCommerce();
   const { user: currentUser } = useAuth();
-  const [viewMode, setViewMode] = useState("seller_hub"); // default to "seller_hub" so user immediately sees confirmation buttons!
+  const [viewMode, setViewMode] = useState("purchases"); // default to student purchases view
   const [activeTab, setActiveTab] = useState("All");
   const [selectedSeller, setSelectedSeller] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -424,19 +424,13 @@ export default function MyOrders() {
 
                           {/* Buyer & Meetup Details (6 cols) */}
                           {(() => {
-                            const currentName = currentUser?.fullName || "Aarav Sharma";
-                            const rawBuyerName = ord.buyer?.name || ord.address?.name;
-                            const displayBuyerName =
-                              rawBuyerName && rawBuyerName !== currentName && !rawBuyerName.toLowerCase().includes("aarav")
-                                ? rawBuyerName
-                                : "Rohan Verma";
+                            const rawBuyerName = ord.buyer?.name || ord.buyer?.fullName || ord.address?.name;
+                            const displayBuyerName = rawBuyerName || "Student Buyer";
 
                             const displayBuyerPhone =
-                              ord.buyer?.phone && ord.buyer?.phone !== currentUser?.phone
-                                ? ord.buyer.phone
-                                : ord.address?.phone && ord.address?.phone !== currentUser?.phone
-                                ? ord.address.phone
-                                : "+91 98765 88990";
+                              ord.buyer?.phone ||
+                              ord.address?.phone ||
+                              "+91 98765 88990";
 
                             return (
                               <div className="md:col-span-6 rounded-2xl bg-[#F8F7FF] p-4 border border-gray-150 text-xs">

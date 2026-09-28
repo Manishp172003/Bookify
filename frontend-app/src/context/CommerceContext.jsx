@@ -862,11 +862,11 @@ export function CommerceProvider({ children }) {
       discount,
       total,
       address: selectedAddress,
-      isSellerOrder: true,
-      seller: cartItems[0]?.seller || { name: "Aarav Sharma", id: "usr_aarav" },
+      isSellerOrder: false,
+      seller: cartItems[0]?.seller || { name: cartItems[0]?.author || "Campus Seller", id: "usr_seller" },
       buyer: {
-        name: selectedAddress?.name || "Student Buyer",
-        phone: selectedAddress?.phone || "+91 98765 43210",
+        name: selectedAddress?.name || user?.fullName || "Student Buyer",
+        phone: selectedAddress?.phone || user?.phone || "+91 98765 43210",
         meetupSpot: selectedAddress?.meetupSpot || selectedAddress?.campus || "Campus Central Library Entrance",
         hostelBlock: selectedAddress?.hostelBlock || selectedAddress?.street || "Campus Hostel"
       },
