@@ -37,7 +37,7 @@ function AdminSidebar({ isOpen, onClose }) {
     { name: "Listings", path: "/admin/listings", icon: BookMarked },
     { name: "Orders & Escrow", path: "/admin/orders", icon: Receipt },
     { name: "Disputes", path: "/admin/disputes", icon: AlertTriangle },
-    { name: "Authors", path: "/admin/authors", icon: UserCheck },
+    { name: "Author Verification", path: "/admin/authors", icon: UserCheck },
     { name: "Coupons", path: "/admin/coupons", icon: Ticket },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ];

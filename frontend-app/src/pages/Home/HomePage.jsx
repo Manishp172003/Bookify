@@ -96,7 +96,7 @@ export default function HomePage() {
 
   const fetchTestimonials = () => {
     testimonialService.getFeaturedTestimonials().then((data) => {
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setLiveTestimonials(data);
       }
     });
