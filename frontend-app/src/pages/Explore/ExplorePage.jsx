@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   SlidersHorizontal,
@@ -65,6 +65,87 @@ export default function ExplorePage() {
     subCategories: [],
   });
 
+  const [allBooks, setAllBooks] = useState(() => [...books]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveBooks = async () => {
+      try {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        const res = await fetch(`${apiBase}/books?limit=100`);
+        if (res.ok) {
+          const json = await res.json();
+          const serverBooks = json?.data?.books || [];
+          if (Array.isArray(serverBooks) && serverBooks.length > 0 && isMounted) {
+            const normalizedServerBooks = serverBooks.map((sb) => {
+              const coverImg =
+                Array.isArray(sb.images) && sb.images.length > 0
+                  ? sb.images[0]
+                  : sb.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop";
+
+              const sellerObj = sb.sellerId && typeof sb.sellerId === "object" ? sb.sellerId : {};
+              const daysOld = sb.createdAt
+                ? Math.max(0, Math.floor((Date.now() - new Date(sb.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
+                : 0;
+
+              return {
+                id: sb._id,
+                _id: sb._id,
+                title: sb.title || "Untitled Book",
+                author: sb.author || "Academic Author",
+                isbn: sb.isbn || "",
+                category: sb.category || "General",
+                subCategory: sb.subCategory || "",
+                condition: (sb.condition || "GOOD").toUpperCase().replace(/\s+/g, "_"),
+                conditionRating: sb.condition === "Like New" ? 4.9 : sb.condition === "Very Good" ? 4.6 : 4.2,
+                askingPrice: Number(sb.price || 0),
+                originalPrice: Number(sb.originalPrice || Math.round((sb.price || 299) * 1.3)),
+                discountPercent:
+                  sb.originalPrice && sb.price
+                    ? Math.max(0, Math.round(((sb.originalPrice - sb.price) / sb.originalPrice) * 100))
+                    : 25,
+                mode: (sb.transactionMode || sb.mode || "sell").toLowerCase(),
+                rentalRate: sb.rentalPrice || 15,
+                securityDeposit: Math.round((sb.price || 200) * 0.8),
+                postedDaysAgo: daysOld,
+                createdAt: sb.createdAt,
+                coverImage: coverImg,
+                photos: Array.isArray(sb.images) && sb.images.length > 0 ? sb.images : [coverImg],
+                description: sb.description || "",
+                seller: {
+                  id: sellerObj._id || "seller",
+                  name: sellerObj.fullName || "Campus Seller",
+                  avatar:
+                    sellerObj.avatar ||
+                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
+                  rating: 4.8,
+                  reviewsCount: 12,
+                  campus: sb.location || sellerObj.address?.campus || "Central Campus",
+                  verified: true,
+                },
+                isNegotiable: Boolean(sb.isNegotiable),
+                deliveryAvailable: true,
+              };
+            });
+
+            setAllBooks((prev) => {
+              const liveIds = new Set(normalizedServerBooks.map((b) => String(b.id)));
+              const nonDuplicateStatic = books.filter((b) => !liveIds.has(String(b.id)));
+              return [...normalizedServerBooks, ...nonDuplicateStatic];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("[ExplorePage] Failed to fetch live books:", err);
+      }
+    };
+
+    fetchLiveBooks();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const getDaysAgo = (book) => {
     if (typeof book.postedDaysAgo === "number") return book.postedDaysAgo;
     if (book.createdAt) {
@@ -75,7 +156,7 @@ export default function ExplorePage() {
   };
 
   const baseFilteredBooks = useMemo(() => {
-    let result = [...books];
+    let result = [...allBooks];
 
     if (initialSeller) {
       result = result.filter(

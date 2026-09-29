@@ -52,65 +52,73 @@ export const getMyRentals = async (req, res) => {
 
     // If database has no rentals for this user, seed default campus active records
     if (rented.length === 0 && lent.length === 0) {
-      const demoOwner = await User.findOne({ _id: { $ne: userId } }) || { _id: userId, fullName: "Dev Kumar" };
-      const demoRenter = await User.findOne({ _id: { $ne: userId } }) || { _id: userId, fullName: "Amit Sen" };
+      try {
+        const demoOwner = (await User.findOne({ _id: { $ne: userId } })) || { _id: userId, fullName: "Dev Kumar" };
+        const demoRenter = (await User.findOne({ _id: { $ne: userId } })) || { _id: userId, fullName: "Amit Sen" };
 
-      const seededRented1 = await Rental.create({
-        rentalCode: "RNT-10928",
-        title: "Operating System Concepts, 9th Edition",
-        author: "Silberschatz, Galvin, Gagne",
-        renterId: userId,
-        renterName: req.user.fullName,
-        ownerId: demoOwner._id,
-        ownerName: demoOwner.fullName || "Dev Kumar",
-        durationDays: 30,
-        startDate: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
-        depositAmount: 400,
-        rentalFee: 150,
-        coverImage: "https://covers.openlibrary.org/b/isbn/9781118063330-L.jpg",
-        coverClass: "from-[#0F172A] to-[#1E293B]",
-        status: "active",
-      });
+        const code1 = `RNT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const code2 = `RNT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const code3 = `LNT-${Math.floor(100000 + Math.random() * 900000)}`;
 
-      const seededRented2 = await Rental.create({
-        rentalCode: "RNT-51290",
-        title: "Core Java: An Integrated Approach",
-        author: "R. Nageswara Rao",
-        renterId: userId,
-        renterName: req.user.fullName,
-        ownerId: demoOwner._id,
-        ownerName: "Priya Patel",
-        durationDays: 30,
-        startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
-        depositAmount: 300,
-        rentalFee: 100,
-        coverImage: "https://covers.openlibrary.org/b/isbn/9789351199342-L.jpg",
-        coverClass: "from-[#4F46E5] to-[#7C3AED]",
-        status: "active",
-      });
+        const seededRented1 = await Rental.create({
+          rentalCode: code1,
+          title: "Operating System Concepts, 9th Edition",
+          author: "Silberschatz, Galvin, Gagne",
+          renterId: userId,
+          renterName: req.user.fullName,
+          ownerId: demoOwner._id,
+          ownerName: demoOwner.fullName || "Dev Kumar",
+          durationDays: 30,
+          startDate: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000),
+          dueDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
+          depositAmount: 400,
+          rentalFee: 150,
+          coverImage: "https://covers.openlibrary.org/b/isbn/9781118063330-L.jpg",
+          coverClass: "from-[#0F172A] to-[#1E293B]",
+          status: "active",
+        });
 
-      const seededLent = await Rental.create({
-        rentalCode: "LNT-38290",
-        title: "Database System Concepts",
-        author: "Korth, Sudarshan",
-        renterId: demoRenter._id,
-        renterName: demoRenter.fullName || "Amit Sen",
-        ownerId: userId,
-        ownerName: req.user.fullName,
-        durationDays: 30,
-        startDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-        depositAmount: 500,
-        rentalFee: 200,
-        coverImage: "https://covers.openlibrary.org/b/isbn/9780073523323-L.jpg",
-        coverClass: "from-[#047857] to-[#065F46]",
-        status: "active",
-      });
+        const seededRented2 = await Rental.create({
+          rentalCode: code2,
+          title: "Core Java: An Integrated Approach",
+          author: "R. Nageswara Rao",
+          renterId: userId,
+          renterName: req.user.fullName,
+          ownerId: demoOwner._id,
+          ownerName: "Priya Patel",
+          durationDays: 30,
+          startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+          dueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
+          depositAmount: 300,
+          rentalFee: 100,
+          coverImage: "https://covers.openlibrary.org/b/isbn/9789351199342-L.jpg",
+          coverClass: "from-[#4F46E5] to-[#7C3AED]",
+          status: "active",
+        });
 
-      rented = [seededRented1, seededRented2];
-      lent = [seededLent];
+        const seededLent = await Rental.create({
+          rentalCode: code3,
+          title: "Database System Concepts",
+          author: "Korth, Sudarshan",
+          renterId: demoRenter._id,
+          renterName: demoRenter.fullName || "Amit Sen",
+          ownerId: userId,
+          ownerName: req.user.fullName,
+          durationDays: 30,
+          startDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+          depositAmount: 500,
+          rentalFee: 200,
+          coverImage: "https://covers.openlibrary.org/b/isbn/9780073523323-L.jpg",
+          coverClass: "from-[#047857] to-[#065F46]",
+          status: "active",
+        });
+
+        rented = [seededRented1, seededRented2];
+        lent = [seededLent];
+      } catch (seedErr) {
+        console.warn("[Rental] Seed fallback notice:", seedErr.message);
+      }
     }
 
     res.status(200).json({

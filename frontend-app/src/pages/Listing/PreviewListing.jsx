@@ -49,10 +49,15 @@ export default function PreviewListing() {
     setIsPublishing(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token =
+        localStorage.getItem('token') ||
+        localStorage.getItem('bookify_auth_token') ||
+        localStorage.getItem('bookify_token') ||
+        JSON.parse(localStorage.getItem('bookify_user') || '{}')?.token;
+
       if (token) {
         const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-        await fetch(`${apiBase}/books`, {
+        const res = await fetch(`${apiBase}/books`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -72,6 +77,17 @@ export default function PreviewListing() {
             location: listingData.pickupCampus || 'Main Campus Library'
           })
         });
+
+        if (res.ok) {
+          const json = await res.json();
+          const savedBook = json?.data;
+          if (savedBook?._id || savedBook?.id) {
+            listingData.backendId = savedBook._id || savedBook.id;
+            listingData.id = savedBook._id || savedBook.id;
+          }
+        } else {
+          console.warn("[PublishListing] Server rejected book creation:", await res.text());
+        }
       }
     } catch (err) {
       console.warn("Backend save skipped or offline:", err);
