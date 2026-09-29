@@ -24,7 +24,23 @@ import { api } from "../../services/apiClient";
 
 function normalizeTimeline(rawTimeline = [], currentStatus = "placed", isDelivered = false) {
   const stageOrder = ["placed", "confirmed", "shipped", "out_for_delivery", "delivered"];
-  const currentIdx = stageOrder.indexOf(currentStatus);
+  const normalizedStatus = (currentStatus || "placed")
+    .toLowerCase()
+    .replace(/ /g, "_")
+    .replace(/-/g, "_");
+
+  const mappedStatus =
+    normalizedStatus === "confirmed" || normalizedStatus === "processing" || normalizedStatus === "seller_confirmed"
+      ? "confirmed"
+      : normalizedStatus === "shipped" || normalizedStatus === "in_transit"
+      ? "shipped"
+      : normalizedStatus === "out_for_delivery"
+      ? "out_for_delivery"
+      : normalizedStatus === "delivered"
+      ? "delivered"
+      : "placed";
+
+  const currentIdx = Math.max(0, stageOrder.indexOf(mappedStatus));
 
   const defaultStages = [
     { stage: "placed", title: "Order Placed", date: "Today", description: "Payment verified & held safely in escrow." },
@@ -36,8 +52,8 @@ function normalizeTimeline(rawTimeline = [], currentStatus = "placed", isDeliver
 
   return defaultStages.map((def) => {
     const stepIdx = stageOrder.indexOf(def.stage);
-    const existing = rawTimeline.find(
-      (t) => (t.stage || "").toLowerCase().replace(/ /g, "_") === def.stage
+    const existing = (rawTimeline || []).find(
+      (t) => (t.stage || "").toLowerCase().replace(/ /g, "_").replace(/-/g, "_") === def.stage
     );
 
     const isStepCompleted = isDelivered || stepIdx < currentIdx || (stepIdx === currentIdx && isDelivered);
@@ -61,15 +77,23 @@ function normalizeTimeline(rawTimeline = [], currentStatus = "placed", isDeliver
 }
 
 function formatBackendOrder(raw, fallback = {}) {
-  const rawStatus = (raw.status || "").toLowerCase();
-  const mappedStatus =
-    rawStatus === "confirmed" || rawStatus === "processing"
-      ? "confirmed"
-      : rawStatus === "out for delivery"
-      ? "out_for_delivery"
-      : rawStatus || fallback.status || "placed";
+  const normalizedRaw = (raw.status || fallback.status || "placed")
+    .toLowerCase()
+    .replace(/ /g, "_")
+    .replace(/-/g, "_");
 
-  const isDelivered = mappedStatus === "delivered";
+  const mappedStatus =
+    normalizedRaw === "confirmed" || normalizedRaw === "processing" || normalizedRaw === "seller_confirmed"
+      ? "confirmed"
+      : normalizedRaw === "shipped" || normalizedRaw === "in_transit"
+      ? "shipped"
+      : normalizedRaw === "out_for_delivery"
+      ? "out_for_delivery"
+      : normalizedRaw === "delivered"
+      ? "delivered"
+      : "placed";
+
+  const isDelivered = mappedStatus === "delivered" || raw.escrowStatus === "Released" || fallback.escrowStatus === "released_to_seller";
 
   return {
     id: raw._id || raw.id || fallback.id,
@@ -89,7 +113,8 @@ function formatBackendOrder(raw, fallback = {}) {
       : fallback.expectedDelivery || "In 3-5 days",
     status: mappedStatus,
     statusLabel:
-      mappedStatus === "confirmed"
+      raw.statusLabel ||
+      (mappedStatus === "confirmed"
         ? "Seller Confirmed & Packaging"
         : mappedStatus === "shipped"
         ? "In Transit via Campus Courier"
@@ -97,7 +122,7 @@ function formatBackendOrder(raw, fallback = {}) {
         ? "Out for Delivery"
         : mappedStatus === "delivered"
         ? "Delivered & Verified"
-        : "Order Placed & Escrow Secured",
+        : "Order Placed & Escrow Secured"),
     escrowStatus: raw.escrowStatus === "Released" ? "released_to_seller" : fallback.escrowStatus || "held_in_escrow",
     paymentMethod: raw.paymentMethod || fallback.paymentMethod || "Razorpay (UPI / NetBanking)",
     transactionId: raw.razorpayPaymentId || fallback.transactionId || "pay_verified",
@@ -167,13 +192,24 @@ function OrderTracking() {
 
   const [order, setOrder] = useState(() => initialOrder);
 
-  // Sync when orders change in context
+  // Sync when orders change in context without regressing to older stale status
   useEffect(() => {
     const found =
       getOrderById(orderId) ||
-      orders.find((o) => o.id === orderId || o._id === orderId);
+      orders.find((o) => o.id === orderId || o._id === orderId || o.orderCode === orderId);
     if (found) {
-      setOrder(found);
+      setOrder((prev) => {
+        if (!prev) return formatBackendOrder(found);
+        const stageOrder = ["placed", "confirmed", "shipped", "out_for_delivery", "delivered"];
+        const prevStatus = (prev.status || "placed").toLowerCase().replace(/ /g, "_").replace(/-/g, "_");
+        const foundStatus = (found.status || "placed").toLowerCase().replace(/ /g, "_").replace(/-/g, "_");
+        const prevIdx = stageOrder.indexOf(prevStatus);
+        const foundIdx = stageOrder.indexOf(foundStatus);
+        if (foundIdx >= prevIdx || prevIdx === -1) {
+          return formatBackendOrder(found, prev);
+        }
+        return prev;
+      });
     }
   }, [orderId, orders, getOrderById]);
 
@@ -184,7 +220,10 @@ function OrderTracking() {
     const fetchBackendOrder = async () => {
       try {
         const token = localStorage.getItem("token") || localStorage.getItem("bookify_token");
-        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        const apiBase =
+          import.meta.env.VITE_API_BASE_URL ||
+          import.meta.env.VITE_API_URL ||
+          "http://localhost:5000/api";
         const res = await fetch(`${apiBase}/orders/${orderId}`, {
           headers: {
             "Content-Type": "application/json",
@@ -274,8 +313,26 @@ function OrderTracking() {
     );
   }
 
-  const currentStatus = (order.status || "placed").toLowerCase();
-  const isDelivered = currentStatus === "delivered" || order.escrowStatus === "released_to_seller";
+  const rawStatus = (order.status || "placed")
+    .toLowerCase()
+    .replace(/ /g, "_")
+    .replace(/-/g, "_");
+
+  const currentStatus =
+    rawStatus === "confirmed" || rawStatus === "processing" || rawStatus === "seller_confirmed"
+      ? "confirmed"
+      : rawStatus === "shipped" || rawStatus === "in_transit"
+      ? "shipped"
+      : rawStatus === "out_for_delivery"
+      ? "out_for_delivery"
+      : rawStatus === "delivered"
+      ? "delivered"
+      : "placed";
+
+  const isDelivered =
+    currentStatus === "delivered" ||
+    order.escrowStatus === "released_to_seller" ||
+    order.escrowStatus === "Released";
 
   const currentUserId = (user?.id || user?._id || "").toString();
   const sellerId = (order.seller?.id || order.seller?._id || order.sellerId || "").toString();
