@@ -7,6 +7,7 @@ import {
   getMySales,
   getOrderById,
   updateOrderStatus,
+  confirmReceiptAndReleaseEscrow,
   razorpayWebhook,
 } from "../controllers/orderController.js";
 
@@ -29,5 +30,9 @@ router.get("/my-sales", protect, getMySales);
 router.get("/:id", protect, getOrderById);
 
 router.patch("/:id/status", protect, updateOrderStatus);
+
+// Buyer confirmation & escrow release endpoint
+router.post("/:id/confirm-receipt", protect, confirmReceiptAndReleaseEscrow);
+router.patch("/:id/confirm-receipt", protect, confirmReceiptAndReleaseEscrow);
 
 export default router;

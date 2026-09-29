@@ -329,8 +329,8 @@ function OrderTracking() {
       ? "delivered"
       : "placed";
 
-  const isDelivered =
-    currentStatus === "delivered" ||
+  const isDelivered = currentStatus === "delivered";
+  const isEscrowReleased =
     order.escrowStatus === "released_to_seller" ||
     order.escrowStatus === "Released";
 
@@ -345,12 +345,11 @@ function OrderTracking() {
 
   const handleConfirmReceipt = async () => {
     try {
-      await updateOrderStatus(order.id, "Delivered");
-      releaseEscrowPayment(order.id);
+      await releaseEscrowPayment(order.id);
       setShowConfirmModal(false);
       showToast("Order confirmed! Escrow funds released to the seller 🎉", "success");
     } catch (err) {
-      showToast("Could not update order status. Please try again.", "error");
+      showToast("Could not release escrow payment. Please try again.", "error");
     }
   };
 
@@ -539,7 +538,7 @@ function OrderTracking() {
               Ref: Claim Pending
             </span>
           </div>
-        ) : !isDelivered ? (
+        ) : !isEscrowReleased ? (
           isViewerSeller ? (
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4">
               <div className="flex items-center gap-3">
@@ -563,9 +562,13 @@ function OrderTracking() {
               <div className="flex items-center gap-3">
                 <ShieldCheck size={24} className="text-amber-700 shrink-0" />
                 <div className="text-xs text-amber-900">
-                  <span className="font-bold">Have you received your book(s)?</span>
+                  <span className="font-bold">
+                    {isDelivered ? "Package Delivered! Inspect Your Book" : "Have you received your book(s)?"}
+                  </span>
                   <p className="text-amber-800 mt-0.5">
-                    Confirm receipt to release the escrow payment to the student seller.
+                    {isDelivered
+                      ? "Please inspect the book condition. If satisfied, confirm receipt to release the escrow payment to the student seller."
+                      : "Confirm receipt once you meet the seller and verify the book to release the escrow payment."}
                   </p>
                 </div>
               </div>
@@ -640,8 +643,8 @@ function OrderTracking() {
 
             <div className="flex justify-between text-gray-600">
               <span>Escrow Status:</span>
-              <span className="font-bold text-emerald-600">
-                {isDelivered ? "Released to Seller" : "Held Safely in Escrow"}
+              <span className={`font-bold ${isEscrowReleased ? "text-emerald-600" : "text-amber-600"}`}>
+                {isEscrowReleased ? "Released to Seller" : "Held Safely in Escrow"}
               </span>
             </div>
           </div>
