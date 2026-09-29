@@ -96,14 +96,54 @@ export default function MyListingsPage() {
     return () => window.removeEventListener('bookify_user_listings_updated', reloadListings);
   }, []);
 
-  const handleMarkSold = (id) => {
+  const handleMarkSold = async (id) => {
     listingService.updateStatus(id, 'Sold');
+    try {
+      const item = listings.find((l) => l.id === id);
+      const targetId = item?.backendId || id;
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("bookify_token") ||
+        JSON.parse(localStorage.getItem("bookify_user") || "{}")?.token;
+
+      if (token && targetId) {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        await fetch(`${apiBase}/books/${targetId}/status`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: "Sold" }),
+        });
+      }
+    } catch (err) {}
     if (showToast) showToast('Listing marked as sold!', 'success');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
+      const item = listings.find((l) => l.id === id);
+      const targetId = item?.backendId || id;
       listingService.deleteListing(id);
+      try {
+        const token =
+          localStorage.getItem("token") ||
+          localStorage.getItem("bookify_auth_token") ||
+          localStorage.getItem("bookify_token") ||
+          JSON.parse(localStorage.getItem("bookify_user") || "{}")?.token;
+
+        if (token && targetId) {
+          const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+          await fetch(`${apiBase}/books/${targetId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        }
+      } catch (err) {}
       if (showToast) showToast('Listing deleted successfully', 'info');
     }
   };
@@ -120,7 +160,7 @@ export default function MyListingsPage() {
     });
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editingListing) return;
     if (!editForm.price || Number(editForm.price) <= 0) {
@@ -128,14 +168,51 @@ export default function MyListingsPage() {
       return;
     }
 
+    const newPrice = Number(editForm.price);
+    const newMrp = editForm.mrp ? Number(editForm.mrp) : undefined;
+
+    // 1. Update local listing
     listingService.updateListing(editingListing.id, {
-      price: Number(editForm.price),
-      mrp: editForm.mrp ? Number(editForm.mrp) : undefined,
+      price: newPrice,
+      mrp: newMrp,
       condition: editForm.condition,
       status: editForm.status,
       conditionNotes: editForm.conditionNotes,
       cover: editForm.cover,
     });
+
+    // 2. Sync to backend MongoDB API
+    try {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("bookify_token") ||
+        JSON.parse(localStorage.getItem("bookify_user") || "{}")?.token;
+
+      const targetId = editingListing.backendId || editingListing.id;
+      if (token && targetId) {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+        const condLabel =
+          editForm.condition === "like-new" || editForm.condition === "very-good" ? "Like New" :
+          editForm.condition === "fair" ? "Fair" : "Good";
+
+        await fetch(`${apiBase}/books/${targetId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            price: newPrice,
+            originalPrice: newMrp,
+            condition: condLabel,
+            description: editForm.conditionNotes,
+          }),
+        });
+      }
+    } catch (err) {
+      console.warn("[MyListingsPage] Sync update error:", err);
+    }
 
     if (showToast) {
       showToast(`Listing ${editingListing.id} updated successfully!`, 'success');
