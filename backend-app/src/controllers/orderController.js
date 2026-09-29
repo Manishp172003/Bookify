@@ -353,13 +353,57 @@ export const verifyPayment = async (req, res) => {
   }
 };
 
+// Helper to safely populate Book models without crashing on custom/catalog bookIds
+const populateBooksForOrders = async (orders) => {
+  if (!orders || orders.length === 0) return orders;
+
+  const validBookIds = [];
+  orders.forEach((ord) => {
+    if (ord.bookId && mongoose.Types.ObjectId.isValid(ord.bookId)) {
+      validBookIds.push(ord.bookId);
+    }
+    if (Array.isArray(ord.items)) {
+      ord.items.forEach((item) => {
+        if (item.bookId && mongoose.Types.ObjectId.isValid(item.bookId)) {
+          validBookIds.push(item.bookId);
+        }
+      });
+    }
+  });
+
+  if (validBookIds.length > 0) {
+    try {
+      const books = await Book.find({ _id: { $in: validBookIds } }).lean();
+      const bookMap = new Map(books.map((b) => [b._id.toString(), b]));
+
+      orders.forEach((ord) => {
+        if (ord.bookId && bookMap.has(ord.bookId.toString())) {
+          ord.bookId = bookMap.get(ord.bookId.toString());
+        }
+        if (Array.isArray(ord.items)) {
+          ord.items.forEach((item) => {
+            if (item.bookId && bookMap.has(item.bookId.toString())) {
+              item.bookId = bookMap.get(item.bookId.toString());
+            }
+          });
+        }
+      });
+    } catch (bErr) {
+      console.warn("[OrderController] Book population notice:", bErr.message);
+    }
+  }
+
+  return orders;
+};
+
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ buyerId: req.user._id })
-      .populate("bookId")
+    let orders = await Order.find({ buyerId: req.user._id })
       .populate("sellerId", "fullName email phone")
-      .populate("items.bookId")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    orders = await populateBooksForOrders(orders);
 
     return res.status(200).json({
       success: true,
@@ -378,11 +422,12 @@ export const getMyOrders = async (req, res) => {
 
 export const getMySales = async (req, res) => {
   try {
-    const orders = await Order.find({ sellerId: req.user._id })
-      .populate("bookId")
+    let orders = await Order.find({ sellerId: req.user._id })
       .populate("buyerId", "fullName email phone")
-      .populate("items.bookId")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    orders = await populateBooksForOrders(orders);
 
     return res.status(200).json({
       success: true,
@@ -406,10 +451,9 @@ export const getOrderById = async (req, res) => {
 
     if (mongoose.Types.ObjectId.isValid(idParam)) {
       order = await Order.findById(idParam)
-        .populate("bookId")
         .populate("buyerId", "fullName email phone")
         .populate("sellerId", "fullName email phone")
-        .populate("items.bookId");
+        .lean();
     }
 
     if (!order) {
@@ -420,10 +464,14 @@ export const getOrderById = async (req, res) => {
           { "courier.trackingNumber": idParam },
         ],
       })
-        .populate("bookId")
         .populate("buyerId", "fullName email phone")
         .populate("sellerId", "fullName email phone")
-        .populate("items.bookId");
+        .lean();
+    }
+
+    if (order) {
+      const [populatedOrder] = await populateBooksForOrders([order]);
+      order = populatedOrder;
     }
 
     if (!order) {
