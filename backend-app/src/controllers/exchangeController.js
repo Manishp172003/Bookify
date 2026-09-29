@@ -54,60 +54,66 @@ export const getMyExchanges = async (req, res) => {
 
     // Seed realistic proposals if empty
     if (received.length === 0 && sent.length === 0) {
-      const partner1 = await User.findOne({ _id: { $ne: userId } }) || { _id: userId, fullName: "Sneha Reddy" };
+      try {
+        const partner1 = (await User.findOne({ _id: { $ne: userId } })) || { _id: userId, fullName: "Sneha Reddy" };
+        const code1 = `SWP-${Math.floor(100000 + Math.random() * 900000)}`;
+        const code2 = `SWP-${Math.floor(100000 + Math.random() * 900000)}`;
 
-      const seededReceived = await Exchange.create({
-        exchangeCode: "SWP-9021",
-        proposerId: partner1._id,
-        proposerName: partner1.fullName || "Sneha Reddy",
-        receiverId: userId,
-        receiverName: req.user.fullName,
-        requestedBook: {
-          title: "Introduction to Algorithms",
-          author: "Cormen, Leiserson",
-          condition: "Very Good",
-          coverImage: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
-          coverClass: "from-[#111827] to-[#374151]",
-        },
-        offeredBook: {
-          title: "Compiler Design: Principles",
-          author: "Aho, Lam, Sethi",
-          condition: "Like New",
-          coverImage: "https://covers.openlibrary.org/b/isbn/9780321486813-L.jpg",
-          coverClass: "from-[#065F46] to-[#047857]",
-        },
-        meetupLocation: "Campus Central Library Ground Floor",
-        note: "Hey, saw your algorithms book! I have the latest dragon book for compiler design in pristine condition. Let me know if you want to trade!",
-        status: "Pending Decision",
-      });
+        const seededReceived = await Exchange.create({
+          exchangeCode: code1,
+          proposerId: partner1._id,
+          proposerName: partner1.fullName || "Sneha Reddy",
+          receiverId: userId,
+          receiverName: req.user.fullName,
+          requestedBook: {
+            title: "Introduction to Algorithms",
+            author: "Cormen, Leiserson",
+            condition: "Very Good",
+            coverImage: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
+            coverClass: "from-[#111827] to-[#374151]",
+          },
+          offeredBook: {
+            title: "Compiler Design: Principles",
+            author: "Aho, Lam, Sethi",
+            condition: "Like New",
+            coverImage: "https://covers.openlibrary.org/b/isbn/9780321486813-L.jpg",
+            coverClass: "from-[#065F46] to-[#047857]",
+          },
+          meetupLocation: "Campus Central Library Ground Floor",
+          note: "Hey, saw your algorithms book! I have the latest dragon book for compiler design in pristine condition. Let me know if you want to trade!",
+          status: "Pending Decision",
+        });
 
-      const seededSent = await Exchange.create({
-        exchangeCode: "SWP-3820",
-        proposerId: userId,
-        proposerName: req.user.fullName,
-        receiverId: partner1._id,
-        receiverName: "Aarav Sharma",
-        requestedBook: {
-          title: "Concepts of Physics Vol 1",
-          author: "H.C. Verma",
-          condition: "Very Good",
-          coverImage: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
-          coverClass: "from-[#E11D48] to-[#F43F5E]",
-        },
-        offeredBook: {
-          title: "Organic Chemistry, 8th Edition",
-          author: "L.G. Wade",
-          condition: "Good",
-          coverImage: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
-          coverClass: "from-[#0F172A] to-[#1E293B]",
-        },
-        meetupLocation: "Student Center Cafeteria",
-        note: "I have the organic chemistry Wade edition ready to swap for HC Verma.",
-        status: "Accepted - Meetup Pending",
-      });
+        const seededSent = await Exchange.create({
+          exchangeCode: code2,
+          proposerId: userId,
+          proposerName: req.user.fullName,
+          receiverId: partner1._id,
+          receiverName: "Aarav Sharma",
+          requestedBook: {
+            title: "Concepts of Physics Vol 1",
+            author: "H.C. Verma",
+            condition: "Very Good",
+            coverImage: "https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg",
+            coverClass: "from-[#E11D48] to-[#F43F5E]",
+          },
+          offeredBook: {
+            title: "Organic Chemistry, 8th Edition",
+            author: "L.G. Wade",
+            condition: "Good",
+            coverImage: "https://covers.openlibrary.org/b/isbn/9780321811295-L.jpg",
+            coverClass: "from-[#0F172A] to-[#1E293B]",
+          },
+          meetupLocation: "Student Center Cafeteria",
+          note: "I have the organic chemistry Wade edition ready to swap for HC Verma.",
+          status: "Accepted - Meetup Pending",
+        });
 
-      received = [seededReceived];
-      sent = [seededSent];
+        received = [seededReceived];
+        sent = [seededSent];
+      } catch (seedErr) {
+        console.warn("[Exchange] Seed fallback notice:", seedErr.message);
+      }
     }
 
     res.status(200).json({
