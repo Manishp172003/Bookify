@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Book from "../models/Book.js";
+import User from "../models/User.js";
 
 const isValidObjectId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
@@ -630,10 +631,64 @@ export const getMyListings = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    if (!books || books.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "My listings fetched successfully",
+        data: [],
+      });
+    }
+
+    const bookIds = books.map((b) => b._id.toString());
+    const bookTitles = books.map((b) => b.title);
+
+    let countMap = new Map();
+    try {
+      const wishlistCounts = await User.aggregate([
+        { $unwind: "$wishlist" },
+        {
+          $match: {
+            $or: [
+              { "wishlist.id": { $in: bookIds } },
+              { "wishlist.title": { $in: bookTitles } },
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: "$wishlist.id",
+            count: { $sum: 1 },
+            title: { $first: "$wishlist.title" },
+          },
+        },
+      ]);
+
+      wishlistCounts.forEach((w) => {
+        if (w._id) countMap.set(String(w._id), w.count);
+        if (w.title) countMap.set(`title:${w.title.toLowerCase().trim()}`, w.count);
+      });
+    } catch (aggErr) {
+      console.warn("[getMyListings] Wishlist count aggregation warning:", aggErr.message);
+    }
+
+    const enrichedBooks = books.map((b) => {
+      const byId = countMap.get(b._id.toString()) || 0;
+      const byTitle = countMap.get(`title:${(b.title || "").toLowerCase().trim()}`) || 0;
+      const savesCount = Math.max(byId, byTitle);
+
+      return {
+        ...b,
+        id: b._id.toString(),
+        wishlists: savesCount,
+        savesCount: savesCount,
+        views: b.views || 1,
+      };
+    });
+
     return res.status(200).json({
       success: true,
       message: "My listings fetched successfully",
-      data: books,
+      data: enrichedBooks,
     });
   } catch (error) {
     console.error("Get my listings error:", error);

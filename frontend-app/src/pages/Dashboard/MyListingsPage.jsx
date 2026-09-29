@@ -29,8 +29,69 @@ export default function MyListingsPage() {
     setListings(listingService.getAllListings());
   };
 
+  const fetchMyListingsFromBackend = async () => {
+    try {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_auth_token") ||
+        localStorage.getItem("bookify_token") ||
+        JSON.parse(localStorage.getItem("bookify_user") || "{}")?.token;
+
+      if (!token) return;
+
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+      const res = await fetch(`${apiBase}/books/my/listings`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const serverListings = json?.data || [];
+        if (Array.isArray(serverListings)) {
+          const localListings = listingService.getAllListings();
+
+          serverListings.forEach((sb) => {
+            const matchedLocal = localListings.find(
+              (l) => l.backendId === sb._id || l.id === sb._id || l.title?.toLowerCase() === sb.title?.toLowerCase()
+            );
+
+            if (matchedLocal) {
+              listingService.updateListing(matchedLocal.id, {
+                wishlists: sb.wishlists ?? sb.savesCount ?? 0,
+                views: Math.max(matchedLocal.views || 1, sb.views || 1),
+                backendId: sb._id,
+              });
+            } else {
+              listingService.createListing({
+                id: sb._id,
+                backendId: sb._id,
+                title: sb.title,
+                author: sb.author,
+                price: sb.price,
+                mrp: sb.originalPrice || Math.round(sb.price * 1.3),
+                condition: (sb.condition || "good").toLowerCase().replace(/\s+/g, "-"),
+                status: sb.status || "Active",
+                cover: (sb.images && sb.images[0]) || sb.coverImage,
+                photos: sb.images || [],
+                wishlists: sb.wishlists ?? sb.savesCount ?? 0,
+                views: sb.views || 1,
+              });
+            }
+          });
+
+          setListings(listingService.getAllListings());
+        }
+      }
+    } catch (err) {
+      console.warn("[MyListings] Error syncing listings with backend:", err);
+    }
+  };
+
   useEffect(() => {
     reloadListings();
+    fetchMyListingsFromBackend();
     window.addEventListener('bookify_user_listings_updated', reloadListings);
     return () => window.removeEventListener('bookify_user_listings_updated', reloadListings);
   }, []);
