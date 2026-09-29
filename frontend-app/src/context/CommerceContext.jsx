@@ -65,6 +65,218 @@ const MOCK_CHAT_IDS = new Set(["chat_1", "chat_2", "chat_3"]);
 const INITIAL_CONVERSATIONS = [];
 const INITIAL_ORDERS = [];
 
+const mapBackendOrder = (bo, isSellerOrder = false, user = null) => {
+  const primaryItem = bo.items?.[0] || bo.bookId || {};
+  const title =
+    primaryItem.title ||
+    (bo.items && bo.items.length > 0 ? bo.items[0].title : `Order #${bo.orderCode || bo._id?.toString().slice(-8)}`);
+  const rawStatus = (bo.status || "Placed").toLowerCase();
+  const mappedStatus =
+    rawStatus === "confirmed" || rawStatus === "processing"
+      ? "confirmed"
+      : rawStatus === "out for delivery"
+      ? "out_for_delivery"
+      : rawStatus;
+
+  const isDelivered = mappedStatus === "delivered";
+
+  // Build timeline
+  const stageOrder = ["placed", "confirmed", "shipped", "out_for_delivery", "delivered"];
+  const currentIdx = stageOrder.indexOf(mappedStatus);
+
+  const timeline =
+    bo.timeline && bo.timeline.length > 0
+      ? bo.timeline.map((t) => {
+          const stageKey = (t.stage || "").toLowerCase().replace(/ /g, "_");
+          const sIdx = stageOrder.indexOf(stageKey);
+          return {
+            stage: stageKey,
+            title: t.title,
+            date: t.date
+              ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })
+              : sIdx <= currentIdx
+              ? "Today"
+              : "Pending",
+            description: t.description,
+            completed: isDelivered || (sIdx !== -1 && sIdx < currentIdx) || (sIdx === currentIdx && isDelivered),
+            active: sIdx === currentIdx && !isDelivered,
+          };
+        })
+      : [
+          {
+            stage: "placed",
+            title: "Order Placed",
+            date: "Today",
+            description: "Payment verified & held safely in escrow.",
+            completed: true,
+            active: currentIdx === 0,
+          },
+          {
+            stage: "confirmed",
+            title: "Seller Confirmed",
+            date: currentIdx >= 1 ? "Today" : "Pending",
+            description: "Seller accepted and packaging the book.",
+            completed: currentIdx >= 1,
+            active: currentIdx === 1,
+          },
+          {
+            stage: "shipped",
+            title: "Shipped",
+            date: currentIdx >= 2 ? "Today" : "Pending",
+            description: "Handed over to college logistics courier.",
+            completed: currentIdx >= 2,
+            active: currentIdx === 2,
+          },
+          {
+            stage: "out_for_delivery",
+            title: "Out for Delivery",
+            date: currentIdx >= 3 ? "Today" : "Pending",
+            description: "Campus delivery executive is on the way.",
+            completed: currentIdx >= 3,
+            active: currentIdx === 3,
+          },
+          {
+            stage: "delivered",
+            title: "Delivered",
+            date: isDelivered ? "Today" : "Pending",
+            description: "Verify package contents & release escrow funds.",
+            completed: isDelivered,
+            active: false,
+          },
+        ];
+
+  const statusLabel =
+    mappedStatus === "confirmed"
+      ? "Seller Confirmed & Packaging"
+      : mappedStatus === "shipped"
+      ? "In Transit via Campus Courier"
+      : mappedStatus === "out_for_delivery"
+      ? "Out for Delivery"
+      : mappedStatus === "delivered"
+      ? "Delivered & Verified"
+      : "Order Placed & Escrow Secured";
+
+  const orderDateFormatted = bo.createdAt
+    ? new Date(bo.createdAt).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "Recently";
+
+  const expectedDelivery = bo.expectedDeliveryDate
+    ? new Date(bo.expectedDeliveryDate).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "In 3-5 days";
+
+  const buyerData =
+    bo.buyerId && typeof bo.buyerId === "object"
+      ? {
+          id: bo.buyerId._id,
+          name: bo.buyerId.fullName || "Student Buyer",
+          fullName: bo.buyerId.fullName || "Student Buyer",
+          phone: bo.buyerId.phone || bo.shippingAddress?.phone || "+91 98765 00000",
+          email: bo.buyerId.email,
+          meetupSpot: bo.shippingAddress?.meetupSpot || bo.shippingAddress?.hostelBlock || "Campus Central Library",
+        }
+      : {
+          id: bo.buyerId,
+          name: bo.shippingAddress?.name || "Student Buyer",
+          fullName: bo.shippingAddress?.name || "Student Buyer",
+          phone: bo.shippingAddress?.phone || "+91 98765 00000",
+          meetupSpot: bo.shippingAddress?.meetupSpot || bo.shippingAddress?.hostelBlock || "Campus Central Library",
+        };
+
+  const sellerData =
+    bo.sellerId && typeof bo.sellerId === "object"
+      ? {
+          id: bo.sellerId._id,
+          name: bo.sellerId.fullName || "Campus Seller",
+          fullName: bo.sellerId.fullName || "Campus Seller",
+          phone: bo.sellerId.phone || "+91 98765 00000",
+          email: bo.sellerId.email,
+          meetup: bo.shippingAddress?.meetupSpot || "Main Campus Library Entrance",
+        }
+      : {
+          id: bo.sellerId || "usr_seller",
+          name: "Campus Seller",
+          fullName: "Campus Seller",
+          phone: "+91 98765 00000",
+          meetup: bo.shippingAddress?.meetupSpot || "Main Campus Library Entrance",
+        };
+
+  const currentUserId = user?.id || user?._id;
+  const sellerIdStr = (bo.sellerId?._id || bo.sellerId || "").toString();
+  const determinedIsSellerOrder =
+    isSellerOrder || (currentUserId && sellerIdStr && currentUserId.toString() === sellerIdStr);
+
+  return {
+    id: bo._id?.toString() || bo.id,
+    _id: bo._id?.toString() || bo.id,
+    orderCode: bo.orderCode || bo._id?.toString(),
+    orderId: bo.orderCode || bo._id?.toString(),
+    title,
+    author: primaryItem.author || "",
+    items:
+      bo.items && bo.items.length > 0
+        ? bo.items.map((it) => ({
+            id: it.bookId || it._id || bo._id,
+            bookId: it.bookId || it._id || bo._id,
+            title: it.title || title,
+            author: it.author || "",
+            price: it.price || bo.amount || 0,
+            condition: it.condition || "Good",
+            image: it.image || "",
+            quantity: it.quantity || 1,
+          }))
+        : [
+            {
+              id: bo._id,
+              bookId: bo._id,
+              title,
+              price: bo.amount || 0,
+              condition: "Good",
+              image: "",
+              quantity: 1,
+            },
+          ],
+    total: bo.amount || 0,
+    amount: bo.amount || 0,
+    subtotal: bo.subtotal || bo.amount || 0,
+    deliveryFee: bo.deliveryFee ?? 0,
+    platformFee: bo.platformFee ?? 15,
+    discount: bo.discount ?? 0,
+    price: bo.amount ? `₹${bo.amount}` : "₹0",
+    status: mappedStatus,
+    statusLabel,
+    rawStatus: bo.status,
+    escrowStatus:
+      bo.escrowStatus === "Released" ? "released_to_seller" : (bo.escrowStatus?.toLowerCase() || "held_in_escrow"),
+    paymentMethod: bo.paymentMethod || "Razorpay",
+    paymentStatus: bo.paymentStatus || "Completed",
+    isSellerOrder: Boolean(determinedIsSellerOrder),
+    buyer: buyerData,
+    seller: sellerData,
+    sellerName: sellerData.fullName || sellerData.name,
+    address: bo.shippingAddress || {},
+    courier:
+      bo.courier && bo.courier.name
+        ? bo.courier
+        : {
+            name: "Campus Delivery Network",
+            trackingNumber: bo.courier?.trackingNumber || `AWB-${Math.floor(100000 + Math.random() * 900000)}`,
+            supportPhone: "+91 9876543210",
+          },
+    timeline,
+    createdAt: bo.createdAt,
+    orderDateFormatted,
+    expectedDelivery,
+  };
+};
+
 export function CommerceProvider({ children }) {
   const { user, isAuthenticated } = useAuth();
 
@@ -188,49 +400,47 @@ export function CommerceProvider({ children }) {
       return;
     }
 
-    // Fetch user's real orders from MongoDB backend
+    // Fetch user's real orders from MongoDB backend (both purchases and incoming sales)
     const fetchUserOrders = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
       try {
-        const res = await fetch(`${API_BASE}/orders/my-orders`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (res.ok) {
-          const json = await res.json();
+        const [ordersRes, salesRes] = await Promise.all([
+          fetch(`${API_BASE}/orders/my-orders`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${API_BASE}/orders/my-sales`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        const combined = [];
+
+        if (ordersRes.ok) {
+          const json = await ordersRes.json();
           if (json?.data && Array.isArray(json.data)) {
-            const mappedOrders = json.data.map((bo) => {
-              const bookItem = bo.bookId || bo.items?.[0]?.bookId || {};
-              const title = bookItem.title || bo.items?.[0]?.title || `Order #${bo._id?.slice(-8)}`;
-              const cover = bookItem.images?.[0] || bo.items?.[0]?.image || "";
-              return {
-                id: bo._id,
-                orderId: bo.orderId || bo._id,
-                title,
-                items: bo.items?.length > 0 ? bo.items : [{
-                  id: bookItem._id || bo._id,
-                  title,
-                  price: bo.amount || 0,
-                  image: cover,
-                }],
-                total: bo.amount || 0,
-                price: bo.amount ? `₹${bo.amount}` : "₹0",
-                status: (bo.status || "Placed").toLowerCase(),
-                statusLabel: bo.status || "Placed",
-                paymentStatus: bo.paymentStatus || "Pending",
-                isSellerOrder: bo.sellerId?._id === (user?.id || user?._id) || bo.sellerId === (user?.id || user?._id),
-                createdAt: bo.createdAt,
-                sellerName: bo.sellerId?.fullName || "Campus Seller",
-                seller: bo.sellerId,
-                address: bo.shippingAddress || bo.deliveryAddress || {},
-              };
-            });
-            setOrders(mappedOrders);
+            const mappedPurchases = json.data.map((bo) => mapBackendOrder(bo, false, user));
+            combined.push(...mappedPurchases);
           }
         }
+
+        if (salesRes.ok) {
+          const json = await salesRes.json();
+          if (json?.data && Array.isArray(json.data)) {
+            const existingIds = new Set(combined.map((o) => o.id));
+            const mappedSales = json.data
+              .filter((bo) => !existingIds.has(bo._id?.toString()))
+              .map((bo) => mapBackendOrder(bo, true, user));
+            combined.push(...mappedSales);
+          }
+        }
+
+        setOrders(combined);
       } catch (err) {
         console.warn("[CommerceContext] Failed to fetch orders from backend:", err);
       }
@@ -238,7 +448,9 @@ export function CommerceProvider({ children }) {
 
     fetchUserOrders();
 
-    const handleOrdersReset = () => setOrders([]);
+    const handleOrdersReset = () => {
+      fetchUserOrders();
+    };
     const handleConversationsReset = () => setConversations([]);
 
     window.addEventListener("bookify_orders_updated", handleOrdersReset);
@@ -446,6 +658,13 @@ export function CommerceProvider({ children }) {
       );
 
       showToast(`Order status updated: ${data.status} 🚀`, "info");
+    });
+
+    // Real-Time Incoming Order for Sellers
+    newSocket.on("newOrder", (data) => {
+      console.log("[Bookify Socket] Received live newOrder:", data);
+      window.dispatchEvent(new Event("bookify_orders_updated"));
+      showToast("🎉 You received a new order to fulfill!", "success");
     });
 
     return () => {
@@ -828,7 +1047,7 @@ export function CommerceProvider({ children }) {
   };
 
   // Checkout order generation
-  const createOrder = ({ paymentMethod, transactionId }) => {
+  const createOrder = ({ paymentMethod, transactionId, backendOrder = null }) => {
     const isExpress = shippingMethod === "express";
     const deliveryDays = isExpress ? 2 : 4;
     const shippingMethodLabel = isExpress
@@ -837,8 +1056,16 @@ export function CommerceProvider({ children }) {
       ? "Self Campus Pickup (Same Day)"
       : "Standard Campus Delivery (3-5 Days)";
 
-    const newOrder = {
-      id: `BK${Math.floor(10000000 + Math.random() * 90000000)}`,
+    const orderId =
+      backendOrder?._id?.toString() ||
+      backendOrder?.id ||
+      backendOrder?.orderCode ||
+      `BK${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+    const newOrder = backendOrder
+      ? mapBackendOrder(backendOrder, false, user)
+      : {
+          id: orderId,
       orderDateFormatted: new Date().toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
@@ -885,28 +1112,29 @@ export function CommerceProvider({ children }) {
       ]
     };
 
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== newOrder.id && o._id !== newOrder.id)]);
     setCartItems([]);
     setAppliedCoupon(null);
+    window.dispatchEvent(new Event("bookify_orders_updated"));
     return newOrder;
   };
 
-  const getOrderById = (id) => orders.find((o) => o.id === id);
+  const getOrderById = (id) => orders.find((o) => o.id === id || o._id === id || o.orderCode === id);
 
   const releaseEscrowPayment = (orderId) => {
     setOrders((prev) =>
       prev.map((order) => {
-        if (order.id === orderId) {
-          const updatedTimeline = order.timeline.map((step) => ({
+        if (order.id === orderId || order._id === orderId || order.orderCode === orderId) {
+          const updatedTimeline = (order.timeline || []).map((step) => ({
             ...step,
             completed: true,
-            active: step.stage === "delivered" ? false : step.active
+            active: false
           }));
           return {
             ...order,
             status: "delivered",
             escrowStatus: "released_to_seller",
-            statusLabel: "Delivered & Payment Released",
+            statusLabel: "Delivered & Verified",
             timeline: updatedTimeline
           };
         }
