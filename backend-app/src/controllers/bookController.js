@@ -433,6 +433,38 @@ export const updateBook = async (req, res) => {
 
     await book.save();
 
+    // If price was updated, sync new price into all wishlists containing this book
+    if (req.body.price !== undefined) {
+      try {
+        const formattedPrice = `₹${book.price}`;
+        await User.updateMany(
+          {
+            $or: [
+              { "wishlist.id": book._id.toString() },
+              { "wishlist.title": book.title },
+            ],
+          },
+          {
+            $set: {
+              "wishlist.$[elem].price": formattedPrice,
+            },
+          },
+          {
+            arrayFilters: [
+              {
+                $or: [
+                  { "elem.id": book._id.toString() },
+                  { "elem.title": book.title },
+                ],
+              },
+            ],
+          }
+        );
+      } catch (wErr) {
+        console.warn("[updateBook] Wishlist sync notice:", wErr.message);
+      }
+    }
+
     const updatedBook = await Book.findById(book._id)
       .populate("sellerId", "fullName email");
 

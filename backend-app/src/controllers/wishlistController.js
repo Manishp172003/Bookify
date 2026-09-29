@@ -1,8 +1,10 @@
+import mongoose from "mongoose";
 import User from "../models/User.js";
+import Book from "../models/Book.js";
 
 /**
  * GET /api/wishlist
- * Retrieve all items in the user's saved wishlist.
+ * Retrieve all items in the user's saved wishlist with live synced prices.
  */
 export const getWishlist = async (req, res) => {
   try {
@@ -10,9 +12,52 @@ export const getWishlist = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    const items = user.wishlist || [];
+    if (items.length > 0) {
+      const validIds = items
+        .map((it) => it.id)
+        .filter((id) => id && mongoose.Types.ObjectId.isValid(id));
+      const titles = items.map((it) => it.title);
+
+      const liveBooks = await Book.find({
+        $or: [
+          { _id: { $in: validIds } },
+          { title: { $in: titles } },
+        ],
+      }).lean();
+
+      const bookMap = new Map();
+      liveBooks.forEach((b) => {
+        bookMap.set(b._id.toString(), b);
+        if (b.title) bookMap.set(b.title.toLowerCase().trim(), b);
+      });
+
+      let hasChanges = false;
+      items.forEach((item) => {
+        const live = bookMap.get(item.id) || (item.title && bookMap.get(item.title.toLowerCase().trim()));
+        if (live && live.price !== undefined) {
+          const livePriceStr = `₹${live.price}`;
+          if (item.price !== livePriceStr) {
+            item.previousPrice = item.price;
+            item.price = livePriceStr;
+            hasChanges = true;
+          }
+          if (live.condition && item.condition !== live.condition) {
+            item.condition = live.condition;
+            hasChanges = true;
+          }
+        }
+      });
+
+      if (hasChanges) {
+        await user.save();
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      data: user.wishlist || [],
+      data: items,
     });
   } catch (error) {
     console.error("Get wishlist error:", error);
