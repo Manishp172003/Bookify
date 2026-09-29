@@ -63,7 +63,8 @@ function Checkout() {
           setIsProcessing(false);
           const newOrder = createOrder({
             paymentMethod: "Razorpay (UPI / NetBanking)",
-            transactionId: paymentResult.razorpay_payment_id || `pay_${Date.now()}`
+            transactionId: paymentResult.razorpay_payment_id || `pay_${Date.now()}`,
+            backendOrder: paymentResult.order || null,
           });
           showToast("Payment Successful! Your order is placed. 🎉");
           navigate("/order-confirmation", { state: { orderId: newOrder.id } });

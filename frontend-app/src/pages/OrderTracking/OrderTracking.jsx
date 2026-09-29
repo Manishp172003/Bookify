@@ -16,7 +16,6 @@ import {
   Check,
   Radio,
   RefreshCw,
-  Zap,
   AlertTriangle
 } from "lucide-react";
 import { useCommerce } from "../../context/CommerceContext";
@@ -135,7 +134,6 @@ function OrderTracking() {
   const [disputeDesc, setDisputeDesc] = useState("");
   const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
   const [isSocketLive, setIsSocketLive] = useState(false);
-  const [isSimulating, setIsSimulating] = useState(false);
 
   const handleRaiseDispute = async (e) => {
     e.preventDefault();
@@ -277,17 +275,15 @@ function OrderTracking() {
   const currentStatus = (order.status || "placed").toLowerCase();
   const isDelivered = currentStatus === "delivered" || order.escrowStatus === "released_to_seller";
 
-  const handleConfirmReceipt = () => {
-    releaseEscrowPayment(order.id);
-    updateOrderStatus(order.id, "Delivered");
-    setShowConfirmModal(false);
-  };
-
-  // Status simulation trigger
-  const handleSimulateStatus = async (newStatus) => {
-    setIsSimulating(true);
-    await updateOrderStatus(order.id, newStatus);
-    setTimeout(() => setIsSimulating(false), 500);
+  const handleConfirmReceipt = async () => {
+    try {
+      await updateOrderStatus(order.id, "Delivered");
+      releaseEscrowPayment(order.id);
+      setShowConfirmModal(false);
+      showToast("Order confirmed! Escrow funds released to the seller 🎉", "success");
+    } catch (err) {
+      showToast("Could not update order status. Please try again.", "error");
+    }
   };
 
   const timelineIcons = {
@@ -357,80 +353,7 @@ function OrderTracking() {
         </div>
       </div>
 
-      {/* Interactive Status Simulation Bar (For paired Seller/Buyer Live Verification) */}
-      <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#6C4BF4]/10 via-[#8B6FF5]/10 to-indigo-50 border border-[#6C4BF4]/20 p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#17152A]">
-            <Zap size={15} className="text-[#6C4BF4]" />
-            <span>Interactive Real-Time Stage Simulator</span>
-            <span className="text-[10px] font-normal text-gray-500 hidden md:inline">
-              (Click any stage below to test live socket updates)
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              type="button"
-              disabled={isSimulating}
-              onClick={() => handleSimulateStatus("Placed")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
-                currentStatus === "placed"
-                  ? "bg-[#6C4BF4] text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              1. Placed
-            </button>
-            <button
-              type="button"
-              disabled={isSimulating}
-              onClick={() => handleSimulateStatus("Confirmed")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
-                currentStatus === "confirmed" || currentStatus === "processing"
-                  ? "bg-[#6C4BF4] text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              2. Seller Confirmed
-            </button>
-            <button
-              type="button"
-              disabled={isSimulating}
-              onClick={() => handleSimulateStatus("Shipped")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
-                currentStatus === "shipped"
-                  ? "bg-[#6C4BF4] text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              3. Shipped
-            </button>
-            <button
-              type="button"
-              disabled={isSimulating}
-              onClick={() => handleSimulateStatus("Out for Delivery")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
-                currentStatus === "out_for_delivery"
-                  ? "bg-[#6C4BF4] text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              4. Out for Delivery
-            </button>
-            <button
-              type="button"
-              disabled={isSimulating}
-              onClick={() => handleSimulateStatus("Delivered")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
-                currentStatus === "delivered"
-                  ? "bg-emerald-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              5. Delivered
-            </button>
-          </div>
-        </div>
-      </div>
+
 
       {/* 1. Dynamic Timeline Card */}
       <div className="mt-2 rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-xs transition-all">
