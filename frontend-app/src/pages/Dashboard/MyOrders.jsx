@@ -166,7 +166,7 @@ export default function MyOrders() {
 
   const handleMarkDelivered = async (orderId) => {
     await updateOrderStatus(orderId, "Delivered");
-    showToast("Order marked Delivered! Escrow payment released to your wallet 🎉", "success");
+    showToast("Package marked as delivered! Buyer notified to inspect and release escrow.", "success");
   };
 
   const handleCancelOrder = async (orderId) => {
@@ -347,6 +347,7 @@ export default function MyOrders() {
                     const isShipped = st === "shipped";
                     const isOut = st === "out_for_delivery";
                     const isDelivered = st === "delivered";
+                    const isEscrowReleased = ord.escrowStatus === "Released" || ord.escrowStatus === "released_to_seller";
 
                     return (
                       <div
@@ -369,7 +370,7 @@ export default function MyOrders() {
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
                               <ShieldCheck size={14} className="text-emerald-600" />
-                              <span>₹{ord.total} Held in Escrow</span>
+                              <span>{isEscrowReleased ? `₹${ord.total} Escrow Released` : `₹${ord.total} Held in Escrow`}</span>
                             </div>
 
                             <span
@@ -482,9 +483,15 @@ export default function MyOrders() {
                               </span>
                             )}
                             {isDelivered && (
-                              <span className="flex items-center gap-1.5 font-bold text-emerald-700">
-                                <CheckCircle2 size={15} /> Order Delivered & Escrow Released to your wallet!
-                              </span>
+                              isEscrowReleased ? (
+                                <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                                  <CheckCircle2 size={15} /> Order Delivered & Escrow Released to your wallet!
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1.5 font-bold text-amber-700">
+                                  <Clock size={15} /> Package Delivered — Awaiting Buyer Verification & Escrow Release (48h auto-release)
+                                </span>
+                              )
                             )}
                           </div>
 
@@ -543,7 +550,7 @@ export default function MyOrders() {
                                 className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer hover:scale-102"
                               >
                                 <CheckCircle2 size={15} />
-                                <span>Confirm Delivery (Release Escrow)</span>
+                                <span>Mark Package Delivered</span>
                               </button>
                             )}
                           </div>

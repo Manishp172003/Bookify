@@ -623,8 +623,11 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     if (status === "Delivered") {
-      order.deliveredAt = new Date();
-      order.escrowStatus = "Released";
+      order.deliveredAt = order.deliveredAt || new Date();
+      // Escrow remains Held pending buyer book inspection & manual confirmation (or 48h cron safety net)
+      if (!order.escrowStatus || order.escrowStatus === "Pending") {
+        order.escrowStatus = "Held";
+      }
 
       const targetBookId = order.bookId || order.items?.[0]?.bookId;
       if (targetBookId) {
@@ -667,6 +670,112 @@ export const updateOrderStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to update order status",
+      data: null,
+    });
+  }
+};
+
+/**
+ * POST /api/orders/:id/confirm-receipt
+ * Called exclusively by the buyer once they receive & inspect their book.
+ * Releases escrow payout safely to the student seller.
+ */
+export const confirmReceiptAndReleaseEscrow = async (req, res) => {
+  try {
+    const idParam = req.params.id;
+    let order = null;
+
+    if (mongoose.Types.ObjectId.isValid(idParam)) {
+      order = await Order.findById(idParam);
+    }
+    if (!order) {
+      order = await Order.findOne({
+        $or: [
+          { orderCode: idParam },
+          { razorpayOrderId: idParam },
+          { "courier.trackingNumber": idParam },
+        ],
+      });
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+        data: null,
+      });
+    }
+
+    // Security check: Only the buyer (or admin) can confirm receipt and release escrow funds
+    const buyerId = (order.buyerId?._id || order.buyerId || "").toString();
+    const isBuyer = req.user && (req.user._id.toString() === buyerId || req.user.role === "admin");
+
+    if (!isBuyer) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the student buyer can inspect the book and release escrow funds to the seller.",
+        data: null,
+      });
+    }
+
+    order.status = "Delivered";
+    order.deliveredAt = order.deliveredAt || new Date();
+    order.escrowStatus = "Released";
+
+    // Complete all timeline steps
+    if (order.timeline && order.timeline.length > 0) {
+      order.timeline.forEach((t) => {
+        t.completed = true;
+        t.active = false;
+        if (t.stage === "Delivered" && !t.date) {
+          t.date = new Date();
+        }
+      });
+    }
+
+    const targetBookId = order.bookId || order.items?.[0]?.bookId;
+    if (targetBookId) {
+      const book = await Book.findById(targetBookId);
+      if (book && order.orderType !== "Rent") {
+        book.status = "Sold";
+        await book.save();
+      }
+    }
+
+    await order.save();
+
+    await order.populate("buyerId", "fullName email phone");
+    await order.populate("sellerId", "fullName email phone");
+    await order.populate("bookId");
+
+    const io = getIO();
+    io.to(`order:${order._id.toString()}`).emit("orderStatusUpdated", order);
+    if (order.razorpayOrderId) {
+      io.to(`order:${order.razorpayOrderId}`).emit("orderStatusUpdated", order);
+    }
+    if (order.buyerId?._id) {
+      io.to(`user:${order.buyerId._id.toString()}`).emit("orderStatusUpdated", order);
+    }
+    if (order.sellerId?._id) {
+      io.to(`user:${order.sellerId._id.toString()}`).emit("orderStatusUpdated", order);
+      io.to(`user:${order.sellerId._id.toString()}`).emit("escrowReleased", {
+        orderId: order._id,
+        amount: order.amount,
+        message: `🎉 Buyer confirmed receipt! ₹${order.amount} has been released to your wallet.`,
+      });
+    }
+    io.emit("orderStatusUpdated", order);
+
+    return res.status(200).json({
+      success: true,
+      message: "Receipt confirmed! Escrow funds released to the seller.",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Confirm receipt & release escrow error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to confirm receipt and release escrow",
       data: null,
     });
   }

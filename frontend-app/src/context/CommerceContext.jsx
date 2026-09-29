@@ -1121,7 +1121,37 @@ export function CommerceProvider({ children }) {
 
   const getOrderById = (id) => orders.find((o) => o.id === id || o._id === id || o.orderCode === id);
 
-  const releaseEscrowPayment = (orderId) => {
+  const releaseEscrowPayment = async (orderId) => {
+    // 1. Send confirm receipt & escrow release request to backend API
+    try {
+      let token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("bookify_token") ||
+        localStorage.getItem("bookify_auth_token");
+      if (!token) {
+        try {
+          const user = JSON.parse(localStorage.getItem("bookify_user") || "{}");
+          token = user.token;
+        } catch {}
+      }
+
+      const apiUrl =
+        import.meta.env.VITE_API_BASE_URL ||
+        import.meta.env.VITE_API_URL ||
+        "http://localhost:5000/api";
+
+      await fetch(`${apiUrl}/orders/${orderId}/confirm-receipt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+    } catch (apiErr) {
+      console.warn("[CommerceContext] Escrow release API notice:", apiErr.message);
+    }
+
+    // 2. Synchronize local state optimistically
     setOrders((prev) =>
       prev.map((order) => {
         if (order.id === orderId || order._id === orderId || order.orderCode === orderId) {
@@ -1229,9 +1259,11 @@ export function CommerceProvider({ children }) {
                 : isOutForDelivery
                 ? "Out for Delivery"
                 : isDeliv
-                ? "Delivered & Escrow Released"
+                ? "Delivered (Awaiting Buyer Confirmation)"
                 : newStatus,
-            escrowStatus: isDeliv ? "released_to_seller" : order.escrowStatus,
+            escrowStatus: isDeliv
+              ? (order.escrowStatus === "Released" || order.escrowStatus === "released_to_seller" ? "released_to_seller" : (order.escrowStatus || "held_in_escrow"))
+              : order.escrowStatus,
             courier: courierObj,
             timeline: updatedTimeline
           };
