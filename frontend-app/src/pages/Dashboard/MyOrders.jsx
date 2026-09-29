@@ -546,16 +546,6 @@ export default function MyOrders() {
                                 <span>Confirm Delivery (Release Escrow)</span>
                               </button>
                             )}
-
-                            {/* Link to Live Order Tracking Page */}
-                            <Link
-                              to={`/orders/${ord.id}/tracking`}
-                              target="_blank"
-                              className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-[#6C4BF4] hover:bg-gray-50 transition cursor-pointer shadow-2xs"
-                            >
-                              <ExternalLink size={13} />
-                              <span>Live Tracking View</span>
-                            </Link>
                           </div>
                         </div>
                       </div>

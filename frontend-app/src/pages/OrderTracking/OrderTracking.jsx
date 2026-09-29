@@ -19,6 +19,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useCommerce } from "../../context/CommerceContext";
+import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/apiClient";
 
 function normalizeTimeline(rawTimeline = [], currentStatus = "placed", isDelivered = false) {
@@ -127,6 +128,7 @@ function formatBackendOrder(raw, fallback = {}) {
 function OrderTracking() {
   const { orderId } = useParams();
   const { orders, getOrderById, releaseEscrowPayment, updateOrderStatus, socket, showToast } = useCommerce();
+  const { user } = useAuth();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCourierModal, setShowCourierModal] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -274,6 +276,15 @@ function OrderTracking() {
 
   const currentStatus = (order.status || "placed").toLowerCase();
   const isDelivered = currentStatus === "delivered" || order.escrowStatus === "released_to_seller";
+
+  const currentUserId = (user?.id || user?._id || "").toString();
+  const sellerId = (order.seller?.id || order.seller?._id || order.sellerId || "").toString();
+  const sellerEmail = (order.seller?.email || "").toLowerCase();
+  const userEmail = (user?.email || "").toLowerCase();
+
+  const isViewerSeller = Boolean(
+    currentUserId && ((sellerId && currentUserId === sellerId) || (sellerEmail && userEmail && userEmail === sellerEmail))
+  );
 
   const handleConfirmReceipt = async () => {
     try {
@@ -472,33 +483,53 @@ function OrderTracking() {
             </span>
           </div>
         ) : !isDelivered ? (
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-            <div className="flex items-center gap-3">
-              <ShieldCheck size={24} className="text-amber-700 shrink-0" />
-              <div className="text-xs text-amber-900">
-                <span className="font-bold">Have you received your book(s)?</span>
-                <p className="text-amber-800 mt-0.5">
-                  Confirm receipt to release the escrow payment to the student seller.
-                </p>
+          isViewerSeller ? (
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4">
+              <div className="flex items-center gap-3">
+                <ShieldCheck size={24} className="text-[#6C4BF4] shrink-0" />
+                <div className="text-xs text-indigo-900">
+                  <span className="font-bold">Seller Escrow Protection Active</span>
+                  <p className="text-indigo-800 mt-0.5">
+                    Your sales payout is held safely in escrow. Once the student buyer verifies and confirms delivery, funds will be released to your wallet.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/dashboard/orders"
+                className="rounded-xl bg-[#6C4BF4] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#5B3DE0] transition cursor-pointer shrink-0"
+              >
+                Go to Seller Hub
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+              <div className="flex items-center gap-3">
+                <ShieldCheck size={24} className="text-amber-700 shrink-0" />
+                <div className="text-xs text-amber-900">
+                  <span className="font-bold">Have you received your book(s)?</span>
+                  <p className="text-amber-800 mt-0.5">
+                    Confirm receipt to release the escrow payment to the student seller.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowDisputeModal(true)}
+                  className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-xl transition cursor-pointer"
+                >
+                  Report Problem / Dispute
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(true)}
+                  className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
+                >
+                  Confirm Receipt & Release Escrow
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowDisputeModal(true)}
-                className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-xl transition cursor-pointer"
-              >
-                Report Problem / Dispute
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(true)}
-                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
-              >
-                Confirm Receipt & Release Escrow
-              </button>
-            </div>
-          </div>
+          )
         ) : (
           <div className="mt-8 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 animate-fade-in-up">
             <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
