@@ -245,7 +245,11 @@ export const getBookById = async (req, res) => {
       });
     }
 
-    const book = await Book.findById(id)
+    const book = await Book.findByIdAndUpdate(
+      id,
+      { $inc: { views: 1 } },
+      { new: true }
+    )
       .populate("sellerId", "fullName email phone isAuthor authorProfile isVerified authorVerificationStatus authorBio authorAvatar address")
       .lean();
 
