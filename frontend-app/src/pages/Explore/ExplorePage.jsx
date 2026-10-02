@@ -316,16 +316,25 @@ export default function ExplorePage() {
         nonfiction: "Non-Fiction",
         academic: "Academic",
         comics: "Comics",
-        selfhelp: "Self-Help",
+        selfhelp: "Self",
         competitive: "Competitive",
         children: "Children",
         regional: "Regional",
       };
-      const catTarget = (catMap[filters.category] || filters.category).toLowerCase();
+      const rawTarget = (catMap[filters.category] || filters.category).toLowerCase().replace(/[-_\s]+/g, " ");
       result = result.filter((b) => {
         if (!b.category) return false;
-        const bCat = b.category.toLowerCase();
-        return bCat.includes(catTarget) || catTarget.includes(bCat);
+        const bCat = b.category.toLowerCase().replace(/[-_\s]+/g, " ");
+        if (filters.category === "academic") {
+          return (
+            bCat.includes("academic") ||
+            bCat.includes("science") ||
+            bCat.includes("technology") ||
+            bCat.includes("engineering") ||
+            bCat.includes("textbook")
+          );
+        }
+        return bCat.includes(rawTarget) || rawTarget.includes(bCat);
       });
     }
 
