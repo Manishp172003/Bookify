@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   SlidersHorizontal,
   X,
@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  ShieldCheck,
+  BookOpen,
 } from "lucide-react";
 import SearchBar from "../../components/search/SearchBar";
 import FilterSidebar from "../../components/search/FilterSidebar";
@@ -19,6 +21,7 @@ import books from "../../data/books";
 import categories from "../../data/categories";
 import ScrollReveal from "../../components/ui/ScrollReveal";
 import { adminService } from "../../services/adminService";
+import { authorService } from "../../services/authorService";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -54,6 +57,7 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
 
   const [filters, setFilters] = useState({
+    source: "all",
     conditions: [],
     modes: initialMode ? [initialMode] : [],
     priceRange: null,
@@ -88,11 +92,13 @@ export default function ExplorePage() {
                 ? Math.max(0, Math.floor((Date.now() - new Date(sb.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
                 : 0;
 
+              const isAuthorBook = Boolean(sb.isAuthorOriginal || sb.isPublisherListing || sellerObj.isAuthor);
+
               return {
                 id: sb._id,
                 _id: sb._id,
                 title: sb.title || "Untitled Book",
-                author: sb.author || "Academic Author",
+                author: sb.author || sellerObj.penName || sellerObj.fullName || "Academic Author",
                 isbn: sb.isbn || "",
                 category: sb.category || "General",
                 subCategory: sb.subCategory || "",
@@ -112,9 +118,12 @@ export default function ExplorePage() {
                 coverImage: coverImg,
                 photos: Array.isArray(sb.images) && sb.images.length > 0 ? sb.images : [coverImg],
                 description: sb.description || "",
+                isAuthorOriginal: isAuthorBook,
+                isPublisherListing: Boolean(sb.isPublisherListing),
+                bookType: sb.bookType || "Paperback",
                 seller: {
                   id: sellerObj._id || "seller",
-                  name: sellerObj.fullName || "Campus Seller",
+                  name: sellerObj.penName || sellerObj.fullName || "Campus Seller",
                   avatar:
                     sellerObj.avatar ||
                     "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
@@ -122,11 +131,66 @@ export default function ExplorePage() {
                   reviewsCount: 12,
                   campus: sb.location || sellerObj.address?.campus || "Central Campus",
                   verified: true,
+                  isVerified: isAuthorBook,
+                  authorVerificationStatus: sellerObj.authorVerificationStatus || (isAuthorBook ? "verified" : null)
                 },
                 isNegotiable: Boolean(sb.isNegotiable),
                 deliveryAvailable: true,
               };
             });
+
+            // Also merge any local author published books so newly published works appear immediately
+            try {
+              const localAuthorBooks = await authorService.getMyBooks();
+              if (Array.isArray(localAuthorBooks) && localAuthorBooks.length > 0) {
+                localAuthorBooks.forEach((ab) => {
+                  const alreadyPresent = normalizedServerBooks.some(
+                    (nb) => String(nb.id) === String(ab.id) || nb.title.toLowerCase() === ab.title.toLowerCase()
+                  );
+                  if (!alreadyPresent) {
+                    normalizedServerBooks.unshift({
+                      id: ab.id || ab._id,
+                      _id: ab._id || ab.id,
+                      title: ab.title,
+                      author: ab.author || "Published Author",
+                      isbn: "",
+                      category: ab.category || "General",
+                      subCategory: "",
+                      condition: "NEW",
+                      conditionRating: 5.0,
+                      askingPrice: Number(ab.price || 399),
+                      originalPrice: Math.round(Number(ab.price || 399) * 1.25),
+                      discountPercent: 20,
+                      mode: "sell",
+                      rentalRate: 49,
+                      securityDeposit: 0,
+                      postedDaysAgo: 0,
+                      createdAt: new Date().toISOString(),
+                      coverImage: ab.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop",
+                      photos: [ab.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop"],
+                      description: ab.description || "Original published work direct from the verified author.",
+                      isAuthorOriginal: true,
+                      isPublisherListing: true,
+                      bookType: "Paperback",
+                      seller: {
+                        id: "author",
+                        name: ab.author || "Verified Author",
+                        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+                        rating: 4.9,
+                        reviewsCount: 15,
+                        campus: "Bookify Author Press",
+                        verified: true,
+                        isVerified: true
+                      },
+                      isNegotiable: false,
+                      deliveryAvailable: true
+                    });
+                  }
+                });
+              }
+            } catch (authErr) {
+              console.warn("[ExplorePage] Local author book merge note:", authErr.message);
+            }
 
             setAllBooks((prev) => {
               const liveIds = new Set(normalizedServerBooks.map((b) => String(b.id)));
@@ -258,6 +322,12 @@ export default function ExplorePage() {
       result = result.filter((b) => b.deliveryAvailable);
     }
 
+    if (filters.source === "authors") {
+      result = result.filter((b) => b.isAuthorOriginal || b.isPublisherListing);
+    } else if (filters.source === "students") {
+      result = result.filter((b) => !b.isAuthorOriginal && !b.isPublisherListing);
+    }
+
     return result;
   }, [searchQuery, filters, initialSeller]);
 
@@ -376,7 +446,13 @@ export default function ExplorePage() {
     }
   };
 
+  const authorBooks = useMemo(
+    () => allBooks.filter((b) => b.isAuthorOriginal || b.isPublisherListing),
+    [allBooks]
+  );
+
   const activeFilterCount = [
+    filters.source && filters.source !== "all" ? filters.source : null,
     filters.conditions.length,
     filters.modes.length,
     filters.priceRange,
@@ -410,6 +486,82 @@ export default function ExplorePage() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Featured Author Spotlight Shelf */}
+            {authorBooks.length > 0 && (!filters.source || filters.source === "all" || filters.source === "authors") && (
+              <div className="mb-6 rounded-3xl bg-gradient-to-r from-[#17152A] via-[#2A1F52] to-[#1F143D] p-5 sm:p-6 text-white shadow-lg relative overflow-hidden animate-fade-in-up">
+                <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#6C4BF4]/30 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#6C4BF4]/40 border border-[#6C4BF4]/60 px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider uppercase text-purple-200">
+                        <Sparkles size={11} className="text-amber-400" /> Featured Author Shelf
+                      </span>
+                      <span className="text-[11px] text-gray-300">Original Publications</span>
+                    </div>
+                    <h2 className="text-base sm:text-lg font-extrabold text-white mt-1 font-poppins">
+                      Discover Works by Verified Authors
+                    </h2>
+                    <p className="text-xs text-gray-300 mt-0.5">
+                      Direct from independent & student authors. Get original print-on-demand books and digital editions.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleFilterChange({
+                        ...filters,
+                        source: filters.source === "authors" ? "all" : "authors",
+                      })
+                    }
+                    className="self-start sm:self-center shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition cursor-pointer backdrop-blur-md"
+                  >
+                    <span>{filters.source === "authors" ? "Show All Marketplace" : `View Author Catalog (${authorBooks.length})`}</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+
+                {/* Horizontal Author Books Cards */}
+                <div className="relative z-10 flex gap-3.5 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
+                  {authorBooks.slice(0, 8).map((b) => (
+                    <Link
+                      key={b.id || b._id}
+                      to={`/book/${b.id || b._id}`}
+                      className="group w-36 sm:w-40 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 p-2.5 transition duration-300 hover:scale-[1.02] flex flex-col justify-between"
+                    >
+                      <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-black/20 mb-2">
+                        <img
+                          src={b.coverImage}
+                          alt={b.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                        <span className="absolute top-1.5 left-1.5 rounded-md bg-[#6C4BF4] px-1.5 py-0.5 text-[8px] font-extrabold text-white">
+                          {b.bookType || "Paperback"}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-white line-clamp-1 group-hover:text-amber-300 transition">
+                          {b.title}
+                        </h3>
+                        <p className="text-[11px] text-gray-300 line-clamp-1 mt-0.5 flex items-center gap-1">
+                          <span>{b.author}</span>
+                          <ShieldCheck size={11} className="text-emerald-400 shrink-0" />
+                        </p>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
+                          <span className="text-xs font-extrabold text-white">₹{b.askingPrice}</span>
+                          <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded">
+                            Direct Author
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Mobile Filter Button */}
             <button
               onClick={() => setShowMobileFilters(true)}
@@ -427,6 +579,22 @@ export default function ExplorePage() {
             {/* Active Filter Pills */}
             {(activeFilterCount > 0 || initialSeller) && (
               <div className="flex flex-wrap gap-2 mb-4">
+                {filters.source && filters.source !== "all" && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-[#6C4BF4] border border-purple-200 text-xs font-semibold rounded-full">
+                    {filters.source === "authors" ? "✍️ Author Originals" : "🎓 Student Textbooks"}
+                    <button
+                      onClick={() =>
+                        setFilters({
+                          ...filters,
+                          source: "all",
+                        })
+                      }
+                      className="cursor-pointer hover:text-purple-900 transition"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
                 {initialSeller && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold rounded-full">
                     Seller: {initialSeller}

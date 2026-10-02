@@ -46,6 +46,11 @@ export default function BookCard({ book, layout = "grid" }) {
           >
             {mode.label}
           </span>
+          {book.isAuthorOriginal && (
+            <span className="absolute bottom-2 left-2 text-[9px] font-extrabold text-white bg-gradient-to-r from-[#6C4BF4] to-[#8C6EF8] px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1">
+              ✍️ Author Original
+            </span>
+          )}
         </div>
         <div className="flex-1 p-4 flex flex-col justify-between">
           <div>
@@ -121,6 +126,13 @@ export default function BookCard({ book, layout = "grid" }) {
         >
           <Heart size={13} className={isWishlisted ? "fill-red-500" : "transition-colors"} />
         </button>
+
+        {/* Author Original Badge */}
+        {book.isAuthorOriginal && (
+          <span className="absolute bottom-2.5 left-2.5 text-[9px] font-extrabold text-white bg-gradient-to-r from-[#6C4BF4] to-[#8C6EF8] px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1 z-10 backdrop-blur-xs">
+            ✍️ Author Original
+          </span>
+        )}
 
       </div>
 

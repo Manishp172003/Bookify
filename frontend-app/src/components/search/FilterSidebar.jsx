@@ -89,6 +89,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
     setPriceMin(0);
     setPriceMax(1000);
     onFilterChange({
+      source: "all",
       conditions: [],
       modes: [],
       priceRange: null,
@@ -102,6 +103,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
   };
 
   const activeCount = [
+    filters.source && filters.source !== "all" ? filters.source : null,
     filters.category,
     (filters.modes || []).length,
     (filters.conditions || []).length,
@@ -141,6 +143,74 @@ export default function FilterSidebar({ filters, onFilterChange, onClose }) {
           </button>
         )}
       </div>
+
+      {/* 0. Listing Source: All vs Author Originals vs Student Textbooks */}
+      <FilterSection
+        title="Listing Source"
+        defaultOpen={true}
+        badge={filters.source && filters.source !== "all" ? "1 active" : null}
+      >
+        <div className="space-y-1.5">
+          <label className="flex items-center justify-between cursor-pointer px-3 py-2 rounded-xl hover:bg-gray-50 transition">
+            <div className="flex items-center gap-2.5">
+              <input
+                type="radio"
+                name="listingSource"
+                checked={!filters.source || filters.source === "all"}
+                onChange={() => onFilterChange({ ...filters, source: "all" })}
+                className="w-4 h-4 text-[#6C4BF4] accent-[#6C4BF4] cursor-pointer"
+              />
+              <div>
+                <p className="text-xs font-bold text-gray-800">All Marketplace</p>
+                <p className="text-[10px] text-gray-400">Authors & Student books</p>
+              </div>
+            </div>
+          </label>
+
+          <label className={`flex items-center justify-between cursor-pointer px-3 py-2 rounded-xl border transition ${
+            filters.source === "authors"
+              ? "bg-[#F8F7FF] border-[#6C4BF4]/40"
+              : "border-transparent hover:bg-gray-50"
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <input
+                type="radio"
+                name="listingSource"
+                checked={filters.source === "authors"}
+                onChange={() => onFilterChange({ ...filters, source: "authors" })}
+                className="w-4 h-4 text-[#6C4BF4] accent-[#6C4BF4] cursor-pointer"
+              />
+              <div>
+                <p className="text-xs font-bold text-[#6C4BF4] flex items-center gap-1">
+                  ✍️ Author Originals
+                </p>
+                <p className="text-[10px] text-gray-500">Direct from verified authors</p>
+              </div>
+            </div>
+            <span className="w-2 h-2 rounded-full bg-[#6C4BF4]" />
+          </label>
+
+          <label className={`flex items-center justify-between cursor-pointer px-3 py-2 rounded-xl border transition ${
+            filters.source === "students"
+              ? "bg-gray-50 border-gray-300"
+              : "border-transparent hover:bg-gray-50"
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <input
+                type="radio"
+                name="listingSource"
+                checked={filters.source === "students"}
+                onChange={() => onFilterChange({ ...filters, source: "students" })}
+                className="w-4 h-4 text-[#6C4BF4] accent-[#6C4BF4] cursor-pointer"
+              />
+              <div>
+                <p className="text-xs font-bold text-gray-800">🎓 Student Textbooks</p>
+                <p className="text-[10px] text-gray-400">Campus secondhand books</p>
+              </div>
+            </div>
+          </label>
+        </div>
+      </FilterSection>
 
       {/* 1. Category */}
       <FilterSection
