@@ -51,6 +51,11 @@ export default function BookCard({ book, layout = "grid" }) {
               ✍️ Author Original
             </span>
           )}
+          {book.isSponsored && (
+            <span className="absolute top-2 right-2 text-[9px] font-extrabold text-amber-950 bg-amber-400 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1 z-10">
+              ✨ Promoted
+            </span>
+          )}
         </div>
         <div className="flex-1 p-4 flex flex-col justify-between">
           <div>
@@ -131,6 +136,13 @@ export default function BookCard({ book, layout = "grid" }) {
         {book.isAuthorOriginal && (
           <span className="absolute bottom-2.5 left-2.5 text-[9px] font-extrabold text-white bg-gradient-to-r from-[#6C4BF4] to-[#8C6EF8] px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1 z-10 backdrop-blur-xs">
             ✍️ Author Original
+          </span>
+        )}
+
+        {/* Sponsored / Promoted Badge */}
+        {book.isSponsored && (
+          <span className="absolute bottom-2.5 right-2.5 text-[9px] font-extrabold text-amber-950 bg-amber-400 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1 z-10 backdrop-blur-xs">
+            ✨ Promoted
           </span>
         )}
 

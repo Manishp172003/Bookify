@@ -366,6 +366,10 @@ export const authorService = {
     return { success: true, id };
   },
 
+  async getBooks() {
+    return this.getMyBooks();
+  },
+
   // ==========================================
   // Campaigns Management (User-Isolated)
   // ==========================================
@@ -390,9 +394,8 @@ export const authorService = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.data) && data.data.length > 0) {
-          // Format backend Campaign model to frontend dashboard structure
-          return data.data.map((c) => ({
+        if (Array.isArray(data.data)) {
+          const apiFormatted = data.data.map((c) => ({
             id: c._id || c.id,
             name: c.title,
             type: c.campaignType === "category_boost" ? "Category Boost" : "Home Boost",
@@ -406,6 +409,11 @@ export const authorService = {
             paymentMethod: c.paymentMethod,
             paymentStatus: c.paymentStatus,
           }));
+
+          if (apiFormatted.length > 0 || !isDemoAuthor(user)) {
+            localStorage.setItem(storageKey, JSON.stringify(apiFormatted));
+            return apiFormatted;
+          }
         }
       }
     } catch {}
