@@ -296,9 +296,26 @@ export const authorService = {
     const user = getCurrentAuthor();
     const storageKey = getBooksStorageKey();
 
+    let createdApiBook = null;
+    try {
+      const res = await fetch(`${API_BASE_URL}/books`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(bookData),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        createdApiBook = json.data;
+      }
+    } catch (err) {
+      console.warn("[authorService] MongoDB sync notice:", err.message);
+    }
+
     const newBook = {
-      id: `bk_${Date.now()}`,
+      id: createdApiBook?._id || createdApiBook?.id || `bk_${Date.now()}`,
+      _id: createdApiBook?._id,
       title: bookData.title,
+      author: bookData.author || user?.penName || user?.fullName || "Author",
       category: bookData.category || "General",
       publishedDate: new Date().toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -308,9 +325,10 @@ export const authorService = {
       status: "Published",
       sales: "0",
       earnings: "₹0",
-      cover: bookData.images && bookData.images[0] ? bookData.images[0] : null,
+      cover: (bookData.images && bookData.images[0]) || (createdApiBook?.images && createdApiBook.images[0]) || null,
       price: bookData.price || 0,
       bgCover: "bg-[#6C4BF4]",
+      isAuthorOriginal: true,
     };
 
     // 1. Save to persistent localStorage
@@ -320,15 +338,6 @@ export const authorService = {
     } catch {}
     const updated = [newBook, ...currentBooks];
     localStorage.setItem(storageKey, JSON.stringify(updated));
-
-    // 2. Sync to MongoDB
-    try {
-      await fetch(`${API_BASE_URL}/books`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(bookData),
-      });
-    } catch {}
 
     return newBook;
   },

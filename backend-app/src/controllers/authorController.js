@@ -194,6 +194,10 @@ export const submitBook = async (req, res) => {
       ? [image]
       : ["https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg"];
 
+    const resolvedPrice = Number(price) || 0;
+    const resolvedRental = Number(rentalPrice) || 0;
+    const resolvedMode = resolvedPrice > 0 ? "Sell" : resolvedRental > 0 ? "Rent" : "Sell";
+
     const book = await Book.create({
       sellerId: req.user._id,
       title,
@@ -205,12 +209,12 @@ export const submitBook = async (req, res) => {
       language: language || "English",
       tags: Array.isArray(tags) ? tags : [],
       description: description || "",
-      bookType: bookType || "eBook",
+      bookType: bookType || "Paperback",
       condition: "New",
-      transactionMode: rentalPrice ? "Rent" : "Sell",
-      price: Number(price) || 0,
-      originalPrice: Number(originalPrice) || Number(price) || 0,
-      rentalPrice: Number(rentalPrice) || 0,
+      transactionMode: resolvedMode,
+      price: resolvedPrice,
+      originalPrice: Number(originalPrice) || resolvedPrice || 0,
+      rentalPrice: resolvedRental,
       allowExchanges: allowExchanges !== undefined ? allowExchanges : true,
       images: bookImages,
       manuscriptUrl: manuscriptUrl || "",

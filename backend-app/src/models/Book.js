@@ -100,8 +100,8 @@ const bookSchema = new mongoose.Schema({
   ],
   bookType: {
     type: String,
-    enum: ["eBook", "Paperback", "Hardcover"],
-    default: "eBook",
+    enum: ["eBook", "Paperback", "Hardcover", "Physical Book"],
+    default: "Paperback",
   },
   manuscriptUrl: {
     type: String,
