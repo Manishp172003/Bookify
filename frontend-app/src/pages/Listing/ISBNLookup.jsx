@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import ListingWizardLayout from '../../components/listing/ListingWizardLayout';
 const BarcodeScannerModal = lazy(() => import('../../components/listing/BarcodeScannerModal'));
 import { useListing } from '../../context/ListingContext';
-import { Search, Barcode, BookOpen, Sparkles, ArrowRight, Check, AlertCircle, Camera } from 'lucide-react';
+import { Search, Barcode, BookOpen, Sparkles, ArrowRight, Check, AlertCircle, Camera, Tag } from 'lucide-react';
 import { getBookCover, DEFAULT_BOOK_COVER } from '../../utils/bookCoverUtils';
+import categories from '../../data/categories';
 
 const DUMMY_PRESETS = [
   {
@@ -14,7 +15,8 @@ const DUMMY_PRESETS = [
     publisher: 'MIT Press',
     edition: '3rd Edition',
     year: '2009',
-    category: 'Computer Science & Engineering',
+    category: 'Academic & Textbooks',
+    subCategory: 'Computer Science',
     mrp: 1450,
     price: 699,
     cover: 'https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg'
@@ -26,7 +28,8 @@ const DUMMY_PRESETS = [
     publisher: 'CareerCup',
     edition: '6th Edition',
     year: '2015',
-    category: 'Placement & Competitive',
+    category: 'Competitive Exams',
+    subCategory: 'Placements & Coding',
     mrp: 999,
     price: 499,
     cover: 'https://covers.openlibrary.org/b/isbn/9780984782857-L.jpg'
@@ -38,7 +41,8 @@ const DUMMY_PRESETS = [
     publisher: 'Bharati Bhawan',
     edition: '2023 Reprint',
     year: '2023',
-    category: 'JEE & Physics',
+    category: 'Competitive Exams',
+    subCategory: 'JEE',
     mrp: 460,
     price: 230,
     cover: 'https://covers.openlibrary.org/b/isbn/9788177091878-L.jpg'
@@ -55,6 +59,33 @@ export default function ISBNLookup() {
   const [isSearching, setIsSearching] = useState(false);
   const [lookupSuccess, setLookupSuccess] = useState(true);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  const resolvePlatformCategory = (raw) => {
+    if (!raw) return 'Academic & Textbooks';
+    const low = raw.toLowerCase();
+    if (low.includes('competitive') || low.includes('exam') || low.includes('jee') || low.includes('neet') || low.includes('upsc') || low.includes('gate') || low.includes('cat')) {
+      return 'Competitive Exams';
+    }
+    if (low.includes('comic') || low.includes('manga') || low.includes('graphic novel')) {
+      return 'Comics & Manga';
+    }
+    if (low.includes('child') || low.includes('kid') || low.includes('juvenile') || low.includes('young reader')) {
+      return "Children's Books";
+    }
+    if (low.includes('hindi') || low.includes('tamil') || low.includes('telugu') || low.includes('bengali') || low.includes('marathi') || low.includes('regional')) {
+      return 'Regional Languages';
+    }
+    if (low.includes('fiction') || low.includes('novel') || low.includes('literature')) {
+      return 'Fiction & Novels';
+    }
+    if (low.includes('self') || low.includes('psychology') || low.includes('productivity') || low.includes('mindfulness') || low.includes('wellness')) {
+      return 'Self-Help';
+    }
+    if (low.includes('history') || low.includes('biography') || low.includes('non-fiction') || low.includes('philosophy')) {
+      return 'Non-Fiction';
+    }
+    return 'Academic & Textbooks';
+  };
 
   const fetchIsbnDetails = async (rawIsbn) => {
     const clean = (rawIsbn || '').trim().replace(/-/g, '');
@@ -78,7 +109,7 @@ export default function ISBNLookup() {
           author: book.author || "Unknown Author",
           publisher: book.publisher || "Academic Publisher",
           edition: book.publishedDate || "Standard Edition",
-          category: book.category || "General Studies",
+          category: resolvePlatformCategory(book.category),
           mrp: estMrp,
           price: estPrice,
           cover: resolvedCover,
@@ -338,6 +369,44 @@ export default function ISBNLookup() {
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-[#F8F7FF] focus:bg-white focus:outline-none focus:border-[#6C4BF4] text-sm text-[#17152A]"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Category *
+                </label>
+                <select
+                  value={listingData.category || 'Academic & Textbooks'}
+                  onChange={(e) => {
+                    const chosen = e.target.value;
+                    const catObj = categories.find(c => c.name === chosen);
+                    updateListingData({
+                      category: chosen,
+                      subCategory: catObj?.subCategories?.[0] || ''
+                    });
+                  }}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-[#F8F7FF] focus:bg-white focus:outline-none focus:border-[#6C4BF4] text-sm text-[#17152A]"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Sub-Category / Stream
+                </label>
+                <select
+                  value={listingData.subCategory || ''}
+                  onChange={(e) => updateListingData({ subCategory: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-[#F8F7FF] focus:bg-white focus:outline-none focus:border-[#6C4BF4] text-sm text-[#17152A]"
+                >
+                  <option value="">General / Standard</option>
+                  {(categories.find(c => c.name === (listingData.category || 'Academic & Textbooks'))?.subCategories || []).map((sub) => (
+                    <option key={sub} value={sub}>{sub}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         )}
@@ -374,6 +443,53 @@ export default function ISBNLookup() {
             ))}
           </div>
         </div>
+
+        {/* Selected Book Verification & Category Review Card */}
+        {listingData.title && (
+          <div className="bg-[#F8F7FF] border border-[#6C4BF4]/25 rounded-2xl p-4 sm:p-5 transition shadow-xs">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex gap-3.5 items-center min-w-0">
+                <img
+                  src={listingData.photos?.[0] || listingData.cover || DEFAULT_BOOK_COVER}
+                  alt={listingData.title}
+                  className="w-12 h-16 object-cover rounded-lg border border-gray-200 shrink-0 shadow-xs"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                      <Check size={11} /> Selected for Listing
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-[#17152A] truncate">{listingData.title}</h4>
+                  <p className="text-xs text-gray-500 truncate">by {listingData.author || "Unknown Author"}</p>
+                </div>
+              </div>
+
+              {/* Category picker to ensure student puts book in correct category */}
+              <div className="w-full sm:w-auto flex flex-col sm:items-end gap-1 shrink-0">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  Marketplace Category
+                </label>
+                <select
+                  value={listingData.category || 'Academic & Textbooks'}
+                  onChange={(e) => {
+                    const chosen = e.target.value;
+                    const catObj = categories.find(c => c.name === chosen);
+                    updateListingData({
+                      category: chosen,
+                      subCategory: catObj?.subCategories?.[0] || ''
+                    });
+                  }}
+                  className="bg-white border border-[#6C4BF4]/40 rounded-xl px-3 py-1.5 text-xs font-bold text-[#6C4BF4] focus:outline-none focus:ring-2 focus:ring-[#6C4BF4]/20 cursor-pointer shadow-2xs"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Next Step Action Button */}
         <div className="pt-6 border-t border-gray-100 flex items-center justify-between">

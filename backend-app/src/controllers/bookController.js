@@ -160,7 +160,19 @@ export const getBooks = async (req, res) => {
     }
 
     if (category?.trim()) {
-      filter.category = category.trim();
+      const catTrimmed = category.trim();
+      const slugMap = {
+        fiction: "Fiction",
+        nonfiction: "Non-Fiction",
+        academic: "Academic|Science|Technology|Engineering",
+        comics: "Comics|Manga",
+        selfhelp: "Self",
+        competitive: "Competitive|Exam|JEE|NEET|UPSC|GATE|CAT",
+        children: "Children|Kids",
+        regional: "Regional|Hindi|Tamil|Telugu|Bengali|Marathi",
+      };
+      const searchTarget = slugMap[catTrimmed.toLowerCase()] || catTrimmed;
+      filter.category = { $regex: searchTarget, $options: "i" };
     }
 
     if (mode?.trim()) {

@@ -67,7 +67,7 @@ export default function PreviewListing() {
             title: listingData.title || 'Untitled Textbook',
             author: listingData.author || 'Academic Author',
             isbn: listingData.isbn || '',
-            category: listingData.category || 'Computer Science & Engineering',
+            category: listingData.category || 'Academic & Textbooks',
             condition: mapConditionForBackend(listingData.condition),
             transactionMode: mapModeForBackend(listingData.mode),
             price: Number(listingData.price) || (listingData.mode === 'donate' ? 0 : 399),
@@ -144,6 +144,7 @@ export default function PreviewListing() {
 
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 pt-2 border-t border-gray-200/70">
                 <div><span className="font-semibold text-gray-700">ISBN:</span> {listingData.isbn || '9780262033848'}</div>
+                <div><span className="font-semibold text-gray-700">Category:</span> {listingData.category || 'Academic & Textbooks'}</div>
                 <div><span className="font-semibold text-gray-700">Edition:</span> {listingData.edition || 'Standard'}</div>
                 <div><span className="font-semibold text-gray-700">Publisher:</span> {listingData.publisher || 'Academic Press'}</div>
                 <div><span className="font-semibold text-gray-700">Photos:</span> {listingData.photos?.length || 1} uploaded</div>

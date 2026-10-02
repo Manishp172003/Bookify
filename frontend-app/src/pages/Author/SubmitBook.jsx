@@ -18,6 +18,7 @@ import {
   Check
 } from "lucide-react";
 import { authorService, getCurrentAuthor } from "../../services/authorService";
+import categories from "../../data/categories";
 
 const SAMPLE_COVERS = [
   "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=600",
@@ -36,9 +37,9 @@ export default function SubmitBook() {
     title: "",
     subtitle: "",
     authorName: defaultAuthorName,
-    category: "Self Help",
+    category: "Academic & Textbooks",
     customCategory: "",
-    subCategory: "Mental Wellness",
+    subCategory: "Computer Science",
     customSubCategory: "",
     description: "",
     tags: ["Mindfulness", "Self Help", "Personal Growth"],
@@ -472,15 +473,20 @@ export default function SubmitBook() {
                   <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">Category*</label>
                   <select 
                     value={formData.category} 
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      const catObj = categories.find(c => c.name === newCat);
+                      setFormData({ 
+                        ...formData, 
+                        category: newCat,
+                        subCategory: catObj?.subCategories?.[0] || "General"
+                      });
+                    }}
                     className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none transition focus:border-[#6C4BF4]"
                   >
-                    <option>Self Help</option>
-                    <option>Fiction & Novels</option>
-                    <option>Technology & Coding</option>
-                    <option>Engineering & Science</option>
-                    <option>Business & Startups</option>
-                    <option>Poetry & Literature</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+                    ))}
                     <option value="Other">Other (Add Custom)</option>
                   </select>
                   {formData.category === "Other" && (
@@ -502,11 +508,9 @@ export default function SubmitBook() {
                     onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
                     className="w-full rounded-xl border border-gray-200 bg-[#F8F7FF] py-3 px-4 text-sm outline-none transition focus:border-[#6C4BF4]"
                   >
-                    <option>Mental Wellness</option>
-                    <option>Philosophy</option>
-                    <option>Psychology</option>
-                    <option>Productivity & Habits</option>
-                    <option>Career Growth</option>
+                    {((categories.find(c => c.name === formData.category)?.subCategories) || ['General']).map((sub) => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
                     <option value="Other">Other (Add Custom)</option>
                   </select>
                   {formData.subCategory === "Other" && (
