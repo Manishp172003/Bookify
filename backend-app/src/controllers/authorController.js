@@ -773,6 +773,7 @@ export const getDashboardStats = async (req, res) => {
     const totalSales = orders.length;
     const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
     const totalReaders = new Set(orders.map((o) => (o.buyerId ? o.buyerId.toString() : "anon"))).size;
+    const totalViews = myBooks.reduce((sum, b) => sum + (b.views || 0), 0);
 
     // Generate 6 milestone intervals for reader/sales demand
     const now = new Date();
@@ -797,6 +798,7 @@ export const getDashboardStats = async (req, res) => {
         label: dayLabel,
         sales: periodOrders.length,
         revenue: periodOrders.reduce((sum, o) => sum + (o.amount || 0), 0),
+        views: 0,
         isCurrent: step === 0,
       });
     }
@@ -809,6 +811,7 @@ export const getDashboardStats = async (req, res) => {
         totalReaders: totalReaders || 0,
         totalSales,
         totalRevenue,
+        totalViews,
         activeCampaigns,
         recentOrders: orders.slice(0, 5),
         timeSeries,
@@ -837,6 +840,8 @@ export const getAnalytics = async (req, res) => {
     const orders = await Order.find(orderMatch).sort({ createdAt: -1 });
     const totalSales = orders.length;
     const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
+    const totalReaders = new Set(orders.map((o) => (o.buyerId ? o.buyerId.toString() : "anon"))).size;
+    const totalViews = myBooks.reduce((sum, b) => sum + (b.views || 0), 0);
 
     // 30-day daily revenue time-series aggregation
     const thirtyDaysAgo = new Date();
@@ -887,23 +892,36 @@ export const getAnalytics = async (req, res) => {
         sales: bookSalesMap[book._id.toString()]?.sales || 0,
         revenue: bookSalesMap[book._id.toString()]?.revenue || 0,
       }))
-      .sort((a, b) => b.sales - a.sales);
+      .sort((a, b) => (b.views - a.views) || (b.sales - a.sales));
+
+    // Dynamic 6-point timeline for views & reader engagement
+    const now = new Date();
+    const timeSeries = [];
+    for (let step = 5; step >= 0; step--) {
+      const targetDate = new Date(now);
+      targetDate.setDate(now.getDate() - step * 5);
+      const dayLabel = targetDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+      timeSeries.push({
+        label: dayLabel,
+        views: step === 0 ? totalViews : 0,
+        sales: 0,
+        isCurrent: step === 0,
+      });
+    }
 
     return res.status(200).json({
       success: true,
       message: "Author analytics fetched",
       data: {
         totalBooks: myBooks.length,
+        totalViews,
+        totalReaders: totalReaders || 0,
         totalSales,
         totalRevenue,
         dailyRevenue,
         topBooks,
-        demographics: [
-          { college: "IIT Bombay", readers: 48 },
-          { college: "BITS Pilani", readers: 36 },
-          { college: "Delhi University", readers: 29 },
-          { college: "VNIT Nagpur", readers: 18 },
-        ],
+        timeSeries,
+        demographics: [],
       },
     });
   } catch (error) {

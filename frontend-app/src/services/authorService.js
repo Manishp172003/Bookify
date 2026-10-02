@@ -277,6 +277,7 @@ export const authorService = {
             status: b.status === "Active" ? "Published" : (b.status || "Published"),
             sales: (b.salesCount || 0).toLocaleString(),
             earnings: `₹${(b.totalEarnings || (b.price ? b.price * (b.salesCount || 0) : 0)).toLocaleString()}`,
+            views: b.views || 0,
             cover: b.images && b.images[0] ? b.images[0] : null,
             price: b.price || 0,
             bgCover: "bg-[#6C4BF4]",
@@ -325,6 +326,7 @@ export const authorService = {
       status: "Published",
       sales: "0",
       earnings: "₹0",
+      views: 0,
       cover: (bookData.images && bookData.images[0]) || (createdApiBook?.images && createdApiBook.images[0]) || null,
       price: bookData.price || 0,
       bgCover: "bg-[#6C4BF4]",
@@ -616,6 +618,11 @@ export const authorService = {
         return sum + (isNaN(num) ? 0 : num);
       }, 0);
 
+      const totalViews = books.reduce((sum, b) => {
+        const num = parseInt((b.views || "0").toString().replace(/[^0-9]/g, ""), 10);
+        return sum + (isNaN(num) ? 0 : num);
+      }, 0);
+
       let backendStats = null;
       try {
         const res = await fetch(`${API_BASE_URL}/dashboard-stats`, { headers: getAuthHeaders() });
@@ -628,10 +635,12 @@ export const authorService = {
       const totalRev = backendStats?.totalRevenue !== undefined ? backendStats.totalRevenue : totalRevenue;
       const salesCount = backendStats?.totalSales !== undefined ? backendStats.totalSales : totalSales;
       const readersCount = backendStats?.totalReaders !== undefined ? backendStats.totalReaders : totalSales;
+      const viewsCount = backendStats?.totalViews !== undefined ? backendStats.totalViews : totalViews;
 
       return {
         isDemo: false,
         totalBooks: backendStats?.totalBooks !== undefined ? backendStats.totalBooks : books.length,
+        totalViews: viewsCount,
         totalReaders: readersCount,
         totalSales: totalRev > 0 ? `₹${totalRev.toLocaleString()}` : (salesCount > 0 ? `${salesCount}` : "₹0"),
         totalEarnings: totalRev > 0 ? `₹${Math.round(totalRev * 0.75).toLocaleString()}` : "₹0",
@@ -645,19 +654,71 @@ export const authorService = {
     return {
       isDemo: true,
       totalBooks: books.length,
+      totalViews: books.length > 0 ? "12.4K" : "0",
       totalReaders: books.length > 0 ? "12.4K" : "0",
       totalSales: books.length > 0 ? "₹48,750" : "₹0",
       totalEarnings: books.length > 0 ? "₹32,680" : "₹0",
       activeCampaigns: campaigns.filter((c) => c.status === "Running").length,
       recentOrders: [],
-      timeSeries: [
-        { label: "05 May", sales: 20 },
-        { label: "10 May", sales: 40 },
-        { label: "15 May", sales: 60 },
-        { label: "20 May", sales: 120 },
-        { label: "25 May", sales: 180 },
-        { label: "30 May", sales: 150 },
+      timeSeries: [],
+    };
+  },
+
+  async getAnalytics() {
+    const user = getCurrentAuthor();
+    const books = await this.getMyBooks();
+
+    if (!isDemoAuthor(user)) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/analytics`, { headers: getAuthHeaders() });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) return json.data;
+        }
+      } catch {}
+
+      const totalViews = books.reduce((sum, b) => {
+        const num = parseInt((b.views || "0").toString().replace(/[^0-9]/g, ""), 10);
+        return sum + (isNaN(num) ? 0 : num);
+      }, 0);
+
+      const totalSales = books.reduce((sum, b) => {
+        const num = parseInt((b.sales || "0").replace(/[^0-9]/g, ""), 10);
+        return sum + (isNaN(num) ? 0 : num);
+      }, 0);
+
+      const totalRevenue = books.reduce((sum, b) => {
+        const num = parseFloat((b.earnings || "0").replace(/[^0-9.]/g, ""));
+        return sum + (isNaN(num) ? 0 : num);
+      }, 0);
+
+      return {
+        totalBooks: books.length,
+        totalViews,
+        totalReaders: totalSales,
+        totalSales,
+        totalRevenue,
+        topBooks: books.map((b) => ({
+          id: b.id,
+          title: b.title,
+          views: parseInt((b.views || "0").toString().replace(/[^0-9]/g, ""), 10) || 0,
+          sales: parseInt((b.sales || "0").toString().replace(/[^0-9]/g, ""), 10) || 0,
+          revenue: parseFloat((b.earnings || "0").toString().replace(/[^0-9.]/g, "")) || 0,
+        })),
+        timeSeries: [],
+      };
+    }
+
+    return {
+      totalBooks: books.length,
+      totalViews: 12400,
+      totalReaders: 3260,
+      totalSales: 3260,
+      totalRevenue: 48750,
+      topBooks: [
+        { id: "demo_b1", title: "The Silent Mind", views: 12400, sales: 3260, revenue: 48750 }
       ],
+      timeSeries: [],
     };
   },
 };
