@@ -64,34 +64,39 @@ export async function openRazorpayCheckout({
       return;
     }
 
-    // Call backend to create Order and generate Razorpay Order ID
-    let backendOrderData = null;
-    try {
-      const createRes = await fetch(`${API_BASE_URL}/orders/create`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          bookId: order.items?.[0]?.bookId || order.items?.[0]?.id,
-          items: order.items || [],
-          orderType: order.orderType || "Buy",
-          amount: Number(order.total || order.amount || 0),
-          subtotal: Number(order.subtotal || order.total || 0),
-          deliveryFee: Number(order.deliveryFee || 0),
-          platformFee: Number(order.platformFee || 0),
-          discount: Number(order.discount || 0),
-          paymentMethod: "Razorpay",
-          shippingAddress: order.address || customer?.address,
-        }),
-      });
+    const orderAmount = Number(order.total ?? order.amount ?? 0);
+    const isMarketplaceOrder = Boolean(Array.isArray(order.items) && order.items.length > 0);
 
-      if (createRes.ok) {
-        const json = await createRes.json();
-        if (json.success && json.data) {
-          backendOrderData = json.data;
+    // Call backend to create Order only for marketplace physical book purchases
+    let backendOrderData = null;
+    if (isMarketplaceOrder) {
+      try {
+        const createRes = await fetch(`${API_BASE_URL}/orders/create`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            bookId: order.items?.[0]?.bookId || order.items?.[0]?.id,
+            items: order.items || [],
+            orderType: order.orderType || "Buy",
+            amount: orderAmount,
+            subtotal: Number(order.subtotal || orderAmount),
+            deliveryFee: Number(order.deliveryFee || 0),
+            platformFee: Number(order.platformFee || 0),
+            discount: Number(order.discount || 0),
+            paymentMethod: "Razorpay",
+            shippingAddress: order.address || customer?.address,
+          }),
+        });
+
+        if (createRes.ok) {
+          const json = await createRes.json();
+          if (json.success && json.data) {
+            backendOrderData = json.data;
+          }
         }
+      } catch (apiErr) {
+        console.warn("[Razorpay Service] Order creation API notice:", apiErr.message);
       }
-    } catch (apiErr) {
-      console.warn("[Razorpay Service] Order creation API notice:", apiErr.message);
     }
 
     const keyId =
@@ -100,14 +105,14 @@ export async function openRazorpayCheckout({
       "rzp_test_SokmKPc76a4dtb";
 
     const razorpayOrderId = backendOrderData?.razorpayOrder?.id || null;
-    const amountInPaise = backendOrderData?.razorpayOrder?.amount || Math.round(Number(order.total || 0) * 100);
+    const amountInPaise = backendOrderData?.razorpayOrder?.amount || Math.round(orderAmount * 100);
 
     const options = {
       key: keyId,
       amount: amountInPaise,
       currency: "INR",
-      name: "Bookify Marketplace",
-      description: "Escrow Protected Book Order",
+      name: order.title ? "Bookify Author Promotions" : "Bookify Marketplace",
+      description: order.title || "Escrow Protected Book Order",
       image: "https://cdn-icons-png.flaticon.com/512/3389/3389081.png",
       order_id: razorpayOrderId,
       prefill: {

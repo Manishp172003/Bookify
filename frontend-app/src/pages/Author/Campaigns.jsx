@@ -27,15 +27,15 @@ function Campaigns() {
       const currentUser = getCurrentAuthor();
       setUser(currentUser);
 
-      const [camps, books] = await Promise.all([
-        authorService.getCampaigns(),
-        authorService.getMyBooks ? authorService.getMyBooks() : authorService.getBooks()
+      const [campsRes, booksRes] = await Promise.allSettled([
+        authorService.getCampaigns ? authorService.getCampaigns() : Promise.resolve([]),
+        authorService.getMyBooks ? authorService.getMyBooks() : (authorService.getBooks ? authorService.getBooks() : Promise.resolve([]))
       ]);
 
-      const campList = Array.isArray(camps) ? camps : [];
+      const campList = campsRes.status === "fulfilled" && Array.isArray(campsRes.value) ? campsRes.value : [];
       setCampaigns(campList);
       
-      const bookList = Array.isArray(books) ? books : [];
+      const bookList = booksRes.status === "fulfilled" && Array.isArray(booksRes.value) ? booksRes.value : [];
       setMyBooks(bookList);
 
       const trialUsed = campList.some(c => c.paymentMethod === "free_trial");
@@ -578,13 +578,19 @@ function Campaigns() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 cursor-pointer flex items-center gap-1.5"
+                  disabled={submitting || (newCampaign.paymentMethod === "wallet" && walletBalance < totalCost)}
+                  className={`px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-md shadow-[#6C4BF4]/20 flex items-center gap-1.5 ${
+                    newCampaign.paymentMethod === "wallet" && walletBalance < totalCost
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300"
+                      : "bg-[#6C4BF4] text-white hover:bg-[#5b3ed9] cursor-pointer"
+                  }`}
                 >
                   {submitting ? (
                     <span>Processing...</span>
                   ) : isFreeTrial ? (
                     <span>Activate Free Trial</span>
+                  ) : newCampaign.paymentMethod === "wallet" && walletBalance < totalCost ? (
+                    <span>Insufficient Wallet (Select Razorpay)</span>
                   ) : (
                     <span>Launch Campaign (₹{totalCost})</span>
                   )}
