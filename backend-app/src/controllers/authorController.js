@@ -459,12 +459,29 @@ export const createCampaign = async (req, res) => {
     const effectiveDays = paymentMethod === "free_trial" ? 3 : durationDays;
     const end = endDate ? new Date(endDate) : new Date(start.getTime() + effectiveDays * 24 * 60 * 60 * 1000);
 
+    let finalBookId = null;
+    if (bookId && mongoose.Types.ObjectId.isValid(bookId)) {
+      finalBookId = bookId;
+    } else if (req.body.book) {
+      const match = await Book.findOne({
+        sellerId: req.user._id,
+        title: new RegExp(`^${req.body.book.trim()}$`, "i"),
+      });
+      if (match) finalBookId = match._id;
+    }
+
+    let resolvedCategory = targetCategory || "All";
+    if (resolvedCategory === "All" && finalBookId) {
+      const bObj = await Book.findById(finalBookId);
+      if (bObj?.category) resolvedCategory = bObj.category;
+    }
+
     const campaign = await Campaign.create({
       authorId: req.user._id,
-      bookId: bookId || null,
+      bookId: finalBookId,
       title: title || "Promotional Spotlight",
       campaignType: campaignType || "home_banner",
-      targetCategory: targetCategory || "All",
+      targetCategory: resolvedCategory,
       discountPercentage: Number(discountPercentage) || 0,
       startDate: start,
       endDate: end,

@@ -192,6 +192,27 @@ export default function ExplorePage() {
               console.warn("[ExplorePage] Local author book merge note:", authErr.message);
             }
 
+            // Also check active promotional campaigns & mark sponsored books
+            try {
+              const activeCampaigns = await authorService.getActiveFeaturedCampaigns();
+              if (Array.isArray(activeCampaigns) && activeCampaigns.length > 0) {
+                activeCampaigns.forEach((camp) => {
+                  authorService.trackCampaignEngagement(camp.id || camp.campaignId, "impression");
+                  normalizedServerBooks.forEach((nb) => {
+                    const matchId = camp.bookId && String(nb.id) === String(camp.bookId);
+                    const matchTitle = camp.bookTitle && nb.title.toLowerCase() === camp.bookTitle.toLowerCase();
+                    if (matchId || matchTitle) {
+                      nb.isSponsored = true;
+                      nb.campaignId = camp.id || camp.campaignId;
+                      nb.campaignType = camp.campaignType;
+                    }
+                  });
+                });
+              }
+            } catch (campErr) {
+              console.warn("[ExplorePage] Active campaign sync note:", campErr.message);
+            }
+
             setAllBooks((prev) => {
               const liveIds = new Set(normalizedServerBooks.map((b) => String(b.id)));
               const nonDuplicateStatic = books.filter((b) => !liveIds.has(String(b.id)));
@@ -447,7 +468,10 @@ export default function ExplorePage() {
   };
 
   const authorBooks = useMemo(
-    () => allBooks.filter((b) => b.isAuthorOriginal || b.isPublisherListing),
+    () =>
+      allBooks
+        .filter((b) => b.isAuthorOriginal || b.isPublisherListing || b.isSponsored)
+        .sort((a, b) => (b.isSponsored ? 1 : 0) - (a.isSponsored ? 1 : 0)),
     [allBooks]
   );
 
@@ -540,6 +564,11 @@ export default function ExplorePage() {
                         <span className="absolute top-1.5 left-1.5 rounded-md bg-[#6C4BF4] px-1.5 py-0.5 text-[8px] font-extrabold text-white">
                           {b.bookType || "Paperback"}
                         </span>
+                        {b.isSponsored && (
+                          <span className="absolute top-1.5 right-1.5 rounded-md bg-amber-400 px-1.5 py-0.5 text-[8px] font-extrabold text-amber-950 shadow-xs flex items-center gap-0.5">
+                            ✨ Promoted
+                          </span>
+                        )}
                       </div>
                       <div>
                         <h3 className="text-xs font-bold text-white line-clamp-1 group-hover:text-amber-300 transition">

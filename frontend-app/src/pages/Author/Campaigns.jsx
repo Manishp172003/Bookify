@@ -18,8 +18,8 @@ function Campaigns() {
     bookId: "",
     book: "",
     type: "Home Boost",
-    days: "7",
-    paymentMethod: "wallet"
+    days: "3",
+    paymentMethod: "free_trial"
   });
 
   const loadData = async () => {
@@ -29,7 +29,7 @@ function Campaigns() {
 
       const [camps, books] = await Promise.all([
         authorService.getCampaigns(),
-        authorService.getBooks()
+        authorService.getMyBooks ? authorService.getMyBooks() : authorService.getBooks()
       ]);
 
       const campList = Array.isArray(camps) ? camps : [];
@@ -38,20 +38,17 @@ function Campaigns() {
       const bookList = Array.isArray(books) ? books : [];
       setMyBooks(bookList);
 
-      // Pre-select first book if available
-      if (bookList.length > 0 && !newCampaign.book) {
-        setNewCampaign(prev => ({
-          ...prev,
-          bookId: bookList[0].id || bookList[0]._id || "",
-          book: bookList[0].title || ""
-        }));
-      }
-
-      // Check if free trial already used
       const trialUsed = campList.some(c => c.paymentMethod === "free_trial");
-      if (!trialUsed) {
-        setNewCampaign(prev => ({ ...prev, paymentMethod: "free_trial", days: "3" }));
-      }
+      const defaultBook = bookList.length > 0 ? bookList[0] : null;
+
+      setNewCampaign({
+        name: defaultBook ? `${defaultBook.title} Spotlight` : "Campus Spotlight Boost",
+        bookId: defaultBook ? (defaultBook.id || defaultBook._id) : "",
+        book: defaultBook ? defaultBook.title : "",
+        type: "Home Boost",
+        days: trialUsed ? "7" : "3",
+        paymentMethod: trialUsed ? (currentUser?.walletBalance >= 2093 ? "wallet" : "razorpay") : "free_trial"
+      });
     } catch (err) {
       console.error("Error loading campaign data:", err);
     } finally {
@@ -70,13 +67,31 @@ function Campaigns() {
   const durationDays = isFreeTrial ? 3 : Number(newCampaign.days || 7);
   const totalCost = isFreeTrial ? 0 : dailyRate * durationDays;
 
+  const handleOpenCreateModal = () => {
+    const trialUsed = campaigns.some(c => c.paymentMethod === "free_trial");
+    const defaultBook = myBooks.length > 0 ? myBooks[0] : null;
+    const defaultBookId = defaultBook ? (defaultBook.id || defaultBook._id) : "";
+    const defaultBookTitle = defaultBook ? defaultBook.title : "";
+
+    setNewCampaign({
+      name: defaultBookTitle ? `${defaultBookTitle} Spotlight` : "Campus Spotlight Boost",
+      bookId: defaultBookId,
+      book: defaultBookTitle,
+      type: "Home Boost",
+      days: trialUsed ? "7" : "3",
+      paymentMethod: trialUsed ? (walletBalance >= 2093 ? "wallet" : "razorpay") : "free_trial"
+    });
+    setShowCreateModal(true);
+  };
+
   const handleBookSelect = (e) => {
     const selectedId = e.target.value;
     const found = myBooks.find(b => (b.id === selectedId || b._id === selectedId));
     setNewCampaign(prev => ({
       ...prev,
       bookId: selectedId,
-      book: found ? found.title : e.target.value
+      book: found ? found.title : e.target.value,
+      name: found ? `${found.title} Spotlight` : prev.name
     }));
   };
 
@@ -199,7 +214,7 @@ function Campaigns() {
         </div>
         <button
           type="button"
-          onClick={() => setShowCreateModal(true)}
+          onClick={handleOpenCreateModal}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#6C4BF4] text-white rounded-xl text-sm font-semibold hover:bg-[#5b3ed9] transition shadow-md shadow-[#6C4BF4]/20 self-start cursor-pointer"
         >
           <Plus size={16} />
@@ -337,7 +352,7 @@ function Campaigns() {
             </p>
             <button
               type="button"
-              onClick={() => setShowCreateModal(true)}
+              onClick={handleOpenCreateModal}
               className="mt-2 px-4 py-2 bg-[#6C4BF4] text-white rounded-xl text-xs font-bold hover:bg-[#5b3ed9] transition cursor-pointer"
             >
               Launch Your First Campaign
