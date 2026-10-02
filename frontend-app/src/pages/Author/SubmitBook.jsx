@@ -19,6 +19,13 @@ import {
 } from "lucide-react";
 import { authorService, getCurrentAuthor } from "../../services/authorService";
 
+const SAMPLE_COVERS = [
+  "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=600",
+  "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=600",
+  "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=600",
+  "https://images.unsplash.com/photo-1532012164546-f432f2e3edd3?auto=format&fit=crop&q=80&w=600"
+];
+
 export default function SubmitBook() {
   const navigate = useNavigate();
   const currentAuthor = getCurrentAuthor() || {};
@@ -60,6 +67,53 @@ export default function SubmitBook() {
   const manuscriptInputRef = useRef(null);
   const [isCoverDragging, setIsCoverDragging] = useState(false);
   const [isManuscriptDragging, setIsManuscriptDragging] = useState(false);
+
+  // Quick Demo Samples for Testing
+  const handleUseSampleCover = (sampleUrl = SAMPLE_COVERS[0]) => {
+    setFormData((prev) => ({
+      ...prev,
+      coverPreview: sampleUrl,
+      coverFileName: "author_sample_cover.jpg",
+      coverFileSize: "1.2 MB"
+    }));
+  };
+
+  const handleUseSampleManuscript = () => {
+    setFormData((prev) => ({
+      ...prev,
+      manuscriptFile: { name: "The_Silent_Mind_Final_Draft.pdf", size: 3670016, type: "application/pdf" },
+      manuscriptFileName: "The_Silent_Mind_Final_Draft.pdf",
+      manuscriptFileSize: "3.5 MB"
+    }));
+  };
+
+  const handleAutoFillDemo = () => {
+    setFormData({
+      title: "The Silent Mind: Art of Mental Peace",
+      subtitle: "A practical mindfulness guide for university students",
+      authorName: defaultAuthorName,
+      category: "Self Help",
+      customCategory: "",
+      subCategory: "Mental Wellness",
+      customSubCategory: "",
+      description: "A transformative exploration of meditation, mental clarity, and focus for high-pressure academic lifestyles. Written by campus authors for modern students.",
+      tags: ["Mindfulness", "Self Help", "Personal Growth", "Study Habits"],
+      newTag: "",
+      language: "English",
+      customLanguage: "",
+      bookType: "Paperback",
+      coverPreview: SAMPLE_COVERS[0],
+      coverFileName: "the_silent_mind_cover.jpg",
+      coverFileSize: "1.4 MB",
+      manuscriptFile: { name: "The_Silent_Mind_Final_Draft.pdf", size: 3670016, type: "application/pdf" },
+      manuscriptFileName: "The_Silent_Mind_Final_Draft.pdf",
+      manuscriptFileSize: "3.5 MB",
+      sellingPrice: "349",
+      rentalPrice: "39",
+      allowExchanges: true,
+      termsAccepted: true
+    });
+  };
 
   // File Handlers
   const handleCoverFile = (file) => {
@@ -321,13 +375,24 @@ export default function SubmitBook() {
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in-up">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6C4BF4] mb-1">
-          <Sparkles size={14} />
-          <span>Independent Author Publishing Suite</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6C4BF4] mb-1">
+            <Sparkles size={14} />
+            <span>Independent Author Publishing Suite</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-[#17152A] font-poppins">Publish New Book / Manuscript</h1>
+          <p className="text-[#6B6880] mt-1 text-sm">Upload your original work, configure royalties, and list directly across campus libraries.</p>
         </div>
-        <h1 className="text-3xl font-extrabold text-[#17152A] font-poppins">Publish New Book / Manuscript</h1>
-        <p className="text-[#6B6880] mt-1 text-sm">Upload your original work, configure royalties, and list directly across campus libraries.</p>
+
+        <button
+          type="button"
+          onClick={handleAutoFillDemo}
+          className="self-start sm:self-center shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#EEEAFE] hover:bg-[#E0D8FD] text-xs font-bold text-[#6C4BF4] border border-[#6C4BF4]/30 shadow-xs transition cursor-pointer hover:scale-102"
+        >
+          <Sparkles size={14} />
+          <span>Auto-Fill Demo Book</span>
+        </button>
       </div>
 
       {/* Progress Tracker */}
@@ -546,9 +611,19 @@ export default function SubmitBook() {
             <div className="space-y-6 animate-fade-in">
               {/* Cover Image Upload */}
               <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Book Cover Image* (High-Res Front Cover)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider">
+                    Book Cover Image* (High-Res Front Cover)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleUseSampleCover()}
+                    className="text-xs font-bold text-[#6C4BF4] bg-[#EEEAFE] hover:bg-[#E0D8FD] px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Sparkles size={12} />
+                    <span>Use Sample Cover</span>
+                  </button>
+                </div>
                 
                 {/* Hidden native input */}
                 <input 
@@ -564,33 +639,52 @@ export default function SubmitBook() {
                 />
 
                 {!formData.coverPreview ? (
-                  <div 
-                    onClick={() => coverInputRef.current && coverInputRef.current.click()}
-                    onDragOver={(e) => { e.preventDefault(); setIsCoverDragging(true); }}
-                    onDragLeave={() => setIsCoverDragging(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsCoverDragging(false);
-                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                        handleCoverFile(e.dataTransfer.files[0]);
-                      }
-                    }}
-                    className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition ${
-                      isCoverDragging 
-                        ? "border-[#6C4BF4] bg-[#EEEAFE]/50 scale-[1.01]" 
-                        : "border-[#E7E4F2] hover:border-[#6C4BF4] bg-[#F8F7FF]"
-                    }`}
-                  >
-                    <div className="mx-auto w-14 h-14 rounded-2xl bg-white shadow-xs flex items-center justify-center text-[#6C4BF4] mb-3">
-                      <ImageIcon size={28} />
+                  <>
+                    <div 
+                      onClick={() => coverInputRef.current && coverInputRef.current.click()}
+                      onDragOver={(e) => { e.preventDefault(); setIsCoverDragging(true); }}
+                      onDragLeave={() => setIsCoverDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsCoverDragging(false);
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          handleCoverFile(e.dataTransfer.files[0]);
+                        }
+                      }}
+                      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition ${
+                        isCoverDragging 
+                          ? "border-[#6C4BF4] bg-[#EEEAFE]/50 scale-[1.01]" 
+                          : "border-[#E7E4F2] hover:border-[#6C4BF4] bg-[#F8F7FF]"
+                      }`}
+                    >
+                      <div className="mx-auto w-14 h-14 rounded-2xl bg-white shadow-xs flex items-center justify-center text-[#6C4BF4] mb-3">
+                        <ImageIcon size={28} />
+                      </div>
+                      <p className="text-sm font-bold text-[#17152A]">
+                        Click to browse or drag & drop book cover here
+                      </p>
+                      <p className="text-xs text-[#6B6880] mt-1">
+                        Supports PNG, JPG, or WEBP up to 8MB (Recommended aspect ratio 2:3)
+                      </p>
                     </div>
-                    <p className="text-sm font-bold text-[#17152A]">
-                      Click to browse or drag & drop book cover here
-                    </p>
-                    <p className="text-xs text-[#6B6880] mt-1">
-                      Supports PNG, JPG, or WEBP up to 8MB (Recommended aspect ratio 2:3)
-                    </p>
-                  </div>
+
+                    <div className="flex items-center gap-2 mt-2.5">
+                      <span className="text-[11px] text-gray-500 font-medium">Or pick sample cover:</span>
+                      <div className="flex gap-2">
+                        {SAMPLE_COVERS.map((url, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleUseSampleCover(url)}
+                            className="h-9 w-7 rounded-lg border border-gray-200 overflow-hidden hover:scale-110 hover:border-[#6C4BF4] transition cursor-pointer shadow-xs"
+                            title={`Sample Cover ${idx + 1}`}
+                          >
+                            <img src={url} alt={`Sample ${idx + 1}`} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="flex items-center gap-4 rounded-2xl border border-emerald-200 bg-[#E8F8EE]/60 p-4">
                     <div className="w-16 h-24 rounded-xl overflow-hidden bg-gray-100 shadow-sm border border-emerald-300 shrink-0">
@@ -629,9 +723,19 @@ export default function SubmitBook() {
 
               {/* Manuscript File Upload */}
               <div>
-                <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider mb-2">
-                  Manuscript Document File* (PDF / EPUB)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-[#17152A] uppercase tracking-wider">
+                    Manuscript Document File* (PDF / EPUB)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleUseSampleManuscript}
+                    className="text-xs font-bold text-[#6C4BF4] bg-[#EEEAFE] hover:bg-[#E0D8FD] px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Sparkles size={12} />
+                    <span>Use Demo Manuscript (PDF)</span>
+                  </button>
+                </div>
 
                 {/* Hidden native input */}
                 <input 
