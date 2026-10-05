@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Mail, CheckCircle2, AlertCircle, ArrowLeft, KeyRound, ExternalLink } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Mail, CheckCircle2, AlertCircle, ArrowLeft, KeyRound, ExternalLink, Feather } from "lucide-react";
 import AuthLayout from "../../components/auth/AuthLayout";
 import loginIllustration from "../../assets/images/auth/login-illustration.png";
 
 export default function ForgotPassword() {
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get("from");
+  const isAuthor = from === "author";
+
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,6 +39,7 @@ export default function ForgotPassword() {
         },
         body: JSON.stringify({
           email: cleanEmail,
+          from: isAuthor ? "author" : "student",
           clientUrl: window.location.origin,
         }),
       });
@@ -60,11 +65,17 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout
-      title="Reset Your Password"
-      subtitle={<span>We'll help you get back into your <span className="text-[#FFD166] font-bold">Bookify</span> account.</span>}
+      title={isAuthor ? "Author & Creator Studio" : "Reset Your Password"}
+      subtitle={
+        isAuthor ? (
+          <span>Password recovery for <span className="text-[#FFD166] font-bold">Bookify Author Studio</span>.</span>
+        ) : (
+          <span>We'll help you get back into your <span className="text-[#FFD166] font-bold">Bookify</span> account.</span>
+        )
+      }
       illustration={loginIllustration}
       isRegister={false}
-      tagText="Account Recovery"
+      tagText={isAuthor ? "Author Partner Portal" : "Account Recovery"}
     >
       {successInfo ? (
         <div className="py-4 text-center animate-fade-in">
@@ -96,7 +107,7 @@ export default function ForgotPassword() {
                 Direct reset link for quick local verification:
               </p>
               <Link
-                to={`/reset-password?token=${successInfo.resetToken}&email=${encodeURIComponent(successInfo.email)}`}
+                to={`/reset-password?token=${successInfo.resetToken}&email=${encodeURIComponent(successInfo.email)}${isAuthor ? "&from=author" : ""}`}
                 className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-[#6C4BF4] hover:underline"
               >
                 <span>Open Password Reset Screen</span>
@@ -117,11 +128,11 @@ export default function ForgotPassword() {
               Send to a different email
             </button>
             <Link
-              to="/login"
+              to={isAuthor ? "/author/login" : "/login"}
               className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-800 transition"
             >
               <ArrowLeft size={14} />
-              <span>Back to Login</span>
+              <span>Back to {isAuthor ? "Author Login" : "Login"}</span>
             </Link>
           </div>
         </div>
@@ -132,15 +143,23 @@ export default function ForgotPassword() {
             <div>
               <div className="flex items-center gap-1.5 mb-1 text-[11px] font-bold text-[#6C4BF4] uppercase tracking-wider">
                 <KeyRound size={14} />
-                <span>Password Assistance</span>
+                <span>{isAuthor ? "Author Portal Security" : "Password Assistance"}</span>
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
-                Forgot Password?
+                {isAuthor ? "Forgot Author Password?" : "Forgot Password?"}
               </h2>
               <p className="mt-1 text-xs text-gray-500">
-                Enter your account email to receive a password reset link.
+                {isAuthor ? "Enter your registered email to receive a password reset link for Author Studio." : "Enter your account email to receive a password reset link."}
               </p>
             </div>
+          </div>
+
+          {/* Unified Account Guidance */}
+          <div className="mb-4 rounded-xl bg-[#F8F7FF] p-3 text-[11px] text-gray-600 border border-gray-100 flex items-start gap-2">
+            <span className="text-sm shrink-0">💡</span>
+            <span className="leading-relaxed">
+              <strong>Unified Account Notice:</strong> Student & Author profiles share one Bookify login. Resetting your password updates access for both the <strong>Student Marketplace</strong> and <strong>Author & Creator Studio</strong>.
+            </span>
           </div>
 
           {error && (
@@ -153,7 +172,7 @@ export default function ForgotPassword() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="mb-1 block text-xs font-bold text-gray-700">
-                Email Address
+                {isAuthor ? "Author / Registered Email Address" : "Email Address"}
               </label>
               <div className="relative">
                 <Mail
@@ -162,7 +181,7 @@ export default function ForgotPassword() {
                 />
                 <input
                   type="email"
-                  placeholder="student@university.edu"
+                  placeholder={isAuthor ? "author@publishing.com or university email" : "student@university.edu"}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -184,11 +203,11 @@ export default function ForgotPassword() {
 
           <div className="mt-6 text-center">
             <Link
-              to="/login"
+              to={isAuthor ? "/author/login" : "/login"}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#6C4BF4] transition"
             >
               <ArrowLeft size={14} />
-              <span>Back to Login</span>
+              <span>Back to {isAuthor ? "Author Login" : "Student Login"}</span>
             </Link>
           </div>
         </div>

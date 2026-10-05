@@ -81,23 +81,25 @@ export const sendOtpEmail = async (email, otp, name = "Bookify Member") => {
 /**
  * 2. Password Reset Email Template
  */
-export const sendPasswordResetEmail = async (email, resetToken, name = "Bookify Member", customClientUrl = null) => {
+export const sendPasswordResetEmail = async (email, resetToken, name = "Bookify Member", customClientUrl = null, from = null) => {
   const clientUrl =
     customClientUrl ||
     (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes("localhost")
       ? process.env.CLIENT_URL
       : "https://bookify-lemon-seven.vercel.app");
-  const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+  const fromParam = from ? `&from=${encodeURIComponent(from)}` : "";
+  const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}${fromParam}`;
 
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 30px; background-color: #F8F7FF; border-radius: 16px; border: 1px solid #E7E4F2;">
       <div style="text-align: center; margin-bottom: 24px;">
         <h1 style="color: #6C4BF4; margin: 0; font-size: 28px; font-weight: 800;">Bookify</h1>
+        <p style="color: #6C4BF4; font-size: 13px; font-weight: 600; margin: 4px 0 0 0;">Unified Account Security</p>
       </div>
       <div style="background-color: #FFFFFF; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(108, 75, 244, 0.05);">
         <h2 style="color: #17152A; font-size: 20px; margin-top: 0;">Reset Your Password</h2>
         <p style="color: #4A4668; font-size: 15px; line-height: 1.6;">Hello <strong>${name}</strong>,</p>
-        <p style="color: #4A4668; font-size: 15px; line-height: 1.6;">We received a request to reset your password. Click the button below to choose a new password:</p>
+        <p style="color: #4A4668; font-size: 15px; line-height: 1.6;">We received a request to reset your password. Since your Bookify account is unified, updating this password secures access across both the <strong>Student Marketplace</strong> and <strong>Author & Creator Studio</strong>.</p>
         <div style="text-align: center; margin: 28px 0;">
           <a href="${resetLink}" style="background-color: #6C4BF4; color: #FFFFFF; text-decoration: none; padding: 14px 28px; font-size: 15px; font-weight: 700; border-radius: 10px; display: inline-block;">Reset Password</a>
         </div>

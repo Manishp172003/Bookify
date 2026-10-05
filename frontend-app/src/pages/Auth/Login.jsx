@@ -117,12 +117,16 @@ function Login() {
 
           // 4. Redirect after short popup delay
           setTimeout(() => {
-            const isAuthor = formData.identifier.toLowerCase().includes("author");
-            if (isAuthor) {
+            const from = location.state?.from?.pathname;
+            if (from) {
+              navigate(from, { replace: true });
+              return;
+            }
+            const isPureAuthor = data.user?.role === "author" || (data.user?.isAuthor && formData.identifier.toLowerCase().includes("author"));
+            if (isPureAuthor) {
               navigate("/author", { replace: true });
             } else {
-              const from = location.state?.from?.pathname || "/dashboard";
-              navigate(from, { replace: true });
+              navigate("/dashboard", { replace: true });
             }
           }, 1500);
         } else {
