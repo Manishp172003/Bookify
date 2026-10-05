@@ -240,11 +240,14 @@ export const forgotPassword = async (req, res) => {
         ? process.env.CLIENT_URL
         : req.headers.origin || "https://bookify-lemon-seven.vercel.app");
 
-    sendPasswordResetEmail(user.email, resetToken, user.fullName, clientUrl).catch((err) =>
+    const from = (req.body.from || "").trim();
+
+    sendPasswordResetEmail(user.email, resetToken, user.fullName, clientUrl, from).catch((err) =>
       console.error("Password reset email error:", err.message)
     );
 
-    const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+    const fromParam = from ? `&from=${encodeURIComponent(from)}` : "";
+    const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}${fromParam}`;
     const isDev = process.env.NODE_ENV !== "production";
 
     res.status(200).json({

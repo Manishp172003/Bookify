@@ -10,6 +10,8 @@ export default function ResetPassword() {
 
   const token = searchParams.get("token") || "";
   const emailParam = searchParams.get("email") || "";
+  const from = searchParams.get("from") || "";
+  const isAuthor = from === "author";
 
   const [formData, setFormData] = useState({
     password: "",
@@ -77,8 +79,8 @@ export default function ResetPassword() {
         if (response.ok) {
           setIsSuccess(true);
           setTimeout(() => {
-            navigate("/login");
-          }, 2500);
+            navigate(isAuthor ? "/author/login" : "/login");
+          }, 3500);
         } else {
           setApiError(data.message || "Failed to reset password. The link may have expired.");
         }
@@ -92,31 +94,55 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout
-      title="Create New Password"
-      subtitle={<span>Secure your account and continue your journey on <span className="text-[#6C4BF4] font-bold">Bookify</span>.</span>}
+      title={isAuthor ? "Author Studio Security" : "Create New Password"}
+      subtitle={
+        isAuthor ? (
+          <span>Secure your <span className="text-[#FFD166] font-bold">Bookify Author Studio</span> account.</span>
+        ) : (
+          <span>Secure your account and continue your journey on <span className="text-[#6C4BF4] font-bold">Bookify</span>.</span>
+        )
+      }
       illustration={loginIllustration}
       isRegister={false}
-      tagText="Account Security"
+      tagText={isAuthor ? "Author Partner Portal" : "Account Security"}
     >
       {isSuccess ? (
-        <div className="py-8 text-center animate-fade-in">
+        <div className="py-6 text-center animate-fade-in">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-md">
             <CheckCircle2 size={36} />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
             Password Updated!
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Your password has been reset successfully. Redirecting you to login in a moment...
+          <p className="mt-2 text-xs sm:text-sm text-gray-600 max-w-sm mx-auto leading-relaxed">
+            Your Bookify account password has been updated. Since your account is unified, you can now sign in with this new password across both portals:
           </p>
-          <div className="mt-6">
+
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <Link
+              to="/author/login"
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-xs sm:text-sm font-bold transition shadow-sm ${
+                isAuthor
+                  ? "bg-[#6C4BF4] text-white hover:bg-[#5B3DE0] shadow-[#6C4BF4]/25"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <span>Sign In to Author Studio</span>
+            </Link>
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#6C4BF4] px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#5B3DE0]"
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-xs sm:text-sm font-bold transition shadow-sm ${
+                !isAuthor
+                  ? "bg-[#6C4BF4] text-white hover:bg-[#5B3DE0] shadow-[#6C4BF4]/25"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
             >
-              Sign In Now
+              <span>Sign In to Student Portal</span>
             </Link>
           </div>
+          <p className="text-[11px] text-gray-400 mt-4">
+            Redirecting automatically in a moment...
+          </p>
         </div>
       ) : (
         <div>
@@ -125,7 +151,7 @@ export default function ResetPassword() {
             <div>
               <div className="flex items-center gap-1.5 mb-1 text-[11px] font-bold text-[#6C4BF4] uppercase tracking-wider">
                 <KeyRound size={14} />
-                <span>Security Portal</span>
+                <span>{isAuthor ? "Author Studio Security" : "Security Portal"}</span>
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-[#17152A]">
                 Reset Password
@@ -146,7 +172,7 @@ export default function ResetPassword() {
                 {(!token || apiError.includes("expired") || apiError.includes("invalid")) && (
                   <div className="mt-2">
                     <Link
-                      to="/forgot-password"
+                      to={isAuthor ? "/forgot-password?from=author" : "/forgot-password"}
                       className="font-bold text-red-700 underline hover:text-red-800"
                     >
                       Request a new password reset link
@@ -237,11 +263,11 @@ export default function ResetPassword() {
           {/* Back to Login link */}
           <div className="mt-6 text-center">
             <Link
-              to="/login"
+              to={isAuthor ? "/author/login" : "/login"}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#6C4BF4] transition"
             >
               <ArrowLeft size={14} />
-              <span>Back to Login</span>
+              <span>Back to {isAuthor ? "Author Login" : "Login"}</span>
             </Link>
           </div>
         </div>
