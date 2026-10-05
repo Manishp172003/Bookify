@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { chatService } from "../services/chatService";
 import { isRealUserAvatar } from "../utils/avatarUtils";
-import { useAuth } from "./AuthContext";
+import { useAuth, getStoredToken } from "./AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -402,7 +402,7 @@ export function CommerceProvider({ children }) {
 
     // Fetch user's real orders from MongoDB backend (both purchases and incoming sales)
     const fetchUserOrders = async () => {
-      const token = localStorage.getItem("token");
+      const token = getStoredToken();
       if (!token) return;
 
       try {
@@ -418,6 +418,11 @@ export function CommerceProvider({ children }) {
             },
           }),
         ]);
+
+        if (ordersRes.status === 401 || salesRes.status === 401) {
+          window.dispatchEvent(new CustomEvent("bookify_unauthorized"));
+          return;
+        }
 
         const combined = [];
 
@@ -467,7 +472,7 @@ export function CommerceProvider({ children }) {
     try {
       savedUser = JSON.parse(localStorage.getItem("bookify_user"));
     } catch {}
-    const token = localStorage.getItem("token");
+    const token = getStoredToken();
 
     const rawApiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000/api";
     const socketBase = import.meta.env.VITE_SOCKET_URL || rawApiBase.replace(/\/api\/?$/, "");
@@ -483,7 +488,7 @@ export function CommerceProvider({ children }) {
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
-      console.log("[Bookify Socket] Connected to backend on port 5000:", newSocket.id);
+      console.log(`[Bookify Socket] Connected to backend (${socketBase}):`, newSocket.id);
       // Join default demo chat rooms
       newSocket.emit("joinChat", "chat_1");
       newSocket.emit("joinChat", "chat_2");
@@ -764,7 +769,7 @@ export function CommerceProvider({ children }) {
       return;
     }
 
-    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+    const token = getStoredToken();
     if (!token) return;
 
     const syncAndFetchWishlist = async () => {
@@ -785,6 +790,12 @@ export function CommerceProvider({ children }) {
             },
             body: JSON.stringify({ items: localItems }),
           });
+
+          if (syncRes.status === 401) {
+            window.dispatchEvent(new CustomEvent("bookify_unauthorized"));
+            return;
+          }
+
           if (syncRes.ok) {
             const syncJson = await syncRes.json();
             if (Array.isArray(syncJson.data)) {
@@ -800,6 +811,12 @@ export function CommerceProvider({ children }) {
             Authorization: `Bearer ${token}`,
           },
         });
+
+        if (res.status === 401) {
+          window.dispatchEvent(new CustomEvent("bookify_unauthorized"));
+          return;
+        }
+
         if (res.ok) {
           const json = await res.json();
           if (Array.isArray(json.data)) {
@@ -816,7 +833,7 @@ export function CommerceProvider({ children }) {
 
   const toggleWishlist = async (book) => {
     const isWish = wishlistItems.some((item) => String(item.id) === String(book.id));
-    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+    const token = getStoredToken();
 
     const itemPayload = {
       id: String(book.id),
@@ -839,7 +856,7 @@ export function CommerceProvider({ children }) {
 
     if (token) {
       try {
-        await fetch(`${API_BASE}/wishlist/toggle`, {
+        const toggleRes = await fetch(`${API_BASE}/wishlist/toggle`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -847,6 +864,9 @@ export function CommerceProvider({ children }) {
           },
           body: JSON.stringify(itemPayload),
         });
+        if (toggleRes.status === 401) {
+          window.dispatchEvent(new CustomEvent("bookify_unauthorized"));
+        }
       } catch (err) {
         console.warn("[Bookify] Failed to sync wishlist toggle to DB:", err);
       }
@@ -860,15 +880,18 @@ export function CommerceProvider({ children }) {
       )
     );
 
-    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+    const token = getStoredToken();
     if (token) {
       try {
-        await fetch(`${API_BASE}/wishlist/${id}/alert`, {
+        const alertRes = await fetch(`${API_BASE}/wishlist/${id}/alert`, {
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        if (alertRes.status === 401) {
+          window.dispatchEvent(new CustomEvent("bookify_unauthorized"));
+        }
       } catch (err) {
         console.warn("[Bookify] Failed to sync wishlist alert to DB:", err);
       }

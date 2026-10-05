@@ -2,12 +2,56 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext(null);
 
+export const isJwtExpired = (token) => {
+  if (!token || typeof token !== "string") return true;
+  const clean = token.trim();
+  if (clean === "undefined" || clean === "null" || clean === "") return true;
+  try {
+    const parts = clean.split(".");
+    if (parts.length !== 3) return false;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    if (payload.exp && typeof payload.exp === "number") {
+      // Return true if expired (with 10-second skew window)
+      return Date.now() >= payload.exp * 1000 - 10000;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+export const getStoredToken = () => {
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("bookify_auth_token") ||
+    localStorage.getItem("bookify_token") ||
+    localStorage.getItem("bookify_admin_token") ||
+    localStorage.getItem("auth_token");
+  if (!token || typeof token !== "string") return null;
+  const clean = token.trim();
+  if (clean === "undefined" || clean === "null" || clean === "") return null;
+  if (isJwtExpired(clean)) return null;
+  return clean;
+};
+
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem("bookify_auth") === "true";
+    const isAuth = localStorage.getItem("bookify_auth") === "true";
+    const token = getStoredToken();
+    if (!isAuth || !token) {
+      return false;
+    }
+    return true;
   });
 
   const [user, setUser] = useState(() => {
+    const token = getStoredToken();
+    if (!token && localStorage.getItem("bookify_auth") === "true") {
+      // Clear zombie credentials
+      localStorage.removeItem("bookify_auth");
+      localStorage.removeItem("bookify_user");
+      return null;
+    }
     const savedUser = localStorage.getItem("bookify_user");
     if (savedUser) {
       try {
@@ -23,7 +67,7 @@ export function AuthProvider({ children }) {
 
   // Re-sync with backend database to keep profile photo and data up-to-date across sessions
   useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("bookify_admin_token");
+    const token = getStoredToken();
     if (!token || !isAuthenticated) return;
 
     const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -32,7 +76,14 @@ export function AuthProvider({ children }) {
         Authorization: `Bearer ${token}`,
       },
     })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res.status === 401) {
+          console.warn("[AuthContext] Session expired on server. Logging out.");
+          logout();
+          return null;
+        }
+        return res.ok ? res.json() : null;
+      })
       .then((data) => {
         if (data?.user || data?.profile) {
           const freshUser = data.user || data.profile;
@@ -51,11 +102,23 @@ export function AuthProvider({ children }) {
       .catch((err) => console.warn("Failed to fetch fresh user profile:", err));
   }, [isAuthenticated]);
 
+  // Listen for unauthorized 401 events anywhere in the app to clean credentials gracefully
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.warn("[AuthContext] Received 401 Unauthorized event. Cleaning expired session.");
+      logout();
+    };
+
+    window.addEventListener("bookify_unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("bookify_unauthorized", handleUnauthorized);
+  }, []);
+
   const login = (userData, token = null) => {
     localStorage.setItem("bookify_auth", "true");
     if (token) {
       localStorage.setItem("token", token);
       localStorage.setItem("bookify_auth_token", token);
+      localStorage.setItem("bookify_token", token);
     }
     const prevUserRaw = localStorage.getItem("bookify_user");
     let prevUser = null;
@@ -160,6 +223,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("bookify_auth");
     localStorage.removeItem("bookify_user");
     localStorage.removeItem("token");
+    localStorage.removeItem("bookify_token");
+    localStorage.removeItem("bookify_auth_token");
+    localStorage.removeItem("bookify_admin_token");
+    localStorage.removeItem("auth_token");
     localStorage.removeItem("bookify_orders");
     localStorage.removeItem("bookify_conversations");
     localStorage.removeItem("bookify_user_listings_v1");

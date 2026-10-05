@@ -107,10 +107,14 @@ function Login() {
 
         if (response.ok) {
           // 2. Store the JWT token in localStorage
-          localStorage.setItem("token", data.token);
+          if (data.token) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("bookify_auth_token", data.token);
+            localStorage.setItem("bookify_token", data.token);
+          }
 
           // 3. Update Auth Context state
-          login(data.user || formData.identifier);
+          login(data.user || formData.identifier, data.token);
 
           setIsLoading(false);
           setShowSuccessPopup(true);
