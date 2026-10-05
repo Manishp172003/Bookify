@@ -70,9 +70,11 @@ function AuthorLogin() {
         if (response.ok) {
           if (data.token) {
             localStorage.setItem("token", data.token);
+            localStorage.setItem("bookify_auth_token", data.token);
+            localStorage.setItem("bookify_token", data.token);
           }
           if (login) {
-            login(data.user || formData.email);
+            login(data.user || formData.email, data.token);
           }
           setIsLoading(false);
           navigate("/author");
